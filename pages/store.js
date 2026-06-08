@@ -12,7 +12,7 @@ export function getServerSideProps() {
   try {
     const settings   = Settings.get();
     const categories = Categories.active().sort((a,b)=>a.sort_order-b.sort_order);
-    const allProds   = Products.active().sort((a,b)=>a.sort_order-b.sort_order);
+    const allProds   = Products.active().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
     const products   = allProds.map(p=>{
       const cat = Categories.byId(p.category_id);
       return {...p,category_name:cat?.name||null,category_slug:cat?.slug||null,category_icon:cat?.icon||null};
