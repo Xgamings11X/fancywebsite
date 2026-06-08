@@ -1,42 +1,88 @@
-import { Orders } from '../../../lib/storage.js';
+/**
+ * /api/orders/webhook — Midtrans payment notification
+ *
+ * PENTING: webhookTransaction harus di-await sebelum res.json()
+ * karena Vercel serverless terminate fungsi segera setelah response dikirim.
+ * Fire-and-forget (.catch tanpa await) menyebabkan Discord request tidak selesai.
+ */
+import { OrdersAsync }                                  from '../../../lib/redis.js';
 import { verifyWebhookSignature, parseTransactionStatus } from '../../../lib/midtrans.js';
-import { notifyTransaction } from '../../../lib/plugin.js';
-import { webhookTransaction } from '../../../lib/discord.js';
+import { notifyTransaction }                             from '../../../lib/plugin.js';
+import { webhookTransaction }                            from '../../../lib/discord.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+
   try {
     const n = req.body;
-    if (!await verifyWebhookSignature(n)) return res.status(403).json({ error:'Invalid signature' });
+
+    // ── Verifikasi signature Midtrans ─────────────────────────────
+    const sigValid = await verifyWebhookSignature(n);
+    if (!sigValid) {
+      console.error('[webhook] Signature tidak valid — order_id:', n.order_id,
+        '| Pastikan MIDTRANS_SERVER_KEY di .env sudah benar');
+      return res.status(403).json({ error: 'Invalid signature' });
+    }
 
     const { status, paymentType } = parseTransactionStatus(n);
     const finalStatus = status === 'paid' ? 'success' : status;
-    const order = Orders.byId(n.order_id);
-    if (!order) return res.status(404).json({ error:'Order not found' });
 
-    Orders.update(n.order_id, {
-      payment_status: finalStatus, payment_method: paymentType,
+    // ── Cari order (Redis-first) ──────────────────────────────────
+    const order = await OrdersAsync.byId(n.order_id);
+    if (!order) {
+      console.error('[webhook] Order tidak ditemukan:', n.order_id,
+        '— Pastikan Redis sudah di-setup (UPSTASH_REDIS_REST_URL)');
+      // Tetap return 200 ke Midtrans agar tidak retry terus
+      return res.status(200).json({ status: 'order_not_found' });
+    }
+
+    // ── Update status order ───────────────────────────────────────
+    await OrdersAsync.update(n.order_id, {
+      payment_status:          finalStatus,
+      payment_method:          paymentType,
       midtrans_transaction_id: n.transaction_id,
+      midtrans_raw:            JSON.stringify(n),
     });
 
-    const updated = Orders.byId(n.order_id);
-    webhookTransaction(updated).catch(()=>{});
+    const updated = await OrdersAsync.byId(n.order_id);
 
-    if (finalStatus==='success' && !order.plugin_notified) {
+    // ── Kirim ke Discord SEBELUM respond (bukan fire-and-forget) ──
+    // await wajib di serverless — fungsi terminate setelah res.json()
+    try {
+      await webhookTransaction(updated);
+    } catch (e) {
+      // Jangan block response meski Discord gagal
+      console.error('[webhook] Discord TX error:', e.message);
+    }
+
+    // ── Notifikasi plugin Minecraft ───────────────────────────────
+    if (finalStatus === 'success' && !order.plugin_notified) {
       try {
         const r = await notifyTransaction({
-          order_id: order.order_id, player_name: order.player_username,
-          player_uuid: order.player_uuid,
+          order_id:   order.order_id,
+          player_name:order.player_username,
+          player_uuid:order.player_uuid,
           product_id: order.reward_trigger || String(order.product_id),
-          amount: order.amount, status:'success', timestamp: new Date().toISOString(),
+          amount:     order.amount,
+          status:     'success',
+          timestamp:  new Date().toISOString(),
         });
-        Orders.update(n.order_id, { plugin_notified: r.ok, plugin_queued: !r.ok, plugin_response: JSON.stringify(r) });
-      } catch(e) {
-        Orders.update(n.order_id, { plugin_response: e.message });
+        await OrdersAsync.update(n.order_id, {
+          plugin_notified:  r.ok,
+          plugin_queued:    !r.ok,
+          plugin_response:  JSON.stringify(r),
+        });
+      } catch (e) {
+        console.error('[webhook] Plugin notify error:', e.message);
+        await OrdersAsync.update(n.order_id, { plugin_response: e.message });
       }
     }
-    return res.json({ status:'ok' });
-  } catch(e) {
-    return res.status(500).json({ error: e.message });
+
+    return res.status(200).json({ status: 'ok' });
+
+  } catch (e) {
+    console.error('[webhook] Unhandled error:', e.message);
+    // Return 200 ke Midtrans agar tidak retry — error sudah di-log
+    return res.status(200).json({ status: 'error', message: e.message });
   }
 }
