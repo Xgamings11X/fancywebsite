@@ -62,35 +62,55 @@ export default function SupportPage({ settings }) {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior:'smooth' });
   }, [activeTicket?.messages]);
 
-  // Simpan ref activeTicket agar bisa diakses di interval tanpa stale closure
-  useEffect(() => {
-    activeTicketRef.current = activeTicket;
-  }, [activeTicket]);
+  // Sync activeTicket ke ref (untuk SSE closure)
+  useEffect(() => { activeTicketRef.current = activeTicket; }, [activeTicket]);
 
-  // Polling realtime saat di view chat — refresh setiap 5 detik
+  // ── SSE realtime saat view=chat, fallback polling 3 detik jika SSE gagal ──
   useEffect(() => {
-    if (view === 'chat') {
-      pollingRef.current = setInterval(async () => {
-        const current = activeTicketRef.current;
-        if (!current) return;
-        try {
-          const r = await fetch(`/api/support?id=${current.ticket_id}`, { credentials:'include', headers: authHeaders() });
-          const d = await r.json();
-          if (d.success && d.ticket) {
-            // Update hanya jika ada pesan baru atau status berubah
-            const prevCount = (activeTicketRef.current?.messages || []).length;
-            const newCount  = (d.ticket.messages || []).length;
-            if (newCount !== prevCount || d.ticket.status !== activeTicketRef.current?.status) {
-              setActiveTicket(d.ticket);
+    if (view !== 'chat' || !activeTicket?.ticket_id) return;
+    let es = null;
+    let reconnectTimer = null;
+
+    const connect = () => {
+      const tk = activeTicketRef.current;
+      if (!tk) return;
+      let token = '';
+      try { token = localStorage.getItem('mc_token') || ''; } catch{}
+      const url = `/api/support/events?ticket_id=${tk.ticket_id}${token?`&token=${encodeURIComponent(token)}`:''}`;
+      es = new EventSource(url);
+      setSseStatus('connecting');
+      es.onopen    = () => setSseStatus('live');
+      es.onmessage = (e) => { try { const { ticket } = JSON.parse(e.data); if (ticket) setActiveTicket(ticket); } catch {} };
+      es.addEventListener('reconnect', () => { es.close(); reconnectTimer = setTimeout(connect, 600); });
+      es.onerror   = () => {
+        setSseStatus('polling');
+        es.close();
+        if (pollingRef.current) clearInterval(pollingRef.current);
+        pollingRef.current = setInterval(async () => {
+          const cur = activeTicketRef.current;
+          if (!cur) return;
+          try {
+            const headers = {'Content-Type':'application/json'};
+            try { const t = localStorage.getItem('mc_token'); if(t) headers['Authorization'] = `Bearer ${t}`; } catch{}
+            const r = await fetch(`/api/support?id=${cur.ticket_id}`, { credentials:'include', headers });
+            const d = await r.json();
+            if (d.success && d.ticket) {
+              if ((d.ticket.messages||[]).length !== (activeTicketRef.current?.messages||[]).length
+                || d.ticket.status !== activeTicketRef.current?.status) {
+                setActiveTicket(d.ticket);
+              }
             }
-          }
-        } catch {}
-      }, 5000);
-    } else {
+          } catch {}
+        }, 3000);
+      };
+    };
+    connect();
+    return () => {
+      if (es) { es.close(); }
+      if (reconnectTimer) clearTimeout(reconnectTimer);
       if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
-    }
-    return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
-  }, [view]);
+    };
+  }, [view, activeTicket?.ticket_id]);
 
   const authHeaders = () => {
     const headers = {'Content-Type':'application/json'};
@@ -154,20 +174,29 @@ export default function SupportPage({ settings }) {
 
   const handleSendMessage = async () => {
     if (!newMsg.trim() || sendingMsg) return;
+    const text = newMsg.trim();
+    // Optimistic UI — pesan tampil langsung
+    const tempMsg = {
+      id:'temp-'+Date.now(), sender:player.username, sender_type:'player',
+      text, created_at:new Date().toISOString(), _pending:true,
+    };
+    setActiveTicket(prev => prev ? { ...prev, messages:[...(prev.messages||[]),tempMsg] } : prev);
+    setNewMsg('');
     setSendingMsg(true);
     try {
-      const res = await fetch('/api/support',{method:'PATCH', headers: authHeaders(), credentials:'include',
-        body: JSON.stringify({ ticket_id: activeTicket.ticket_id, text: newMsg.trim() })});
+      const res = await fetch('/api/support',{method:'PATCH', headers:authHeaders(), credentials:'include',
+        body:JSON.stringify({ ticket_id:activeTicket.ticket_id, text })});
       const d = await res.json();
-      if (d.success) {
-        setNewMsg('');
-        await loadTicketDetail(activeTicket.ticket_id);
-        // Refresh ticket list unread count
-        loadTickets();
-      } else {
+      if (!d.success) {
+        setActiveTicket(prev => prev ? { ...prev, messages:(prev.messages||[]).filter(m=>m.id!==tempMsg.id) } : prev);
         toast.error(d.message || 'Gagal mengirim pesan');
+      } else {
+        loadTickets();
       }
-    } catch { toast.error('Server error'); }
+    } catch {
+      setActiveTicket(prev => prev ? { ...prev, messages:(prev.messages||[]).filter(m=>m.id!==tempMsg.id) } : prev);
+      toast.error('Server error');
+    }
     setSendingMsg(false);
   };
 
@@ -375,6 +404,13 @@ export default function SupportPage({ settings }) {
                   <span style={{background:`${chatStatus?.color}18`,color:chatStatus?.color,border:`1px solid ${chatStatus?.color}44`,padding:'4px 10px',borderRadius:6,fontSize:11,fontWeight:700,flexShrink:0}}>
                     {chatStatus?.label}
                   </span>
+                  {/* SSE status indicator */}
+                  <div title={sseStatus==='live'?'Realtime aktif':sseStatus==='polling'?'Mode polling':'Menghubungkan...'} style={{flexShrink:0}}>
+                    <span style={{display:'flex',alignItems:'center',gap:4,fontSize:10,color:sseStatus==='live'?'#2ecc71':sseStatus==='polling'?'#f1c40f':'var(--text-muted)'}}>
+                      <span style={{width:6,height:6,borderRadius:'50%',background:sseStatus==='live'?'#2ecc71':sseStatus==='polling'?'#f1c40f':'#8e8e9a',display:'inline-block',animation:sseStatus==='live'?'pulse-dot 2s infinite':undefined}}/>
+                      {sseStatus==='live'?'Live':sseStatus==='polling'?'Polling':'...'}
+                    </span>
+                  </div>
                 </>
               )}
             </div>
@@ -395,22 +431,26 @@ export default function SupportPage({ settings }) {
                     </div>
                   )}
                   {(activeTicket.messages||[]).map((msg,i) => {
-                    const isAdmin = msg.sender_type === 'admin';
+                    const isAdmin  = msg.sender_type === 'admin';
+                    const isPending = !!msg._pending;
                     return (
                       <div key={msg.id||i} style={{display:'flex',flexDirection:'column',alignItems: isAdmin ? 'flex-end' : 'flex-start'}}>
                         <div style={{
                           maxWidth:'80%',
-                          background: isAdmin ? 'rgba(52,152,219,0.1)' : 'rgba(255,255,255,0.04)',
-                          border: isAdmin ? '1px solid rgba(52,152,219,0.25)' : '1px solid rgba(255,255,255,0.07)',
+                          background: isAdmin ? 'rgba(52,152,219,0.1)' : isPending ? 'rgba(255,107,0,0.06)' : 'rgba(255,255,255,0.04)',
+                          border: isAdmin ? '1px solid rgba(52,152,219,0.25)' : isPending ? '1px dashed rgba(255,107,0,0.3)' : '1px solid rgba(255,255,255,0.07)',
                           borderRadius: isAdmin ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                           padding:'10px 14px',
+                          opacity: isPending ? 0.75 : 1,
                         }}>
                           <p style={{fontSize:11,fontWeight:700,color: isAdmin ? '#3498db' : 'var(--primary-light)',marginBottom:5}}>
                             {isAdmin ? '🛡️ Admin' : `👤 ${msg.sender}`}
                           </p>
                           <p style={{fontSize:13,color:'#e0e0e6',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{msg.text}</p>
                         </div>
-                        <p style={{fontSize:10,color:'var(--text-muted)',marginTop:4,padding:'0 4px'}}>{fmt(msg.created_at)}</p>
+                        <p style={{fontSize:10,color:'var(--text-muted)',marginTop:4,padding:'0 4px'}}>
+                          {isPending ? '⏳ Mengirim...' : fmt(msg.created_at)}
+                        </p>
                       </div>
                     );
                   })}
