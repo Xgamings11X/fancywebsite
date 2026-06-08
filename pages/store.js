@@ -43,13 +43,17 @@ export default function StorePage({ settings, categories: initCategories, produc
 
   // Client-side fetch untuk memastikan data produk selalu terbaru
   // (mengatasi kasus Vercel serverless di mana /tmp/data bisa berbeda per instance)
+  // BUGFIX: hanya update state jika response benar-benar punya data,
+  // supaya data SSR tidak tertimpa array kosong dari instance berbeda.
   useEffect(() => {
     fetch('/api/store/products')
       .then(r => r.json())
       .then(d => {
         if (d.success) {
-          if (d.products) setProducts(d.products);
-          if (d.categories) setCategories(d.categories);
+          // Hanya update produk jika ada isi, jangan timpa data SSR dengan array kosong
+          if (Array.isArray(d.products) && d.products.length > 0) setProducts(d.products);
+          // Update categories hanya jika ada isi
+          if (Array.isArray(d.categories) && d.categories.length > 0) setCategories(d.categories);
         }
       })
       .catch(() => {});
