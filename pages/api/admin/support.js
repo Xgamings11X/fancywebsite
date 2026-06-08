@@ -25,7 +25,7 @@ export default function handler(req, res) {
       if (status && status!=='all') tickets = tickets.filter(t=>t.status===status);
       if (type   && type!=='all')   tickets = tickets.filter(t=>t.type===type);
       const total = tickets.length;
-      tickets = tickets.slice((parseInt(page)-1)*25, parseInt(page)*25);
+      // No pagination cap — return ALL tickets so history is never lost
       return res.json({ success:true, tickets, total });
     }
 
