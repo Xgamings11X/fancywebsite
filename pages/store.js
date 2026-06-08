@@ -12,7 +12,7 @@ export function getServerSideProps() {
   try {
     const settings   = Settings.get();
     const categories = Categories.active().sort((a,b)=>a.sort_order-b.sort_order);
-    const allProds   = Products.active().sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    const allProds   = Products.active().sort((a,b)=>a.sort_order-b.sort_order);
     const products   = allProds.map(p=>{
       const cat = Categories.byId(p.category_id);
       return {...p,category_name:cat?.name||null,category_slug:cat?.slug||null,category_icon:cat?.icon||null};
@@ -23,7 +23,7 @@ export function getServerSideProps() {
 
 const idr = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
 
-export default function StorePage({ settings, categories, products }) {
+export default function StorePage({ settings, categories: initCategories, products: initProducts }) {
   const router = useRouter();
   const s = settings || {};
   const serverName = s.server_name || 'Fancy Network';
@@ -37,6 +37,23 @@ export default function StorePage({ settings, categories, products }) {
   const [activeTab,  setActiveTab]  = useState('all');
   const [expanded,   setExpanded]   = useState({});
   const [search,     setSearch]     = useState('');
+  // State produk — bisa di-update via client-side fetch
+  const [products,   setProducts]   = useState(initProducts || []);
+  const [categories, setCategories] = useState(initCategories || []);
+
+  // Client-side fetch untuk memastikan data produk selalu terbaru
+  // (mengatasi kasus Vercel serverless di mana /tmp/data bisa berbeda per instance)
+  useEffect(() => {
+    fetch('/api/store/products')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success) {
+          if (d.products) setProducts(d.products);
+          if (d.categories) setCategories(d.categories);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
