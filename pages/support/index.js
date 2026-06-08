@@ -44,6 +44,8 @@ export default function SupportPage({ settings }) {
   const [sendingMsg,  setSendingMsg]  = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
   const chatEndRef = useRef(null);
+  const pollingRef = useRef(null);
+  const activeTicketRef = useRef(null);
 
   // Favicon
   useEffect(() => {
@@ -59,6 +61,36 @@ export default function SupportPage({ settings }) {
   useEffect(() => {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior:'smooth' });
   }, [activeTicket?.messages]);
+
+  // Simpan ref activeTicket agar bisa diakses di interval tanpa stale closure
+  useEffect(() => {
+    activeTicketRef.current = activeTicket;
+  }, [activeTicket]);
+
+  // Polling realtime saat di view chat — refresh setiap 5 detik
+  useEffect(() => {
+    if (view === 'chat') {
+      pollingRef.current = setInterval(async () => {
+        const current = activeTicketRef.current;
+        if (!current) return;
+        try {
+          const r = await fetch(`/api/support?id=${current.ticket_id}`, { credentials:'include', headers: authHeaders() });
+          const d = await r.json();
+          if (d.success && d.ticket) {
+            // Update hanya jika ada pesan baru atau status berubah
+            const prevCount = (activeTicketRef.current?.messages || []).length;
+            const newCount  = (d.ticket.messages || []).length;
+            if (newCount !== prevCount || d.ticket.status !== activeTicketRef.current?.status) {
+              setActiveTicket(d.ticket);
+            }
+          }
+        } catch {}
+      }, 5000);
+    } else {
+      if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; }
+    }
+    return () => { if (pollingRef.current) { clearInterval(pollingRef.current); pollingRef.current = null; } };
+  }, [view]);
 
   const authHeaders = () => {
     const headers = {'Content-Type':'application/json'};
