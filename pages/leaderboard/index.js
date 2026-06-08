@@ -12,11 +12,11 @@ export function getServerSideProps() {
 }
 
 const BOARDS = {
-  balance:      { label:'Top Balance', icon:'fa-coins',         color:'#f1c40f', unit:'Coins' },
-  auraskills:   { label:'Top Skills',  icon:'fa-wand-sparkles', color:'#9b59b6', unit:'Level' },
-  votes:        { label:'Top Votes',   icon:'fa-star',          color:'var(--primary)', unit:'Vote' },
-  playtime:     { label:'Top Playtime',icon:'fa-clock',         color:'#2ecc71', unit:'Jam'   },
-  playerpoints: { label:'Top Points',  icon:'fa-gem',           color:'#3498db', unit:'Poin'  },
+  balance:      { label:'Top Balance',      icon:'fa-coins',         color:'#f1c40f', unit:'Coins' },
+  auraskills:   { label:'Top AuraSkills',   icon:'fa-wand-sparkles', color:'#9b59b6', unit:'Level' },
+  votes:        { label:'Top Votes',        icon:'fa-star',          color:'var(--primary)', unit:'Vote' },
+  playtime:     { label:'Top Playtime',     icon:'fa-clock',         color:'#2ecc71', unit:'Jam' },
+  playerpoints: { label:'Top PlayerPoints', icon:'fa-gem',           color:'#3498db', unit:'Poin' },
 };
 
 const RANK_COLORS = {1:'var(--gold)', 2:'var(--silver)', 3:'var(--bronze)'};
@@ -38,7 +38,7 @@ export default function LeaderboardPage({ settings }) {
   const [showLogin, setShowLogin] = useState(false);
   const [active,    setActive]    = useState('balance');
   const [data,      setData]      = useState({});
-  const [connMeta,  setConnMeta]  = useState({});  // renamed: connection metadata per board
+  const [meta,      setMeta]      = useState({});   // Menggunakan state meta dari kode endpoint penhubung
   const [loading,   setLoading]   = useState(true);
   const [lastFetch, setLastFetch] = useState(null);
 
@@ -62,12 +62,12 @@ export default function LeaderboardPage({ settings }) {
       } catch {}
     }));
     setData(results);
-    setConnMeta(metaMap);
+    setMeta(metaMap);
     setLastFetch(new Date());
     if (!quiet) setLoading(false);
   };
 
-  // Auto-refresh setiap 60 detik
+  // Auto-refresh setiap 60 detik jika endpoint dikonfigurasi
   useEffect(() => {
     const iv = setInterval(() => fetchAll(true), 60000);
     return () => clearInterval(iv);
@@ -92,7 +92,10 @@ export default function LeaderboardPage({ settings }) {
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
-      <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
+      <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={async()=>{
+        await fetch('/api/auth/logout',{method:'POST',credentials:'include'});
+        setPlayer(null); localStorage.removeItem('mc_player'); toast.success('Berhasil keluar');
+      }} settings={s}/>
 
       <div style={{padding:'130px 6% 80px', maxWidth:900, margin:'0 auto'}}>
 
@@ -103,9 +106,9 @@ export default function LeaderboardPage({ settings }) {
             Papan <span style={{color:'var(--primary)'}}>Peringkat</span>
           </h1>
 
-          {/* Connection status badge */}
+          {/* Connection status badge (Sinkron dengan metadata API) */}
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,flexWrap:'wrap'}}>
-            {connMeta[active]?.endpointConfigured ? (
+            {meta[active]?.endpointConfigured ? (
               <span style={{display:'inline-flex',alignItems:'center',gap:6,background:'rgba(46,204,113,0.1)',border:'1px solid rgba(46,204,113,0.25)',borderRadius:20,padding:'4px 14px',fontSize:12,color:'#2ecc71',fontWeight:600}}>
                 <span style={{width:6,height:6,borderRadius:'50%',background:'#2ecc71',display:'inline-block',boxShadow:'0 0 6px #2ecc71'}}/>
                 Terhubung ke Plugin Endpoint
@@ -127,25 +130,21 @@ export default function LeaderboardPage({ settings }) {
           </div>
         </div>
 
-        {/* ── Board Tabs ──
-            - Scrollable horizontally (overflow-x: auto)
-            - flex-shrink:0 on buttons so they never squash
-            - variable active colour per board
-        ── */}
+        {/* ── Design Board Tabs (Scrollable Horizontally) ── */}
         <div style={{
           overflowX:'auto',
           WebkitOverflowScrolling:'touch',
           marginBottom:32,
-          paddingBottom:4,   /* room for scrollbar */
+          paddingBottom:4,
         }}>
           <div style={{
-            display:'inline-flex',          /* shrink-wrap content */
+            display:'inline-flex',
             gap:6,
             background:'rgba(15,15,20,0.6)',
             padding:6,
             borderRadius:12,
             border:'1px solid rgba(255,255,255,0.05)',
-            minWidth:'100%',                /* at least fill container */
+            minWidth:'100%',
           }}>
             {Object.entries(BOARDS).map(([key, boardMeta]) => {
               const isActive = active === key;
@@ -208,7 +207,7 @@ export default function LeaderboardPage({ settings }) {
                 {
                   step:2, icon:'fa-file-code', title:'Set Environment Variable',
                   desc:'Isi variabel berikut di .env.local — LEADERBOARD_ENDPOINT aktifkan mode pull otomatis dari plugin.',
-                  code:'PLUGIN_HTTP_URL=http://IP_SERVER_MC:12025\nPLUGIN_SERVER_KEY=key-dari-config-plugin\nLEADERBOARD_ENDPOINT=http://IP_SERVER_MC:12025/api/plugin/leaderboard',
+                  code:'PLUGIN_HTTP_URL=http://IP_SERVER_MC:12025nPLUGIN_SERVER_KEY=key-dari-config-pluginnLEADERBOARD_ENDPOINT=http://IP_SERVER_MC:12025/api/plugin/leaderboard',
                 },
                 {
                   step:3, icon:'fa-gear', title:'Konfigurasi config.yml Plugin',
@@ -250,11 +249,7 @@ export default function LeaderboardPage({ settings }) {
         ) : (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
 
-            {/* ── Top 3 Podium ──
-                - minWidth:0 pada grid agar cells tidak overflow
-                - overflow:hidden + text-overflow di semua teks
-                - padding dikurangi supaya tidak sesak
-            ── */}
+            {/* ── Top 3 Podium ── */}
             {entries.length >= 3 && (() => {
               const podOrder = [entries[1], entries[0], entries[2]]; // 2nd, 1st, 3rd
               const podRanks  = [2, 1, 3];
@@ -282,14 +277,13 @@ export default function LeaderboardPage({ settings }) {
                         alignItems:'center',
                         justifyContent:'center',
                         gap:6,
-                        padding:'12px 8px',  /* reduced padding */
-                        overflow:'hidden',   /* clip anything that tries to escape */
-                        minWidth:0,          /* allow grid cell to shrink */
+                        padding:'12px 8px',
+                        overflow:'hidden',
+                        minWidth:0,
                         boxSizing:'border-box',
                       }}>
                         <i className={`fa-solid ${RANK_ICONS[podRank]}`} style={{fontSize:18,color:col,flexShrink:0}}/>
                         <PlayerAvatar uuid={e.player} username={e.player} size={podRank===1?40:32}/>
-                        {/* Player name — hard-truncate with ellipsis */}
                         <span style={{
                           fontWeight:700,
                           fontSize: podRank===1 ? 12 : 11,
@@ -301,7 +295,6 @@ export default function LeaderboardPage({ settings }) {
                           whiteSpace:'nowrap',
                           lineHeight:1.3,
                         }}>{e.player}</span>
-                        {/* Score */}
                         <span className="font-space" style={{
                           fontWeight:700,
                           color:col,
@@ -351,8 +344,8 @@ export default function LeaderboardPage({ settings }) {
 
             {/* Last sync note */}
             <p style={{textAlign:'center',color:'var(--text-muted)',fontSize:11,marginTop:12}}>
-              <i className="fa-solid fa-rotate" style={{marginRight:4,color:connMeta[active]?.source==='plugin-endpoint'?'#2ecc71':'var(--text-muted)'}}/>
-              {connMeta[active]?.source==='plugin-endpoint'
+              <i className="fa-solid fa-rotate" style={{marginRight:4,color:meta[active]?.source==='plugin-endpoint'?'#2ecc71':'var(--text-muted)'}}/>
+              {meta[active]?.source==='plugin-endpoint'
                 ? <><span>Pull dari plugin endpoint</span> • <span style={{color:'#2ecc71'}}>Auto-refresh 60 detik</span></>
                 : 'Data dikirim oleh plugin • Diperbarui sesuai interval konfigurasi'
               }
