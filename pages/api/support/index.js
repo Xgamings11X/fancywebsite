@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       }
 
       return res.json({ success:true, tickets: Tickets.byPlayer(user.username)
-        .sort((a,b)=>b.created_at?.localeCompare(a.created_at)).slice(0,20) });
+        .sort((a,b)=>b.created_at?.localeCompare(a.created_at)) });
     }
 
     // PATCH /api/support — player kirim pesan baru ke tiket
