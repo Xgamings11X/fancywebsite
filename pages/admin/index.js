@@ -9,7 +9,6 @@ const TABS = [
   { id:'redeem',    label:'Redeem Code',   icon:'fa-ticket'        },
   { id:'orders',    label:'Log Transaksi', icon:'fa-receipt'       },
   { id:'reports',   label:'Report',        icon:'fa-flag'          },
-  { id:'settings',  label:'Pengaturan',    icon:'fa-gear'          },
 ];
 
 const idr = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
@@ -67,7 +66,7 @@ export default function AdminPanel() {
   const [tickets,      setTickets]      = useState([]);
   const [codes,        setCodes]        = useState([]);
   const [stats,        setStats]        = useState({total:0,success:0,pending:0,failed:0,revenue:0});
-  const [siteSettings, setSiteSettings] = useState(null);
+  const [siteSettings, setSiteSettings] = useState(null); // unused, kept for safety
 
   const [orderFilter,  setOrderFilter]  = useState('all');
   const [reportFilter, setReportFilter] = useState('all');
@@ -91,7 +90,6 @@ export default function AdminPanel() {
       if (['dashboard','orders'].includes(tab))     { const r=await af(`/api/admin/orders?status=${orderFilter}`); if(r.success){setOrders(r.orders||[]);if(r.stats)setStats(r.stats);} }
       if (tab==='reports')                          { const r=await af(`/api/admin/support?status=${reportFilter}`); if(r.success) setTickets(r.tickets||[]); }
       if (tab==='redeem')                           { const r=await af('/api/admin/redeem'); if(r.success) setCodes(r.codes||[]); }
-      if (tab==='settings')                         { const r=await af('/api/admin/settings'); if(r.success) setSiteSettings(r.settings||{}); }
     } catch {}
     setLoading(false);
   };
@@ -511,11 +509,6 @@ export default function AdminPanel() {
               </div>
             )}
 
-            {/* ═══ SETTINGS ════════════════════════════════ */}
-            {tab==='settings' && (
-              <SettingsPanel af={af} settings={siteSettings} onSaved={()=>{ load(); window.location.reload(); }}/>
-            )}
-
           </div>
         </main>
       </div>
@@ -529,104 +522,6 @@ export default function AdminPanel() {
 }
 
 // ── TicketCard ────────────────────────────────────────────────
-// ── SettingsPanel ─────────────────────────────────────────────
-function SettingsPanel({ af, settings, onSaved }) {
-  const [f, setF] = useState(null);
-  const [saving, setSaving] = useState(false);
-
-  useEffect(() => { if (settings) setF({...settings}); }, [settings]);
-
-  if (!f) return <div style={{textAlign:'center',padding:60,color:'var(--text-muted)'}}><i className="fa-solid fa-spinner fa-spin" style={{fontSize:32}}/></div>;
-
-  const inp = (key, placeholder='', type='text') => (
-    <input type={type} value={f[key]||''} onChange={e=>setF(p=>({...p,[key]:e.target.value}))}
-      className="admin-input" placeholder={placeholder}/>
-  );
-
-  const save = async () => {
-    setSaving(true);
-    const r = await af('/api/admin/settings',{method:'PATCH',body:JSON.stringify(f)});
-    setSaving(false);
-    if(r.success){ toast.success('✅ Pengaturan disimpan! Halaman akan di-refresh...'); onSaved(); }
-    else toast.error(r.message||'Gagal menyimpan');
-  };
-
-  const Section = ({title,children}) => (
-    <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:14,padding:'20px 22px',marginBottom:16}}>
-      <h3 style={{fontFamily:'Space Grotesk',fontWeight:700,fontSize:14,color:'var(--primary)',marginBottom:16,textTransform:'uppercase',letterSpacing:1}}>{title}</h3>
-      <div style={{display:'flex',flexDirection:'column',gap:12}}>{children}</div>
-    </div>
-  );
-
-  return (
-    <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-        <h2 style={{fontFamily:'Space Grotesk',fontWeight:700,fontSize:20,color:'#fff'}}>⚙️ Pengaturan Website</h2>
-        <button onClick={save} disabled={saving} className="btn-primary-fn">
-          {saving?<><i className="fa-solid fa-spinner fa-spin"/> Menyimpan...</>:<><i className="fa-solid fa-floppy-disk"/> Simpan & Refresh</>}
-        </button>
-      </div>
-
-      <Section title="🏠 Identitas Server">
-        <Field label="Nama Server"><input value={f.server_name||''} onChange={e=>setF(p=>({...p,server_name:e.target.value}))} className="admin-input" placeholder="Fancy Network"/></Field>
-        <Field label="IP Server">{inp('server_ip','fancynet.my.id')}</Field>
-        <Field label="Deskripsi Server"><textarea value={f.server_description||''} onChange={e=>setF(p=>({...p,server_description:e.target.value}))} className="admin-input" rows={2}/></Field>
-        <Field label="Pengumuman (opsional)">{inp('announcement','Kosongkan jika tidak ada pengumuman')}</Field>
-      </Section>
-
-      <Section title="🖼️ Logo & Tampilan">
-        <Field label="URL Logo (gambar)"><input value={f.logo_url||''} onChange={e=>setF(p=>({...p,logo_url:e.target.value}))} className="admin-input" placeholder="https://i.imgur.com/xxxxx.png (biarkan kosong untuk pakai teks)"/></Field>
-        <Field label="Teks Logo (jika tidak pakai gambar)">{inp('logo_text','Fancy Network')}</Field>
-        <Field label="Icon Logo (emoji)">{inp('logo_icon','⚔️')}</Field>
-        <Field label="Judul Hero">{inp('hero_title','Selamat Datang di Fancy Network')}</Field>
-        <Field label="Subjudul Hero">{inp('hero_subtitle','Economy Semi RPG')}</Field>
-        <Field label="URL Background Desktop (opsional)">{inp('bg_desktop','https://...')}</Field>
-        <Field label="URL Background Mobile (opsional)">{inp('bg_mobile','https://...')}</Field>
-        <Field label="Teks Footer">{inp('footer_text','© 2024 Fancy Network. All rights reserved.')}</Field>
-      </Section>
-
-      <Section title="🔗 Social Media">
-        <Field label="Discord URL">{inp('discord_url','https://discord.gg/...')}</Field>
-        <Field label="Vote URL">{inp('vote_url','https://minecraft-server-list.com/...')}</Field>
-        <Field label="WhatsApp URL">{inp('whatsapp_url','https://wa.me/62...')}</Field>
-        <Field label="TikTok URL">{inp('tiktok_url','https://tiktok.com/@...')}</Field>
-        <Field label="YouTube URL">{inp('youtube_url','https://youtube.com/@...')}</Field>
-      </Section>
-
-      <Section title="💳 Payment & API">
-        <Field label="Midtrans Server Key">{inp('midtrans_server_key','SB-Mid-server-...')}</Field>
-        <Field label="Midtrans Client Key">{inp('midtrans_client_key','SB-Mid-client-...')}</Field>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <label className="toggle-switch">
-            <input type="checkbox" checked={f.midtrans_env==='production'} onChange={e=>setF(p=>({...p,midtrans_env:e.target.checked?'production':'sandbox'}))}/>
-            <span className="toggle-slider"/>
-          </label>
-          <span style={{fontSize:13,fontWeight:600,color:f.midtrans_env==='production'?'#2ecc71':'#f1c40f'}}>
-            Mode: {f.midtrans_env==='production'?'🟢 Production':'🟡 Sandbox'}
-          </span>
-        </div>
-      </Section>
-
-      <Section title="🔌 Plugin Minecraft">
-        <Field label="Plugin HTTP URL">{inp('plugin_http_url','http://IP_MC:12025')}</Field>
-        <Field label="Plugin Server Key">{inp('plugin_server_key','server-key-dari-config.yml')}</Field>
-        <Field label="MC Status URL">{inp('mc_status_url','https://api.mcsrvstat.us/2/ip-server')}</Field>
-      </Section>
-
-      <Section title="📣 Discord Webhooks">
-        <Field label="Webhook Transaksi">{inp('webhook_transaction_url','https://discord.com/api/webhooks/...')}</Field>
-        <Field label="Webhook Report/Support">{inp('webhook_report_url','https://discord.com/api/webhooks/...')}</Field>
-      </Section>
-
-      <div style={{textAlign:'right',marginTop:8}}>
-        <button onClick={save} disabled={saving} className="btn-primary-fn" style={{minWidth:180}}>
-          {saving?<><i className="fa-solid fa-spinner fa-spin"/> Menyimpan...</>:<><i className="fa-solid fa-floppy-disk"/> Simpan & Refresh</>}
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function TicketCard({ tk, af, onRefresh }) {
   const [reply, setReply]   = useState(tk.admin_reply||'');
   const [saving, setSaving] = useState(false);
