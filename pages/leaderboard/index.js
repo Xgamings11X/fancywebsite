@@ -12,11 +12,11 @@ export function getServerSideProps() {
 }
 
 const BOARDS = {
-  balance:      { label:'Top Balance', icon:'fa-coins',         color:'#f1c40f', unit:'Coins' },
+  balance:      { label:'Top Balance', icon:'fa-coins',         color:'#f1c40f', unit:'Balance' },
   auraskills:   { label:'Top Skills',  icon:'fa-wand-sparkles', color:'#9b59b6', unit:'Level' },
   votes:        { label:'Top Votes',   icon:'fa-star',          color:'var(--primary)', unit:'Vote' },
-  playtime:     { label:'Top Playtime',icon:'fa-clock',         color:'#2ecc71', unit:'Jam'   },
-  playerpoints: { label:'Top Points',  icon:'fa-gem',           color:'#3498db', unit:'Poin'  },
+  playtime:     { label:'Top Playtime',icon:'fa-clock',         color:'#2ecc71', unit:'Playtime'   },
+  playerpoints: { label:'Top Points',  icon:'fa-gem',           color:'#3498db', unit:'Point'  },
 };
 
 const RANK_COLORS = {1:'var(--gold)', 2:'var(--silver)', 3:'var(--bronze)'};
