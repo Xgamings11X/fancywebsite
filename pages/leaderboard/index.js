@@ -196,29 +196,28 @@ export default function LeaderboardPage({ settings }) {
             <div style={{textAlign:'center',marginBottom:28}}>
               <i className={`fa-solid ${board.icon}`} style={{fontSize:42,color:'var(--text-muted)',display:'block',marginBottom:14}}/>
               <h3 className="font-space" style={{fontSize:20,marginBottom:8}}>Data Belum Tersedia</h3>
-              <p style={{color:'var(--text-muted)',fontSize:13}}>Leaderboard terhubung ke plugin Minecraft. Ikuti langkah berikut untuk mengaktifkannya.</p>
+              <p style={{color:'var(--text-muted)',fontSize:13}}>Menunggu data dari plugin Minecraft. Pastikan konfigurasi plugin sudah benar.</p>
             </div>
 
             <div style={{display:'flex',flexDirection:'column',gap:14,maxWidth:680,margin:'0 auto'}}>
               {[
                 {
-                  step:1, icon:'fa-plug', title:'Pastikan Plugin ShadowynAPI Aktif',
-                  desc:'Plugin harus sudah diinstall dan berjalan di server Minecraft kamu. Cek dengan command /shadowyn ping di dalam game.',
+                  step:1, icon:'fa-plug', title:'Pastikan Plugin Sudah Aktif',
+                  desc:'Plugin harus sudah diinstall dan berjalan di server Minecraft. Cek dengan command /shadowyn ping di dalam game.',
                 },
                 {
-                  step:2, icon:'fa-file-code', title:'Set Environment Variable',
-                  desc:'Isi variabel berikut di .env.local — LEADERBOARD_ENDPOINT aktifkan mode pull otomatis dari plugin.',
-                  code:'PLUGIN_HTTP_URL=http://IP_SERVER_MC:12025\nPLUGIN_SERVER_KEY=key-dari-config-plugin\nLEADERBOARD_ENDPOINT=http://IP_SERVER_MC:12025/api/plugin/leaderboard',
+                  step:2, icon:'fa-gear', title:'Konfigurasi config.yml Plugin',
+                  desc:'Pastikan bagian leaderboard di config.yml plugin sudah seperti ini:',
+                  code:`leaderboards:\n  sync-enabled: true\n  endpoint: https://www.fancynet.my.id/api/leaderboard\n  sync-interval: 300\n  top-entries: 10\n  boards:\n    money: ...\n    auraskills: ...\n    votes: ...\n    playtime: ...\n    playerpoints: ...`,
                 },
                 {
-                  step:3, icon:'fa-gear', title:'Konfigurasi config.yml Plugin',
-                  desc:'Aktifkan sync leaderboard di config.yml plugin.',
-                  code:`leaderboards:\n  website_url: "${typeof window!=='undefined'?window.location.origin:'https://domain-kamu.com'}"\n  server_key: "key-dari-config-plugin"\n  sync_interval: 300  # detik\n  boards:\n    balance: true\n    auraskills: true\n    votes: true`,
+                  step:3, icon:'fa-vial', title:'Test Push Manual (opsional)',
+                  desc:'Kirim data test ke endpoint untuk verifikasi koneksi berhasil:',
+                  code:`curl -X POST https://www.fancynet.my.id/api/leaderboard \\\n  -H "Content-Type: application/json" \\\n  -d '{"board":"money","entries":[{"rank":1,"player":"TestPlayer","value":99999}]}'`,
                 },
                 {
-                  step:4, icon:'fa-vial', title:'Test Koneksi Manual (opsional)',
-                  desc:'Kirim data test ke API untuk verifikasi koneksi berhasil.',
-                  code:`curl -X POST ${typeof window!=='undefined'?window.location.origin:'https://domain-kamu.com'}/api/plugin/leaderboard \\\n  -H "Content-Type: application/json" \\\n  -H "x-server-key: KEY_KAMU" \\\n  -d '{"board":"balance","entries":[{"rank":1,"player":"TestPlayer","value":99999}]}'`,
+                  step:4, icon:'fa-rotate', title:'Tunggu Sync Otomatis',
+                  desc:'Plugin akan sync otomatis sesuai sync-interval di config. Atau restart plugin untuk memaksa sync sekarang.',
                 },
               ].map(item => (
                 <div key={item.step} className="fn-card" style={{padding:'18px 22px'}}>
@@ -243,7 +242,7 @@ export default function LeaderboardPage({ settings }) {
 
             <p style={{textAlign:'center',color:'var(--text-muted)',fontSize:12,marginTop:20}}>
               <i className="fa-solid fa-circle-info" style={{marginRight:6,color:'var(--primary)'}}/>
-              Setelah plugin sync, data leaderboard akan muncul otomatis di sini.
+              Setelah plugin push data, leaderboard akan muncul otomatis di sini.
             </p>
           </div>
 
