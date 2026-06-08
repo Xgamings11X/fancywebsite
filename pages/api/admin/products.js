@@ -34,6 +34,7 @@ export default function handler(req, res) {
         purchase_limit: parseInt(purchase_limit)||0, limit_scope: limit_scope||'per_product',
         sort_order: parseInt(sort_order)||0,
         features: Array.isArray(features) ? features : [],
+        is_active: true,
       });
       return res.status(201).json({ success:true, id: newP.id });
     }
@@ -46,6 +47,7 @@ export default function handler(req, res) {
       if (patch.category_id !== undefined) patch.category_id = patch.category_id ? parseInt(patch.category_id) : null;
       if (patch.features !== undefined) patch.features = Array.isArray(patch.features) ? patch.features : [];
       if (patch.purchase_limit !== undefined) patch.purchase_limit = parseInt(patch.purchase_limit)||0;
+      if (patch.is_active !== undefined) patch.is_active = patch.is_active === true || patch.is_active === 1 || patch.is_active === '1';
       Products.update(id, patch);
       return res.json({ success:true });
     }
