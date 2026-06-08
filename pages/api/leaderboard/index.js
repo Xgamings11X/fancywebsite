@@ -1,111 +1,94 @@
+/**
+ * /api/leaderboard
+ *
+ * GET  ?board=<name>&limit=<n>
+ *   → Baca dari storage lokal (data yang sudah di-push plugin)
+ *
+ * POST (dari plugin Minecraft)
+ *   Body: { board: "money"|"auraskills"|"votes"|"playtime"|"playerpoints", entries: [{rank,player,value},...] }
+ *   Plugin config: endpoint: https://www.fancynet.my.id/api/leaderboard
+ *
+ * Mapping board plugin → web:
+ *   money        → balance   (ditampilkan sebagai "Top Balance")
+ *   auraskills   → auraskills
+ *   votes        → votes
+ *   playtime     → playtime
+ *   playerpoints → playerpoints
+ */
 import { Leaderboard } from '../../../lib/storage.js';
 
-// ── In-memory cache ────────────────────────────────────────────────
-const _cache   = {};
-const CACHE_TTL_MS = 60_000; // 60 detik
+// Board alias: nama yang dikirim plugin → nama internal web
+const BOARD_ALIAS = {
+  money:       'balance',
+  balance:     'balance',
+  auraskills:  'auraskills',
+  votes:       'votes',
+  playtime:    'playtime',
+  playerpoints:'playerpoints',
+};
 
-/**
- * Fetch leaderboard dari endpoint eksternal (mode Pull).
- *
- * Format URL yang dibangun:
- *   https://www.shadowyn.id/api/leaderboard?board=money&limit=10
- *
- * LEADERBOARD_ENDPOINT = https://www.shadowyn.id/api/leaderboard
- * Opsional: LEADERBOARD_BOARD_BALANCE=money  (alias jika nama board beda)
- */
-async function fetchFromEndpoint(board, limit = 10) {
-  // Base URL — strip trailing slash & query string lama jika ada
-  const raw  = (process.env.LEADERBOARD_ENDPOINT || '').trim();
-  const base = raw.split('?')[0].replace(/\/$/, '');
-  if (!base) return null;
-
-  const cacheKey = `${board}:${limit}`;
-  const now      = Date.now();
-  if (_cache[cacheKey] && now - _cache[cacheKey].ts < CACHE_TTL_MS) {
-    return _cache[cacheKey].data;
-  }
-
-  // Opsional board alias: LEADERBOARD_BOARD_BALANCE=money
-  const boardAlias =
-    process.env[`LEADERBOARD_BOARD_${board.toUpperCase()}`] || board;
-
-  // Bangun URL persis seperti: ?board=money&limit=10
-  const url = `${base}?board=${encodeURIComponent(boardAlias)}&limit=${limit}`;
-
-  try {
-    const res = await fetch(url, {
-      headers: {
-        'Accept':       'application/json',
-        'X-Server-Key': process.env.PLUGIN_SERVER_KEY || '',
-      },
-      signal: AbortSignal.timeout(6000),
-    });
-
-    if (!res.ok) return null;
-
-    const raw = await res.json();
-
-    // Normalise berbagai format response:
-    // { success, entries: [{rank,player,value}] }
-    // { board,   entries: [...] }
-    // { data:    [...] }
-    // [ {rank,player,value}, ... ]  ← array langsung
-    let entries = [];
-    if (Array.isArray(raw))              entries = raw;
-    else if (Array.isArray(raw.entries)) entries = raw.entries;
-    else if (Array.isArray(raw.data))    entries = raw.data;
-
-    const normalized = entries.slice(0, 50).map((e, idx) => ({
-      rank:   parseInt(e.rank || e.position || idx + 1) || idx + 1,
-      player: String(e.player || e.username || e.name || ''),
-      score:  Number(e.value ?? e.score ?? e.amount ?? 0),
-    }));
-
-    // Simpan lokal sebagai fallback jika endpoint mati
-    if (normalized.length > 0) {
-      try { Leaderboard.setBoard(board, normalized); } catch {}
-    }
-
-    _cache[cacheKey] = { ts: now, data: normalized };
-    return normalized;
-  } catch {
-    return null;
-  }
-}
+const VALID_BOARDS = ['balance','auraskills','votes','playtime','playerpoints'];
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).end();
 
-  const board = req.query.board || 'balance';
-  const limit = parseInt(req.query.limit || '10');
+  // ── POST: plugin push data ──────────────────────────────────
+  if (req.method === 'POST') {
+    // Opsional auth — jika PLUGIN_SERVER_KEY di-set, validasi
+    const key      = req.headers['x-server-key'] || req.headers['authorization']?.replace('Bearer ','') || req.body?.secret || '';
+    const expected = (process.env.PLUGIN_SERVER_KEY || '').trim();
+    if (expected && key !== expected) {
+      return res.status(403).json({ success:false, error:'Invalid server key' });
+    }
 
-  // 1. Pull dari LEADERBOARD_ENDPOINT jika dikonfigurasi
-  const pulled = await fetchFromEndpoint(board, limit);
+    const { board: rawBoard, entries } = req.body || {};
+    if (!rawBoard || !Array.isArray(entries)) {
+      return res.status(400).json({ success:false, error:'"board" dan "entries" wajib diisi' });
+    }
 
-  let entries, source;
+    const board = BOARD_ALIAS[rawBoard.toLowerCase()];
+    if (!board) {
+      return res.status(400).json({ success:false, error:`Board tidak dikenal: ${rawBoard}. Gunakan: ${Object.keys(BOARD_ALIAS).join(', ')}` });
+    }
 
-  if (pulled !== null) {
-    entries = pulled;           // limit sudah diterapkan saat fetch
-    source  = 'plugin-endpoint';
-  } else {
-    // 2. Fallback: data push dari plugin (tersimpan lokal)
-    const lb = Leaderboard.get();
-    entries  = (lb[board] || []).slice(0, limit);
-    source   = 'local-storage';
+    try {
+      const normalized = entries.slice(0, 50).map((e, idx) => ({
+        rank:   parseInt(e.rank || e.position || idx + 1) || idx + 1,
+        player: String(e.player || e.username || e.name || ''),
+        score:  Number(e.value ?? e.score ?? e.amount ?? 0),
+      })).filter(e => e.player); // buang entry tanpa nama
+
+      Leaderboard.setBoard(board, normalized);
+
+      console.log(`[leaderboard] push OK — board=${rawBoard}→${board}, entries=${normalized.length}`);
+      return res.status(200).json({ success:true, board, received: normalized.length });
+    } catch(e) {
+      console.error('[leaderboard] push error:', e.message);
+      return res.status(500).json({ success:false, error: e.message });
+    }
   }
 
-  const lb     = Leaderboard.get();
-  const boards = ['balance','auraskills','votes','playtime','playerpoints']
-    .filter(b => (lb[b] || []).length > 0);
+  // ── GET: frontend baca data ─────────────────────────────────
+  if (req.method === 'GET') {
+    const rawBoard = req.query.board || 'balance';
+    const board    = BOARD_ALIAS[rawBoard.toLowerCase()] || rawBoard;
+    const limit    = Math.min(parseInt(req.query.limit || '10'), 50);
 
-  res.setHeader('Cache-Control', 'public,s-maxage=30');
-  return res.json({
-    success: true,
-    board,
-    entries,
-    availableBoards: boards,
-    lastSync: lb.lastSync?.[board] || null,
-    source,
-    endpointConfigured: !!raw,
-  });
+    const lb      = Leaderboard.get();
+    const entries = (lb[board] || []).slice(0, limit);
+
+    const availableBoards = VALID_BOARDS.filter(b => (lb[b] || []).length > 0);
+
+    res.setHeader('Cache-Control', 'no-store'); // data push bisa berubah kapan saja
+    return res.json({
+      success:  true,
+      board,
+      entries,
+      availableBoards,
+      lastSync: lb.lastSync?.[board] || null,
+      source:   'plugin-push',
+      endpointConfigured: true,
+    });
+  }
+
+  return res.status(405).end();
 }
