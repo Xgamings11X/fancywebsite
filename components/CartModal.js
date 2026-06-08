@@ -4,11 +4,12 @@ import toast from 'react-hot-toast';
 const idr = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
 
 export default function CartModal({ product, player, onClose }) {
-  const [step,           setStep]           = useState('confirm');
-  const [loading,        setLoading]        = useState(false);
-  const [redeemInput,    setRedeemInput]    = useState('');
-  const [redeemInfo,     setRedeemInfo]     = useState(null);
-  const [redeemLoading,  setRedeemLoading]  = useState(false);
+  const [step,          setStep]          = useState('confirm');
+  const [loading,       setLoading]       = useState(false);
+  const [redeemInput,   setRedeemInput]   = useState('');
+  const [redeemInfo,    setRedeemInfo]    = useState(null);
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [discordUser,   setDiscordUser]   = useState('');
 
   const basePrice  = product.price;
   const finalPrice = redeemInfo ? redeemInfo.finalPrice : basePrice;
@@ -19,28 +20,28 @@ export default function CartModal({ product, player, onClose }) {
     if (!code) return;
     setRedeemLoading(true);
     try {
-      const res  = await fetch('/api/orders/apply-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,productId:product.id,price:basePrice})});
+      const res  = await fetch('/api/orders/apply-code',{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({code,productId:product.id,price:basePrice})});
       const data = await res.json();
-      if (data.success) {
-        setRedeemInfo(data);
-        toast.success(`✅ Kode berhasil! Hemat ${idr(data.discountAmount)}`);
-      } else {
-        toast.error(data.message||'Kode tidak valid');
-        // Jangan clear input agar user bisa koreksi
-      }
-    } catch { toast.error('Gagal memeriksa kode. Cek koneksi internet.'); }
+      if (data.success) { setRedeemInfo(data); toast.success(`✅ Kode berhasil! Hemat ${idr(data.discountAmount)}`); }
+      else toast.error(data.message||'Kode tidak valid');
+    } catch { toast.error('Gagal memeriksa kode.'); }
     setRedeemLoading(false);
   };
 
   const handleCheckout = async () => {
+    if (!discordUser.trim()) {
+      toast.error('Username Discord wajib diisi untuk klaim role!');
+      return;
+    }
     setLoading(true);
     try {
-      // Ambil token dari localStorage sebagai fallback jika cookie tidak terkirim
       let token = null;
       try { const d = localStorage.getItem('mc_token'); if(d) token = d; } catch{}
       const headers = {'Content-Type':'application/json'};
       if (token) headers['Authorization'] = `Bearer ${token}`;
-      const res  = await fetch('/api/orders/create',{method:'POST',headers,credentials:'include',body:JSON.stringify({productId:product.id,redeemCode:redeemInfo?.code||null})});
+      const res  = await fetch('/api/orders/create',{method:'POST',headers,credentials:'include',
+        body:JSON.stringify({productId:product.id,redeemCode:redeemInfo?.code||null,discord_username:discordUser.trim()})});
       const data = await res.json();
       if (!res.ok||!data.success) { toast.error(data.message||'Gagal membuat order'); setLoading(false); return; }
 
@@ -112,7 +113,7 @@ export default function CartModal({ product, player, onClose }) {
               <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid var(--border)',borderRadius:12,padding:'14px 16px',marginBottom:14,display:'flex',alignItems:'center',gap:14}}>
                 <div style={{width:52,height:52,background:'rgba(255,107,0,0.06)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden'}}>
                   {product.image_url
-                    ? <img src={product.image_url} alt={product.name} style={{width:44,height:44,objectFit:'contain'}} onError={e=>e.target.style.display='none'}/>
+                    ? <img src={product.image_url} alt={product.name} loading="lazy" style={{width:44,height:44,objectFit:'contain'}} onError={e=>e.target.style.display='none'}/>
                     : <span style={{fontSize:24}}>{product.category_icon||'📦'}</span>
                   }
                 </div>
@@ -132,13 +133,40 @@ export default function CartModal({ product, player, onClose }) {
                 </div>
               </div>
 
+              {/* Discord Username — WAJIB */}
+              <div style={{marginBottom:14}}>
+                <div style={{background:'rgba(88,101,242,0.06)',border:'1px solid rgba(88,101,242,0.25)',borderRadius:10,padding:'10px 14px',marginBottom:8,display:'flex',alignItems:'center',gap:8}}>
+                  <i className="fa-brands fa-discord" style={{color:'#5865F2',fontSize:15,flexShrink:0}}/>
+                  <p style={{fontSize:11,color:'var(--text-muted)',lineHeight:1.4}}>
+                    <strong style={{color:'#fff'}}>Wajib:</strong> Username Discord diperlukan untuk klaim role otomatis setelah pembayaran.
+                  </p>
+                </div>
+                <div style={{position:'relative'}}>
+                  <i className="fa-brands fa-discord" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'#5865F2',fontSize:13}}/>
+                  <input
+                    value={discordUser}
+                    onChange={e=>setDiscordUser(e.target.value)}
+                    placeholder="Username Discord (tanpa #, contoh: Steve)"
+                    className="fn-input"
+                    style={{paddingLeft:34,fontSize:13}}
+                    required
+                  />
+                </div>
+                {discordUser.trim() && (
+                  <p style={{fontSize:11,color:'#5865F2',marginTop:5}}>
+                    <i className="fa-solid fa-check-circle" style={{marginRight:4}}/>
+                    Discord: <strong>{discordUser.trim()}</strong>
+                  </p>
+                )}
+              </div>
+
               {/* Redeem */}
               <div style={{marginBottom:14}}>
                 <div style={{display:'flex',gap:8}}>
                   <div style={{position:'relative',flex:1}}>
                     <i className="fa-solid fa-tag" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)',fontSize:12}}/>
                     <input value={redeemInput} onChange={e=>setRedeemInput(e.target.value.toUpperCase())}
-                      onKeyDown={e=>{ if(e.key==='Enter' && redeemInput.trim() && !redeemInfo && !redeemLoading) applyRedeem(); }}
+                      onKeyDown={e=>{ if(e.key==='Enter'&&redeemInput.trim()&&!redeemInfo&&!redeemLoading) applyRedeem(); }}
                       placeholder="Kode redeem (opsional)" className="fn-input"
                       style={{paddingLeft:32,fontFamily:'monospace',fontSize:13,letterSpacing:1}} disabled={!!redeemInfo}/>
                   </div>
@@ -175,13 +203,18 @@ export default function CartModal({ product, player, onClose }) {
                 <span className="font-space" style={{fontSize:22,fontWeight:700,color:'var(--primary-light)'}}>{idr(finalPrice)}</span>
               </div>
 
-              <button onClick={handleCheckout} disabled={loading} className="btn-primary-fn"
-                style={{width:'100%',justifyContent:'center',padding:'13px',fontSize:14,borderRadius:10}}>
+              <button onClick={handleCheckout} disabled={loading||!discordUser.trim()} className="btn-primary-fn"
+                style={{width:'100%',justifyContent:'center',padding:'13px',fontSize:14,borderRadius:10,opacity:(!discordUser.trim()&&!loading)?0.6:1}}>
                 {loading
                   ? <><span className="fn-spinner" style={{width:16,height:16,borderWidth:2}}/> Memproses...</>
                   : <><i className="fa-solid fa-credit-card"/> Bayar Sekarang</>
                 }
               </button>
+              {!discordUser.trim() && (
+                <p style={{textAlign:'center',fontSize:11,color:'rgba(88,101,242,0.8)',marginTop:8}}>
+                  <i className="fa-brands fa-discord" style={{marginRight:4}}/>Isi username Discord untuk melanjutkan
+                </p>
+              )}
             </>
           )}
         </div>
