@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { Settings } from '../../lib/storage.js';
 import FancyNav, { PlayerAvatar } from '../../components/FancyNav';
@@ -41,22 +41,8 @@ export default function LeaderboardPage({ settings }) {
   const [connMeta,  setConnMeta]  = useState({});  // renamed: connection metadata per board
   const [loading,   setLoading]   = useState(true);
   const [lastFetch, setLastFetch] = useState(null);
-  const dataRef = useRef({});
 
-  // Load cached data from localStorage immediately to prevent "Data Tidak Tersedia" flicker
   useEffect(() => {
-    try {
-      const cached = localStorage.getItem('lb_cache');
-      if (cached) {
-        const { data: cd, meta, ts } = JSON.parse(cached);
-        if (cd && Object.keys(cd).some(k => (cd[k]||[]).length > 0)) {
-          setData(cd);
-          setLoading(false);
-        }
-        if (meta) setConnMeta(meta);
-        if (ts) setLastFetch(new Date(ts));
-      }
-    } catch {}
     try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
     fetchAll();
   }, []);
@@ -75,19 +61,20 @@ export default function LeaderboardPage({ settings }) {
         }
       } catch {}
     }));
-    // Only update if we got some real data, or if nothing was cached
-    const hasData = Object.keys(results).some(k => (results[k]||[]).length > 0);
-    if (hasData || Object.keys(dataRef.current).length === 0) {
-      setData(results);
-      dataRef.current = results;
-      setConnMeta(metaMap);
-    }
-    const now = new Date();
-    setLastFetch(now);
-    // Cache in localStorage for persistence across page refreshes
-    try {
-      localStorage.setItem('lb_cache', JSON.stringify({ data: hasData ? results : dataRef.current, meta: metaMap, ts: now.toISOString() }));
-    } catch {}
+    // BUGFIX: saat refresh (quiet), pertahankan data lama jika data baru kosong
+    // Supaya saat sync tidak tiba-tiba kosong karena timing atau instance berbeda
+    setData(prev => {
+      const merged = { ...prev };
+      Object.keys(results).forEach(b => {
+        if (results[b].length > 0) {
+          merged[b] = results[b];
+        }
+        // Jika results[b] kosong tapi sebelumnya ada data, pertahankan data lama
+      });
+      return merged;
+    });
+    setConnMeta(metaMap);
+    setLastFetch(new Date());
     if (!quiet) setLoading(false);
   };
 
