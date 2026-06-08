@@ -1,0 +1,25 @@
+{
+  "name": "fancy-network-store",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 25580",
+    "build": "next build",
+    "start": "next start -p 25580",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie": "^1.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "next": "^14.2.35",
+    "react": "^18",
+    "react-dom": "^18",
+    "react-hot-toast": "^2.4.1"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.4.0"
+  }
+}

@@ -1,0 +1,137 @@
+// components/FancyNav.js — Capsule navbar shared semua halaman
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/router';
+import LogoImage, { useTransparentLogo } from './LogoImage';
+
+export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const router  = useRouter();
+  const s       = settings || {};
+  const logoUrl = s.logo_url || null;
+  const logoTxt = s.logo_text || 'Fancy Network';
+
+  const links = [
+    { href:'/',            label:'Home'        },
+    { href:'/store',       label:'Store'       },
+    { href:'/leaderboard', label:'Leaderboard' },
+    { href:'/support',     label:'Support'     },
+  ];
+
+  const logoImgStyle = {
+    height:34,
+    width:34,
+    borderRadius:8,
+    background:'transparent',
+    objectFit:'contain',
+    // mix-blend-mode multiply removes white/black backgrounds on PNG/JPG logos
+    mixBlendMode:'lighten',
+    filter:'drop-shadow(0 0 8px rgba(255,107,0,0.5))',
+    animation:'logoFloat 3s ease-in-out infinite',
+  };
+
+  return (
+    <nav className="fn-nav">
+      {/* Logo */}
+      <Link href="/" className="flex items-center gap-2 flex-shrink-0" style={{textDecoration:'none'}}>
+        {logoUrl
+          ? <img src={logoUrl} alt={logoTxt}
+              style={{height:40,width:'auto',background:'transparent',objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.5))',animation:'logoFloat 3s ease-in-out infinite'}}/>
+          : <span className="font-space font-bold text-white text-base" style={{display:'flex',alignItems:'center',gap:6}}>
+              <LogoImage alt={logoTxt} style={{height:38,width:38,objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.5))',animation:'logoFloat 3s ease-in-out infinite'}}/>
+              <span><span style={{color:'var(--primary)'}}>FANCY</span> NETWORK</span>
+            </span>
+        }
+      </Link>
+
+      {/* Desktop menu */}
+      <ul className="hidden md:flex list-none gap-5 items-center">
+        {links.map(l => (
+          <li key={l.href}>
+            <Link href={l.href}
+              style={{color: router.pathname===l.href ? 'var(--primary)' : 'var(--text-muted)',
+                fontWeight:600, fontSize:14, textDecoration:'none', transition:'color 0.2s'}}>
+              {l.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      {/* Right side */}
+      <div className="flex items-center gap-2">
+        {player ? (
+          <div className="flex items-center gap-2">
+            {/* Player badge */}
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+              style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)'}}>
+              <PlayerAvatar uuid={player.uuid} username={player.username} size={22}/>
+              <span style={{color:'#fff',fontSize:13,fontWeight:600}}>
+                {player.displayName || player.username}
+              </span>
+              {player.rank && player.rank !== 'default' && (
+                <span className="hidden sm:inline px-1.5 py-0.5 rounded text-xs font-bold"
+                  style={{background:'rgba(255,107,0,0.2)',color:'var(--primary-light)',fontSize:10}}>
+                  {player.rank.toUpperCase()}
+                </span>
+              )}
+            </div>
+            <button onClick={onLogout} className="btn-login-nav" style={{color:'var(--text-muted)',fontSize:12}}>
+              <i className="fa-solid fa-right-from-bracket"/>
+              <span className="hidden sm:inline">Keluar</span>
+            </button>
+          </div>
+        ) : (
+          <button onClick={onLoginClick} className="btn-login-nav">
+            <i className="fa-solid fa-right-to-bracket"/> Login
+          </button>
+        )}
+
+        {/* Hamburger */}
+        <button className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl"
+          style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,107,0,0.15)',color:'var(--primary)',fontSize:16}}
+          onClick={() => setMenuOpen(!menuOpen)}>
+          <i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`}/>
+        </button>
+      </div>
+
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <div className="md:hidden absolute left-0 right-0 rounded-xl p-4 flex flex-col gap-4"
+          style={{top:64, background:'#0f0f14', border:'1px solid rgba(255,255,255,0.08)', boxShadow:'0 10px 25px rgba(0,0,0,0.5)'}}>
+          {links.map(l => (
+            <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)}
+              style={{color: router.pathname===l.href ? 'var(--primary)' : 'var(--text-muted)',
+                fontWeight:600, fontSize:14, textDecoration:'none'}}>
+              {l.label}
+            </Link>
+          ))}
+          {!player && (
+            <button onClick={() => { setMenuOpen(false); onLoginClick?.(); }}
+              className="btn-primary-fn justify-center w-full">
+              <i className="fa-solid fa-right-to-bracket"/> Login
+            </button>
+          )}
+          {player && (
+            <button onClick={() => { setMenuOpen(false); onLogout?.(); }}
+              className="btn-ghost-fn justify-center w-full">
+              <i className="fa-solid fa-right-from-bracket"/> Keluar ({player.displayName||player.username})
+            </button>
+          )}
+        </div>
+      )}
+    </nav>
+  );
+}
+
+export function PlayerAvatar({ uuid, username, size = 28 }) {
+  const [src, setSrc] = useState(
+    uuid
+      ? `https://crafatar.com/avatars/${uuid}?size=${size*2}&overlay`
+      : `https://minotar.net/helm/${encodeURIComponent(username||'steve')}/${size*2}`
+  );
+  return (
+    <img src={src} alt={username} width={size} height={size}
+      style={{borderRadius:4, imageRendering:'pixelated', flexShrink:0}}
+      onError={() => setSrc(`https://minotar.net/helm/steve/${size*2}`)}/>
+  );
+}
