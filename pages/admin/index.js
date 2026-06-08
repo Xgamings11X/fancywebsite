@@ -66,11 +66,8 @@ export default function AdminPanel() {
   const [tickets,      setTickets]      = useState([]);
   const [codes,        setCodes]        = useState([]);
   const [stats,        setStats]        = useState({total:0,success:0,pending:0,failed:0,revenue:0});
-  const [siteSettings, setSiteSettings] = useState(null); // unused, kept for safety
-
   const [orderFilter,  setOrderFilter]  = useState('all');
   const [reportFilter, setReportFilter] = useState('all');
-  const [reportSearch, setReportSearch] = useState('');
 
   const [showProductModal,  setShowProductModal]  = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -82,6 +79,20 @@ export default function AdminPanel() {
 
   useEffect(() => { if (localStorage.getItem('admin_token')) setLoggedIn(true); }, []);
   useEffect(() => { if (loggedIn) load(); }, [loggedIn, tab, orderFilter, reportFilter]);
+
+  // Realtime polling untuk tab reports dan orders (setiap 10 detik)
+  useEffect(() => {
+    if (!loggedIn) return;
+    const REALTIME_TABS = ['reports', 'orders', 'dashboard'];
+    if (!REALTIME_TABS.includes(tab)) return;
+    const iv = setInterval(async () => {
+      try {
+        if (tab === 'reports') { const r=await af(`/api/admin/support?status=${reportFilter}`); if(r.success) setTickets(r.tickets||[]); }
+        if (tab === 'orders' || tab === 'dashboard') { const r=await af(`/api/admin/orders?status=${orderFilter}`); if(r.success){setOrders(r.orders||[]);if(r.stats)setStats(r.stats);} }
+      } catch {}
+    }, 10000);
+    return () => clearInterval(iv);
+  }, [loggedIn, tab, orderFilter, reportFilter]);
 
   const load = async () => {
     setLoading(true);
@@ -204,9 +215,21 @@ export default function AdminPanel() {
             <h1 style={{fontFamily:'Space Grotesk',fontWeight:700,fontSize:17,color:'#fff'}}>
               {TABS.find(t=>t.id===tab)?.label}
             </h1>
-            <button onClick={load} className="btn-ghost-fn" style={{fontSize:12}}>
-              <i className={`fa-solid fa-rotate${loading?' fa-spin':''}`}/> Refresh
-            </button>
+            <div style={{display:'flex',gap:8,alignItems:'center'}}>
+              {tab==='orders' && (
+                <button className="btn-ghost-fn" style={{fontSize:12}}
+                  onClick={async()=>{
+                    const r = await af('/api/admin/test-webhook',{method:'POST'});
+                    if(r.success) toast.success(r.message||'Test webhook terkirim!');
+                    else toast.error(r.message||'Gagal — cek DISCORD_WEBHOOK_TX');
+                  }}>
+                  <i className="fa-brands fa-discord"/> Test Webhook
+                </button>
+              )}
+              <button onClick={load} className="btn-ghost-fn" style={{fontSize:12}}>
+                <i className={`fa-solid fa-rotate${loading?' fa-spin':''}`}/> Refresh
+              </button>
+            </div>
           </div>
 
           <div style={{padding:24}}>
@@ -442,12 +465,13 @@ export default function AdminPanel() {
                 <div className="admin-card" style={{overflow:'hidden'}}>
                   <div style={{overflowX:'auto'}}>
                     <table className="admin-table" style={{minWidth:820}}>
-                      <thead><tr>{['Order ID','Player','Produk','Total','Status','Plugin','Tanggal','Aksi'].map(h=><th key={h}>{h}</th>)}</tr></thead>
+                      <thead><tr>{['Order ID','Player','Discord','Produk','Total','Status','Plugin','Tanggal','Aksi'].map(h=><th key={h}>{h}</th>)}</tr></thead>
                       <tbody>
                         {orders.map(o=>(
                           <tr key={o.order_id}>
                             <td><code style={{fontSize:11,color:'var(--text-muted)',fontFamily:'monospace'}}>{o.order_id}</code></td>
                             <td style={{fontWeight:700,color:'#fff'}}>{o.player_username}</td>
+                            <td style={{fontSize:12,color:'#5865F2'}}>{o.discord_username||<span style={{color:'var(--text-muted)'}}>—</span>}</td>
                             <td style={{color:'var(--text-muted)',maxWidth:140,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{o.product_name}</td>
                             <td style={{color:'var(--primary-light)',fontWeight:700,fontFamily:'Space Grotesk',whiteSpace:'nowrap'}}>{idr(o.amount)}</td>
                             <td><span className={`admin-badge ${ORDER_STATUS_BADGE[o.payment_status]||'admin-badge-gray'}`}>{o.payment_status?.toUpperCase()}</span></td>
@@ -482,20 +506,7 @@ export default function AdminPanel() {
             {/* ═══ REPORTS ═════════════════════════════════ */}
             {tab==='reports' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                {/* Header: count + search */}
-                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
-                  <span style={{fontSize:13,color:'var(--text-muted)',fontWeight:600}}>
-                    <i className="fa-solid fa-inbox" style={{marginRight:6,color:'var(--primary)'}}/>
-                    {tickets.length} tiket{reportFilter!=='all'?` · ${TICKET_STATUS_LABEL[reportFilter]||reportFilter}`:''}
-                  </span>
-                  <div style={{position:'relative'}}>
-                    <i className="fa-solid fa-search" style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)',fontSize:12}}/>
-                    <input value={reportSearch} onChange={e=>setReportSearch(e.target.value)}
-                      placeholder="Cari tiket / player..." className="admin-input"
-                      style={{paddingLeft:32,width:200,fontSize:12,padding:'7px 10px 7px 32px'}}/>
-                  </div>
-                </div>
-                {/* Status filter */}
+                {/* Filter */}
                 <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                   {['all','open','in_review','resolved','rejected'].map(s=>(
                     <button key={s} onClick={()=>setReportFilter(s)}
@@ -508,29 +519,18 @@ export default function AdminPanel() {
                   ))}
                 </div>
 
-                {(() => {
-                  const q = reportSearch.toLowerCase().trim();
-                  const filtered = q ? tickets.filter(tk =>
-                    (tk.subject||'').toLowerCase().includes(q) ||
-                    (tk.player_username||'').toLowerCase().includes(q) ||
-                    (tk.ticket_id||'').toLowerCase().includes(q) ||
-                    (tk.description||'').toLowerCase().includes(q)
-                  ) : tickets;
-                  if (filtered.length===0) return (
-                    <div style={{textAlign:'center',padding:'60px 0',color:'var(--text-muted)'}}>
-                      <i className="fa-solid fa-inbox" style={{fontSize:36,display:'block',marginBottom:12}}/>
-                      <p>{q ? `Tidak ada tiket untuk "${reportSearch}"` : `Belum ada tiket${reportFilter!=='all'?' ('+reportFilter+')':''}`}</p>
-                      {q && <button onClick={()=>setReportSearch('')} style={{marginTop:10,background:'none',border:'none',color:'var(--primary)',cursor:'pointer',fontSize:12}}>Hapus pencarian</button>}
-                    </div>
-                  );
-                  return (
-                    <div style={{display:'flex',flexDirection:'column',gap:12}}>
-                      {filtered.map(tk=>(
-                        <TicketCard key={tk.ticket_id} tk={tk} af={af} onRefresh={load}/>
-                      ))}
-                    </div>
-                  );
-                })()}
+                {tickets.length===0 ? (
+                  <div style={{textAlign:'center',padding:'60px 0',color:'var(--text-muted)'}}>
+                    <i className="fa-solid fa-inbox" style={{fontSize:36,display:'block',marginBottom:12}}/>
+                    <p>Belum ada tiket {reportFilter!=='all'&&`(${reportFilter})`}</p>
+                  </div>
+                ) : (
+                  <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                    {tickets.map(tk=>(
+                      <TicketCard key={tk.ticket_id} tk={tk} af={af} onRefresh={load}/>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -547,150 +547,179 @@ export default function AdminPanel() {
 }
 
 // ── TicketCard ────────────────────────────────────────────────
-function TicketCard({ tk: tkProp, af, onRefresh }) {
-  const [tk, setTk]         = useState(tkProp);
-  const [expanded, setExpanded] = useState(false);
-  const [newMsg, setNewMsg] = useState('');
-  const [saving, setSaving] = useState(false);
-  const chatEndRef = useRef(null);
+function TicketCard({ tk, af, onRefresh }) {
+  const [expanded,  setExpanded]  = useState(false);
+  const [msg,       setMsg]       = useState('');
+  const [sending,   setSending]   = useState(false);
+  const [timeLeft,  setTimeLeft]  = useState(null);  // detik tersisa sebelum cleanup
+  const msgEndRef = useRef(null);
 
-  // Refresh ticket detail from API
-  const loadDetail = async () => {
-    const r = await af(`/api/admin/support?id=${tk.ticket_id}`);
-    if (r.success && r.ticket) setTk(r.ticket);
+  const tInfo = {
+    banding:{icon:'fa-gavel',color:'#e67e22'}, bug:{icon:'fa-bug',color:'#3498db'},
+    report_player:{icon:'fa-user-xmark',color:'#e74c3c'}, lainnya:{icon:'fa-comment-dots',color:'#9b59b6'},
+  }[tk.type] || {icon:'fa-ticket',color:'var(--primary)'};
+
+  const st = {
+    open:{label:'Menunggu',color:'#f1c40f'}, in_review:{label:'Review',color:'#3498db'},
+    resolved:{label:'Selesai',color:'#2ecc71'}, rejected:{label:'Ditolak',color:'#e74c3c'},
+    expired:{label:'Expired',color:'#95a5a6'},
+  }[tk.status] || {label:tk.status,color:'#8e8e9a'};
+
+  // Hitung countdown 2 menit untuk closed ticket
+  useEffect(() => {
+    if (!tk.closed_at) { setTimeLeft(null); return; }
+    const closedMs  = new Date(tk.closed_at).getTime();
+    const TWO_MIN   = 2 * 60 * 1000;
+    const tick = () => {
+      const left = Math.max(0, TWO_MIN - (Date.now() - closedMs));
+      setTimeLeft(left);
+    };
+    tick();
+    const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, [tk.closed_at]);
+
+  // Scroll ke pesan terbaru saat expand
+  useEffect(() => {
+    if (expanded && msgEndRef.current) {
+      msgEndRef.current.scrollIntoView({ behavior:'smooth' });
+    }
+  }, [expanded, tk.messages?.length]);
+
+  const sendMsg = async () => {
+    if (!msg.trim() || sending) return;
+    setSending(true);
+    await af('/api/admin/support', { method:'PATCH', body:JSON.stringify({ id:tk.ticket_id, message:msg.trim() }) });
+    setSending(false);
+    setMsg('');
+    onRefresh();
   };
 
-  useEffect(() => {
-    if (expanded) loadDetail();
-  }, [expanded]);
+  const cancelCleanup = async () => {
+    await af('/api/admin/support', { method:'PATCH', body:JSON.stringify({ id:tk.ticket_id, cancel_cleanup:true }) });
+    toast.success('Auto-cleanup dibatalkan');
+    onRefresh();
+  };
 
-  useEffect(() => {
-    if (expanded && chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior:'smooth' });
-  }, [tk.messages, expanded]);
+  const fmtTime = secs => {
+    if (secs === null) return '';
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${String(s).padStart(2,'0')}`;
+  };
 
-  const tInfo = { banding:{icon:'fa-gavel',color:'#e67e22'}, bug:{icon:'fa-bug',color:'#3498db'}, report_player:{icon:'fa-user-xmark',color:'#e74c3c'}, lainnya:{icon:'fa-comment-dots',color:'#9b59b6'} }[tk.type]||{icon:'fa-ticket',color:'var(--primary)'};
-  const st = { open:{label:'Menunggu',color:'#f1c40f'}, in_review:{label:'Review',color:'#3498db'}, resolved:{label:'Selesai',color:'#2ecc71'}, rejected:{label:'Ditolak',color:'#e74c3c'} }[tk.status]||{label:tk.status,color:'#8e8e9a'};
   const isClosed = tk.status === 'resolved' || tk.status === 'rejected';
-  const msgCount = (tk.messages||[]).length;
-
-  const sendMessage = async () => {
-    if (!newMsg.trim() || saving) return;
-    setSaving(true);
-    const r = await af('/api/admin/support',{method:'PATCH',body:JSON.stringify({id:tk.ticket_id,message:newMsg.trim()})});
-    setSaving(false);
-    if (r.success) { setNewMsg(''); await loadDetail(); onRefresh(); toast.success('Pesan terkirim'); }
-    else toast.error(r.message||'Gagal kirim pesan');
-  };
+  const msgs = tk.messages || [];
 
   return (
-    <div className="admin-card" style={{padding:0,overflow:'hidden'}}>
-      {/* Header row - always visible */}
-      <div style={{padding:'16px 20px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,cursor:'pointer'}}
-        onClick={()=>setExpanded(p=>!p)}>
+    <div className="admin-card" style={{padding:'18px 20px',borderColor:isClosed&&tk.closed_at?'rgba(231,76,60,0.3)':''}}>
+
+      {/* Countdown cleanup banner */}
+      {isClosed && tk.closed_at && timeLeft !== null && (
+        <div style={{background:'rgba(231,76,60,0.08)',border:'1px solid rgba(231,76,60,0.25)',borderRadius:8,padding:'8px 14px',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            <i className="fa-solid fa-clock" style={{color:'#e74c3c',fontSize:13}}/>
+            {timeLeft > 0
+              ? <span style={{fontSize:12,color:'#e74c3c',fontWeight:700}}>
+                  Auto-cleanup dalam <strong>{fmtTime(Math.ceil(timeLeft/1000))}</strong> — arsip akan dikirim ke webhook
+                </span>
+              : <span style={{fontSize:12,color:'#95a5a6'}}>Menunggu cleanup job...</span>
+            }
+          </div>
+          {timeLeft > 0 && (
+            <button onClick={cancelCleanup} style={{background:'rgba(255,107,0,0.12)',border:'1px solid rgba(255,107,0,0.3)',color:'var(--primary)',padding:'4px 12px',borderRadius:6,cursor:'pointer',fontSize:11,fontWeight:700,flexShrink:0}}>
+              ✕ Batalkan
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,marginBottom:10}}>
         <div style={{display:'flex',alignItems:'center',gap:10,flex:1,minWidth:0}}>
           <div style={{width:36,height:36,borderRadius:8,background:`${tInfo.color}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
             <i className={`fa-solid ${tInfo.icon}`} style={{color:tInfo.color,fontSize:14}}/>
           </div>
-          <div style={{flex:1,minWidth:0}}>
+          <div style={{minWidth:0}}>
             <p style={{fontWeight:700,color:'#fff',fontSize:14,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tk.subject}</p>
-            <div style={{display:'flex',gap:8,alignItems:'center',marginTop:2,flexWrap:'wrap'}}>
+            <div style={{display:'flex',gap:6,alignItems:'center',marginTop:2,flexWrap:'wrap'}}>
               <code style={{fontSize:11,color:'var(--text-muted)',fontFamily:'monospace'}}>{tk.ticket_id}</code>
-              <span style={{fontSize:11,color:'var(--text-muted)'}}>•</span>
+              <span style={{fontSize:11,color:'var(--text-muted)'}}>·</span>
               <span style={{fontSize:12,color:'var(--primary-light)',fontWeight:600}}>{tk.player_username}</span>
-              <span style={{fontSize:11,color:'var(--text-muted)'}}>•</span>
+              <span style={{fontSize:11,color:'var(--text-muted)'}}>·</span>
               <span style={{fontSize:11,color:'var(--text-muted)'}}>{fmt(tk.created_at)}</span>
-              <span style={{fontSize:11,color:'var(--text-muted)'}}>•</span>
-              <span style={{fontSize:11,color:'var(--text-muted)',display:'inline-flex',alignItems:'center',gap:3}}>
-                <i className="fa-solid fa-comment-dots" style={{fontSize:10}}/> {msgCount} pesan
-              </span>
+              {msgs.length > 0 && <span style={{fontSize:11,background:'rgba(255,107,0,0.1)',color:'var(--primary)',padding:'1px 6px',borderRadius:4}}>{msgs.length} pesan</span>}
             </div>
           </div>
         </div>
-        <div style={{display:'flex',gap:8,alignItems:'center',flexShrink:0}}>
-          <span style={{background:`${st.color}18`,color:st.color,border:`1px solid ${st.color}44`,padding:'4px 10px',borderRadius:6,fontSize:11,fontWeight:700}}>{st.label}</span>
-          <i className={`fa-solid fa-chevron-${expanded?'up':'down'}`} style={{color:'var(--text-muted)',fontSize:11}}/>
+        <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
+          <button onClick={()=>setExpanded(!expanded)}
+            style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-muted)',padding:'5px 10px',borderRadius:7,cursor:'pointer',fontSize:12,display:'flex',alignItems:'center',gap:5}}>
+            <i className={`fa-solid fa-chevron-${expanded?'up':'down'}`} style={{fontSize:10}}/>
+            {expanded ? 'Tutup' : 'Buka Chat'}
+          </button>
+          <select defaultValue={tk.status} onChange={async e=>{
+            await af('/api/admin/support',{method:'PATCH',body:JSON.stringify({id:tk.ticket_id,status:e.target.value})});
+            toast.success('Status diupdate'); onRefresh();
+          }} style={{background:'rgba(255,255,255,0.03)',border:`1px solid ${st.color}44`,color:st.color,padding:'6px 10px',borderRadius:8,fontFamily:'Plus Jakarta Sans',fontSize:12,fontWeight:700,cursor:'pointer'}}>
+            <option value="open">Menunggu</option>
+            <option value="in_review">Review</option>
+            <option value="resolved">Selesai</option>
+            <option value="rejected">Ditolak</option>
+          </select>
         </div>
       </div>
 
-      {/* Expanded chat panel */}
-      {expanded && (
-        <div style={{borderTop:'1px solid rgba(255,255,255,0.05)'}}>
-          {/* Meta info */}
-          <div style={{padding:'10px 20px',background:'rgba(0,0,0,0.2)',display:'flex',gap:16,flexWrap:'wrap',alignItems:'center'}}>
-            {tk.target_player && <span style={{fontSize:12,color:'#e74c3c'}}><i className="fa-solid fa-user-xmark" style={{marginRight:5}}/>Target: <strong>{tk.target_player}</strong></span>}
-            {tk.evidence_url && <a href={tk.evidence_url} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:'#3498db',display:'inline-flex',alignItems:'center',gap:4,textDecoration:'none'}}><i className="fa-solid fa-link"/>Lihat Bukti</a>}
-            {/* Status changer */}
-            <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8}}>
-              <span style={{fontSize:11,color:'var(--text-muted)',fontWeight:600}}>Ubah Status:</span>
-              <select value={tk.status} onChange={async e=>{
-                await af('/api/admin/support',{method:'PATCH',body:JSON.stringify({id:tk.ticket_id,status:e.target.value})});
-                toast.success('Status diupdate'); await loadDetail(); onRefresh();
-              }} style={{background:'rgba(255,255,255,0.05)',border:`1px solid ${st.color}44`,color:st.color,padding:'5px 10px',borderRadius:8,fontFamily:'Plus Jakarta Sans',fontSize:12,fontWeight:700,cursor:'pointer'}}>
-                <option value="open">Menunggu</option>
-                <option value="in_review">Review</option>
-                <option value="resolved">Selesai</option>
-                <option value="rejected">Ditolak</option>
-              </select>
-            </div>
-          </div>
+      {tk.target_player && <p style={{fontSize:12,color:'#e74c3c',marginBottom:6}}><i className="fa-solid fa-user-xmark" style={{marginRight:6}}/>Target: <strong>{tk.target_player}</strong></p>}
+      {tk.evidence_url  && <a href={tk.evidence_url} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:'#3498db',display:'inline-flex',alignItems:'center',gap:4,marginBottom:8,textDecoration:'none'}}><i className="fa-solid fa-link"/>Lihat Bukti</a>}
 
-          {/* Chat bubbles */}
-          <div style={{minHeight:180,maxHeight:'40vh',overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:10}}>
-            {(tk.messages||[]).length === 0 ? (
-              <div style={{textAlign:'center',padding:'30px 0',color:'var(--text-muted)',fontSize:13}}>
-                <i className="fa-solid fa-comment-slash" style={{display:'block',fontSize:24,marginBottom:8}}/>
-                Belum ada percakapan
-              </div>
-            ) : (tk.messages||[]).map((msg,i) => {
-              const isAdmin = msg.sender_type === 'admin';
+      {/* Chat area - expanded */}
+      {expanded && (
+        <div style={{marginTop:12,borderTop:'1px solid rgba(255,255,255,0.05)',paddingTop:12}}>
+          {/* Messages */}
+          <div style={{maxHeight:320,overflowY:'auto',display:'flex',flexDirection:'column',gap:8,marginBottom:12,paddingRight:4}}>
+            {msgs.length === 0 && <p style={{textAlign:'center',color:'var(--text-muted)',fontSize:12,padding:'20px 0'}}>Belum ada percakapan</p>}
+            {msgs.map((m,i) => {
+              const isAdmin = m.sender_type === 'admin';
               return (
-                <div key={msg.id||i} style={{display:'flex',flexDirection:'column',alignItems:isAdmin?'flex-end':'flex-start'}}>
+                <div key={m.id||i} style={{display:'flex',flexDirection:'column',alignItems:isAdmin?'flex-end':'flex-start'}}>
                   <div style={{
-                    maxWidth:'78%',
-                    background: isAdmin ? 'rgba(52,152,219,0.12)' : 'rgba(255,255,255,0.04)',
-                    border: isAdmin ? '1px solid rgba(52,152,219,0.3)' : '1px solid rgba(255,255,255,0.07)',
-                    borderRadius: isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                    padding:'9px 13px',
+                    maxWidth:'80%',background:isAdmin?'rgba(255,107,0,0.1)':'rgba(255,255,255,0.04)',
+                    border:`1px solid ${isAdmin?'rgba(255,107,0,0.2)':'rgba(255,255,255,0.07)'}`,
+                    borderRadius:isAdmin?'12px 12px 2px 12px':'12px 12px 12px 2px',
+                    padding:'8px 12px',
                   }}>
-                    <p style={{fontSize:11,fontWeight:700,color:isAdmin?'#3498db':'var(--primary-light)',marginBottom:4}}>
-                      {isAdmin ? '🛡️ Admin' : `👤 ${msg.sender}`}
+                    <p style={{fontSize:12,fontWeight:700,color:isAdmin?'var(--primary)':'var(--primary-light)',marginBottom:2}}>
+                      {isAdmin ? '👑 Admin' : `👤 ${m.sender}`}
                     </p>
-                    <p style={{fontSize:13,color:'#e0e0e6',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{msg.text}</p>
+                    <p style={{fontSize:13,color:'#d1d1d6',lineHeight:1.5,wordBreak:'break-word'}}>{m.text}</p>
                   </div>
-                  <p style={{fontSize:10,color:'var(--text-muted)',marginTop:3,padding:'0 3px'}}>{fmt(msg.created_at)}</p>
+                  <span style={{fontSize:10,color:'var(--text-muted)',marginTop:2,paddingHorizontal:4}}>{fmt(m.created_at)}</span>
                 </div>
               );
             })}
-            <div ref={chatEndRef}/>
+            <div ref={msgEndRef}/>
           </div>
 
-          {/* Input area */}
-          <div style={{padding:'10px 16px',borderTop:'1px solid rgba(255,255,255,0.05)'}}>
-            {isClosed ? (
-              <div style={{textAlign:'center',padding:'8px',color:'var(--text-muted)',fontSize:12}}>
-                <i className="fa-solid fa-lock" style={{marginRight:6}}/>
-                Tiket ditutup — tidak bisa mengirim pesan baru
-              </div>
-            ) : (
-              <div style={{display:'flex',gap:8}}>
-                <textarea value={newMsg} onChange={e=>setNewMsg(e.target.value)} rows={2}
-                  placeholder="Tulis balasan admin di sini... (Ctrl+Enter kirim)"
-                  onKeyDown={e=>{ if(e.key==='Enter'&&e.ctrlKey) sendMessage(); }}
-                  className="admin-input" style={{flex:1,resize:'none',fontSize:12,padding:'9px 12px'}}/>
-                <button disabled={saving||!newMsg.trim()} className="btn-primary-fn"
-                  style={{flexShrink:0,alignSelf:'flex-end',padding:'10px 14px'}}
-                  onClick={sendMessage}>
-                  {saving?<i className="fa-solid fa-spinner fa-spin"/>:<><i className="fa-solid fa-paper-plane"/> Kirim</>}
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Reply input */}
+          {!isClosed && (
+            <div style={{display:'flex',gap:8}}>
+              <textarea value={msg} onChange={e=>setMsg(e.target.value)} rows={2}
+                onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();} }}
+                placeholder="Tulis balasan... (Enter kirim, Shift+Enter baris baru)"
+                className="admin-input" style={{flex:1,resize:'none',fontSize:12}}/>
+              <button disabled={sending||!msg.trim()} className="btn-primary-fn"
+                style={{flexShrink:0,alignSelf:'flex-end',padding:'10px 14px'}} onClick={sendMsg}>
+                {sending ? <i className="fa-solid fa-spinner fa-spin"/> : <><i className="fa-solid fa-paper-plane"/> Kirim</>}
+              </button>
+            </div>
+          )}
+          {isClosed && <p style={{textAlign:'center',fontSize:12,color:'var(--text-muted)',padding:'8px 0'}}>Tiket ditutup — tidak bisa membalas</p>}
         </div>
       )}
     </div>
   );
 }
-
 // ── MODAL helpers ─────────────────────────────────────────────
 function ModalWrap({ title, onClose, children }) {
   return (
@@ -719,9 +748,16 @@ function Field({ label, children }) {
 function ProductModal({ product, categories, af, onClose, onDone }) {
   const isEdit = !!product?.id;
   const pf = v => { try { const p=typeof v==='string'?JSON.parse(v):v; return Array.isArray(p)?p.join('\n'):''; } catch { return ''; } };
+  // Hitung discount_percent dari existing data (untuk mode edit)
+  const existingDiscount = product?.discount_percent || (
+    product?.original_price > product?.price
+      ? Math.round((1 - product.price / product.original_price) * 100)
+      : 0
+  );
   const [f, setF] = useState({
     id:product?.id||null, name:product?.name||'', category_id:product?.category_id||'',
-    description:product?.description||'', price:product?.price||'', original_price:product?.original_price||'',
+    description:product?.description||'', price:product?.price||'',
+    discount_percent: existingDiscount || '',
     image_url:product?.image_url||'', badge:product?.badge||'', badge_color:product?.badge_color||'orange',
     reward_trigger:product?.reward_trigger||'', purchase_limit:product?.purchase_limit||0,
     limit_scope:product?.limit_scope||'per_product', sort_order:product?.sort_order||0,
@@ -729,10 +765,16 @@ function ProductModal({ product, categories, af, onClose, onDone }) {
   });
   const [saving, setSaving] = useState(false);
 
+  // Preview: harga asli (coret) dihitung dari harga jual + diskon
+  const priceNum   = parseInt(f.price) || 0;
+  const discNum    = parseInt(f.discount_percent) || 0;
+  const origPrice  = discNum > 0 && discNum < 100 ? Math.round(priceNum / (1 - discNum / 100)) : 0;
+
   const submit = async e => {
     e.preventDefault(); setSaving(true);
     const r = await af('/api/admin/products',{method:isEdit?'PUT':'POST',body:JSON.stringify({
-      ...f, price:parseInt(f.price)||0, original_price:parseInt(f.original_price)||null,
+      ...f, price:parseInt(f.price)||0,
+      discount_percent: parseInt(f.discount_percent)||0,
       purchase_limit:parseInt(f.purchase_limit)||0, sort_order:parseInt(f.sort_order)||0,
       category_id:f.category_id?parseInt(f.category_id):null, is_active:f.is_active?1:0,
       features:f.features.split('\n').filter(Boolean),
@@ -751,25 +793,22 @@ function ProductModal({ product, categories, af, onClose, onDone }) {
             <option value="">— Pilih —</option>{categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
           </select></Field>
           <Field label="Harga (Rp) *"><input type="number" value={f.price} onChange={e=>setF(p=>({...p,price:e.target.value}))} className="admin-input" required/></Field>
-          <div>
-            <Field label="Harga Coret (Rp)"><input type="number" value={f.original_price} onChange={e=>setF(p=>({...p,original_price:e.target.value}))} className="admin-input"/></Field>
-            {(() => {
-              const orig = parseInt(f.original_price)||0;
-              const price = parseInt(f.price)||0;
-              if (orig > price && price > 0) {
-                const disc = Math.round((1 - price/orig)*100);
-                return (
-                  <div style={{background:'rgba(231,76,60,0.08)',border:'1px solid rgba(231,76,60,0.25)',borderRadius:8,padding:'8px 12px',marginTop:-8,display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-                    <span style={{background:'#e74c3c',color:'#fff',fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:4}}>-{disc}%</span>
-                    <span style={{fontSize:12,color:'var(--text-muted)',textDecoration:'line-through'}}>Rp {orig.toLocaleString('id-ID')}</span>
-                    <span style={{fontSize:13,color:'#2ecc71',fontWeight:700}}>→ Rp {price.toLocaleString('id-ID')}</span>
-                    <span style={{fontSize:11,color:'var(--text-muted)'}}>Hemat Rp {(orig-price).toLocaleString('id-ID')}</span>
-                  </div>
-                );
-              }
-              return null;
-            })()}
-          </div>
+          <Field label="Diskon (%)">
+            <div style={{position:'relative'}}>
+              <input type="number" min="0" max="99" value={f.discount_percent}
+                onChange={e=>setF(p=>({...p,discount_percent:e.target.value}))}
+                className="admin-input" placeholder="0 = tidak ada diskon"/>
+              <span style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)',fontSize:13}}>%</span>
+            </div>
+            {discNum > 0 && priceNum > 0 && (
+              <div style={{marginTop:6,fontSize:12,background:'rgba(231,76,60,0.06)',border:'1px solid rgba(231,76,60,0.2)',borderRadius:6,padding:'6px 10px',display:'flex',gap:8,alignItems:'center'}}>
+                <span style={{color:'var(--text-muted)',textDecoration:'line-through'}}>{idr(origPrice)}</span>
+                <span style={{color:'#e74c3c',fontWeight:700}}>→</span>
+                <span style={{color:'var(--primary-light)',fontWeight:700}}>{idr(priceNum)}</span>
+                <span style={{marginLeft:'auto',background:'#e74c3c',color:'#fff',fontSize:10,fontWeight:700,padding:'2px 6px',borderRadius:4}}>-{discNum}%</span>
+              </div>
+            )}
+          </Field>
           <Field label="Reward Trigger">
             <input value={f.reward_trigger} onChange={e=>setF(p=>({...p,reward_trigger:e.target.value}))} className="admin-input" placeholder="contoh: rank_vip" style={{fontFamily:'monospace'}}/>
             <p style={{fontSize:11,color:'var(--text-muted)',marginTop:5}}>ID reward di config.yml plugin ShadowynAPI</p>
