@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 
@@ -70,6 +70,7 @@ export default function AdminPanel() {
 
   const [orderFilter,  setOrderFilter]  = useState('all');
   const [reportFilter, setReportFilter] = useState('all');
+  const [reportSearch, setReportSearch] = useState('');
 
   const [showProductModal,  setShowProductModal]  = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
@@ -481,7 +482,20 @@ export default function AdminPanel() {
             {/* ═══ REPORTS ═════════════════════════════════ */}
             {tab==='reports' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                {/* Filter */}
+                {/* Header: count + search */}
+                <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
+                  <span style={{fontSize:13,color:'var(--text-muted)',fontWeight:600}}>
+                    <i className="fa-solid fa-inbox" style={{marginRight:6,color:'var(--primary)'}}/>
+                    {tickets.length} tiket{reportFilter!=='all'?` · ${TICKET_STATUS_LABEL[reportFilter]||reportFilter}`:''}
+                  </span>
+                  <div style={{position:'relative'}}>
+                    <i className="fa-solid fa-search" style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)',fontSize:12}}/>
+                    <input value={reportSearch} onChange={e=>setReportSearch(e.target.value)}
+                      placeholder="Cari tiket / player..." className="admin-input"
+                      style={{paddingLeft:32,width:200,fontSize:12,padding:'7px 10px 7px 32px'}}/>
+                  </div>
+                </div>
+                {/* Status filter */}
                 <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                   {['all','open','in_review','resolved','rejected'].map(s=>(
                     <button key={s} onClick={()=>setReportFilter(s)}
@@ -494,18 +508,29 @@ export default function AdminPanel() {
                   ))}
                 </div>
 
-                {tickets.length===0 ? (
-                  <div style={{textAlign:'center',padding:'60px 0',color:'var(--text-muted)'}}>
-                    <i className="fa-solid fa-inbox" style={{fontSize:36,display:'block',marginBottom:12}}/>
-                    <p>Belum ada tiket {reportFilter!=='all'&&`(${reportFilter})`}</p>
-                  </div>
-                ) : (
-                  <div style={{display:'flex',flexDirection:'column',gap:12}}>
-                    {tickets.map(tk=>(
-                      <TicketCard key={tk.ticket_id} tk={tk} af={af} onRefresh={load}/>
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  const q = reportSearch.toLowerCase().trim();
+                  const filtered = q ? tickets.filter(tk =>
+                    (tk.subject||'').toLowerCase().includes(q) ||
+                    (tk.player_username||'').toLowerCase().includes(q) ||
+                    (tk.ticket_id||'').toLowerCase().includes(q) ||
+                    (tk.description||'').toLowerCase().includes(q)
+                  ) : tickets;
+                  if (filtered.length===0) return (
+                    <div style={{textAlign:'center',padding:'60px 0',color:'var(--text-muted)'}}>
+                      <i className="fa-solid fa-inbox" style={{fontSize:36,display:'block',marginBottom:12}}/>
+                      <p>{q ? `Tidak ada tiket untuk "${reportSearch}"` : `Belum ada tiket${reportFilter!=='all'?' ('+reportFilter+')':''}`}</p>
+                      {q && <button onClick={()=>setReportSearch('')} style={{marginTop:10,background:'none',border:'none',color:'var(--primary)',cursor:'pointer',fontSize:12}}>Hapus pencarian</button>}
+                    </div>
+                  );
+                  return (
+                    <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                      {filtered.map(tk=>(
+                        <TicketCard key={tk.ticket_id} tk={tk} af={af} onRefresh={load}/>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -522,68 +547,146 @@ export default function AdminPanel() {
 }
 
 // ── TicketCard ────────────────────────────────────────────────
-function TicketCard({ tk, af, onRefresh }) {
-  const [reply, setReply]   = useState(tk.admin_reply||'');
+function TicketCard({ tk: tkProp, af, onRefresh }) {
+  const [tk, setTk]         = useState(tkProp);
+  const [expanded, setExpanded] = useState(false);
+  const [newMsg, setNewMsg] = useState('');
   const [saving, setSaving] = useState(false);
+  const chatEndRef = useRef(null);
+
+  // Refresh ticket detail from API
+  const loadDetail = async () => {
+    const r = await af(`/api/admin/support?id=${tk.ticket_id}`);
+    if (r.success && r.ticket) setTk(r.ticket);
+  };
+
+  useEffect(() => {
+    if (expanded) loadDetail();
+  }, [expanded]);
+
+  useEffect(() => {
+    if (expanded && chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior:'smooth' });
+  }, [tk.messages, expanded]);
+
   const tInfo = { banding:{icon:'fa-gavel',color:'#e67e22'}, bug:{icon:'fa-bug',color:'#3498db'}, report_player:{icon:'fa-user-xmark',color:'#e74c3c'}, lainnya:{icon:'fa-comment-dots',color:'#9b59b6'} }[tk.type]||{icon:'fa-ticket',color:'var(--primary)'};
   const st = { open:{label:'Menunggu',color:'#f1c40f'}, in_review:{label:'Review',color:'#3498db'}, resolved:{label:'Selesai',color:'#2ecc71'}, rejected:{label:'Ditolak',color:'#e74c3c'} }[tk.status]||{label:tk.status,color:'#8e8e9a'};
+  const isClosed = tk.status === 'resolved' || tk.status === 'rejected';
+  const msgCount = (tk.messages||[]).length;
+
+  const sendMessage = async () => {
+    if (!newMsg.trim() || saving) return;
+    setSaving(true);
+    const r = await af('/api/admin/support',{method:'PATCH',body:JSON.stringify({id:tk.ticket_id,message:newMsg.trim()})});
+    setSaving(false);
+    if (r.success) { setNewMsg(''); await loadDetail(); onRefresh(); toast.success('Pesan terkirim'); }
+    else toast.error(r.message||'Gagal kirim pesan');
+  };
 
   return (
-    <div className="admin-card" style={{padding:'18px 20px'}}>
-      <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,marginBottom:12}}>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
+    <div className="admin-card" style={{padding:0,overflow:'hidden'}}>
+      {/* Header row - always visible */}
+      <div style={{padding:'16px 20px',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,cursor:'pointer'}}
+        onClick={()=>setExpanded(p=>!p)}>
+        <div style={{display:'flex',alignItems:'center',gap:10,flex:1,minWidth:0}}>
           <div style={{width:36,height:36,borderRadius:8,background:`${tInfo.color}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
             <i className={`fa-solid ${tInfo.icon}`} style={{color:tInfo.color,fontSize:14}}/>
           </div>
-          <div>
-            <p style={{fontWeight:700,color:'#fff',fontSize:14}}>{tk.subject}</p>
-            <div style={{display:'flex',gap:8,alignItems:'center',marginTop:2}}>
+          <div style={{flex:1,minWidth:0}}>
+            <p style={{fontWeight:700,color:'#fff',fontSize:14,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tk.subject}</p>
+            <div style={{display:'flex',gap:8,alignItems:'center',marginTop:2,flexWrap:'wrap'}}>
               <code style={{fontSize:11,color:'var(--text-muted)',fontFamily:'monospace'}}>{tk.ticket_id}</code>
               <span style={{fontSize:11,color:'var(--text-muted)'}}>•</span>
               <span style={{fontSize:12,color:'var(--primary-light)',fontWeight:600}}>{tk.player_username}</span>
               <span style={{fontSize:11,color:'var(--text-muted)'}}>•</span>
               <span style={{fontSize:11,color:'var(--text-muted)'}}>{fmt(tk.created_at)}</span>
+              <span style={{fontSize:11,color:'var(--text-muted)'}}>•</span>
+              <span style={{fontSize:11,color:'var(--text-muted)',display:'inline-flex',alignItems:'center',gap:3}}>
+                <i className="fa-solid fa-comment-dots" style={{fontSize:10}}/> {msgCount} pesan
+              </span>
             </div>
           </div>
         </div>
-        {/* Status dropdown */}
-        <select defaultValue={tk.status} onChange={async e=>{
-          await af('/api/admin/support',{method:'PATCH',body:JSON.stringify({id:tk.ticket_id,status:e.target.value})});
-          toast.success('Status diupdate'); onRefresh();
-        }} style={{background:'rgba(255,255,255,0.03)',border:`1px solid ${st.color}44`,color:st.color,padding:'6px 10px',borderRadius:8,fontFamily:'Plus Jakarta Sans',fontSize:12,fontWeight:700,cursor:'pointer',flexShrink:0}}>
-          <option value="open">Menunggu</option>
-          <option value="in_review">Review</option>
-          <option value="resolved">Selesai</option>
-          <option value="rejected">Ditolak</option>
-        </select>
+        <div style={{display:'flex',gap:8,alignItems:'center',flexShrink:0}}>
+          <span style={{background:`${st.color}18`,color:st.color,border:`1px solid ${st.color}44`,padding:'4px 10px',borderRadius:6,fontSize:11,fontWeight:700}}>{st.label}</span>
+          <i className={`fa-solid fa-chevron-${expanded?'up':'down'}`} style={{color:'var(--text-muted)',fontSize:11}}/>
+        </div>
       </div>
 
-      <p style={{fontSize:13,color:'#d1d1d6',lineHeight:1.6,marginBottom:12}}>{tk.description}</p>
-      {tk.target_player&&<p style={{fontSize:12,color:'#e74c3c',marginBottom:10}}><i className="fa-solid fa-user-xmark" style={{marginRight:6}}/>Target: <strong>{tk.target_player}</strong></p>}
-      {tk.evidence_url&&<a href={tk.evidence_url} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:'#3498db',display:'inline-flex',alignItems:'center',gap:4,marginBottom:10,textDecoration:'none'}}><i className="fa-solid fa-link"/>Lihat Bukti</a>}
+      {/* Expanded chat panel */}
+      {expanded && (
+        <div style={{borderTop:'1px solid rgba(255,255,255,0.05)'}}>
+          {/* Meta info */}
+          <div style={{padding:'10px 20px',background:'rgba(0,0,0,0.2)',display:'flex',gap:16,flexWrap:'wrap',alignItems:'center'}}>
+            {tk.target_player && <span style={{fontSize:12,color:'#e74c3c'}}><i className="fa-solid fa-user-xmark" style={{marginRight:5}}/>Target: <strong>{tk.target_player}</strong></span>}
+            {tk.evidence_url && <a href={tk.evidence_url} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:'#3498db',display:'inline-flex',alignItems:'center',gap:4,textDecoration:'none'}}><i className="fa-solid fa-link"/>Lihat Bukti</a>}
+            {/* Status changer */}
+            <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontSize:11,color:'var(--text-muted)',fontWeight:600}}>Ubah Status:</span>
+              <select value={tk.status} onChange={async e=>{
+                await af('/api/admin/support',{method:'PATCH',body:JSON.stringify({id:tk.ticket_id,status:e.target.value})});
+                toast.success('Status diupdate'); await loadDetail(); onRefresh();
+              }} style={{background:'rgba(255,255,255,0.05)',border:`1px solid ${st.color}44`,color:st.color,padding:'5px 10px',borderRadius:8,fontFamily:'Plus Jakarta Sans',fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                <option value="open">Menunggu</option>
+                <option value="in_review">Review</option>
+                <option value="resolved">Selesai</option>
+                <option value="rejected">Ditolak</option>
+              </select>
+            </div>
+          </div>
 
-      {/* Admin reply */}
-      {tk.admin_reply&&(
-        <div style={{background:'rgba(52,152,219,0.06)',border:'1px solid rgba(52,152,219,0.15)',borderRadius:10,padding:'10px 14px',marginBottom:10}}>
-          <p style={{fontSize:11,color:'#3498db',fontWeight:700,textTransform:'uppercase',marginBottom:4}}>💬 Balasan Admin:</p>
-          <p style={{fontSize:13,color:'#e0e0e6',lineHeight:1.6}}>{tk.admin_reply}</p>
+          {/* Chat bubbles */}
+          <div style={{minHeight:180,maxHeight:'40vh',overflowY:'auto',padding:'14px 20px',display:'flex',flexDirection:'column',gap:10}}>
+            {(tk.messages||[]).length === 0 ? (
+              <div style={{textAlign:'center',padding:'30px 0',color:'var(--text-muted)',fontSize:13}}>
+                <i className="fa-solid fa-comment-slash" style={{display:'block',fontSize:24,marginBottom:8}}/>
+                Belum ada percakapan
+              </div>
+            ) : (tk.messages||[]).map((msg,i) => {
+              const isAdmin = msg.sender_type === 'admin';
+              return (
+                <div key={msg.id||i} style={{display:'flex',flexDirection:'column',alignItems:isAdmin?'flex-end':'flex-start'}}>
+                  <div style={{
+                    maxWidth:'78%',
+                    background: isAdmin ? 'rgba(52,152,219,0.12)' : 'rgba(255,255,255,0.04)',
+                    border: isAdmin ? '1px solid rgba(52,152,219,0.3)' : '1px solid rgba(255,255,255,0.07)',
+                    borderRadius: isAdmin ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
+                    padding:'9px 13px',
+                  }}>
+                    <p style={{fontSize:11,fontWeight:700,color:isAdmin?'#3498db':'var(--primary-light)',marginBottom:4}}>
+                      {isAdmin ? '🛡️ Admin' : `👤 ${msg.sender}`}
+                    </p>
+                    <p style={{fontSize:13,color:'#e0e0e6',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{msg.text}</p>
+                  </div>
+                  <p style={{fontSize:10,color:'var(--text-muted)',marginTop:3,padding:'0 3px'}}>{fmt(msg.created_at)}</p>
+                </div>
+              );
+            })}
+            <div ref={chatEndRef}/>
+          </div>
+
+          {/* Input area */}
+          <div style={{padding:'10px 16px',borderTop:'1px solid rgba(255,255,255,0.05)'}}>
+            {isClosed ? (
+              <div style={{textAlign:'center',padding:'8px',color:'var(--text-muted)',fontSize:12}}>
+                <i className="fa-solid fa-lock" style={{marginRight:6}}/>
+                Tiket ditutup — tidak bisa mengirim pesan baru
+              </div>
+            ) : (
+              <div style={{display:'flex',gap:8}}>
+                <textarea value={newMsg} onChange={e=>setNewMsg(e.target.value)} rows={2}
+                  placeholder="Tulis balasan admin di sini... (Ctrl+Enter kirim)"
+                  onKeyDown={e=>{ if(e.key==='Enter'&&e.ctrlKey) sendMessage(); }}
+                  className="admin-input" style={{flex:1,resize:'none',fontSize:12,padding:'9px 12px'}}/>
+                <button disabled={saving||!newMsg.trim()} className="btn-primary-fn"
+                  style={{flexShrink:0,alignSelf:'flex-end',padding:'10px 14px'}}
+                  onClick={sendMessage}>
+                  {saving?<i className="fa-solid fa-spinner fa-spin"/>:<><i className="fa-solid fa-paper-plane"/> Kirim</>}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
-
-      {/* Reply input */}
-      <div style={{borderTop:'1px solid rgba(255,255,255,0.04)',paddingTop:12,display:'flex',gap:8}}>
-        <textarea value={reply} onChange={e=>setReply(e.target.value)} rows={2}
-          placeholder="Tulis balasan untuk player (akan tampil di halaman support mereka)..."
-          className="admin-input" style={{flex:1,resize:'none',fontSize:12}}/>
-        <button disabled={saving} className="btn-primary-fn" style={{flexShrink:0,alignSelf:'flex-end',padding:'10px 14px'}}
-          onClick={async()=>{
-            setSaving(true);
-            await af('/api/admin/support',{method:'PATCH',body:JSON.stringify({id:tk.ticket_id,admin_reply:reply})});
-            setSaving(false); toast.success('Balasan dikirim'); onRefresh();
-          }}>
-          {saving?<i className="fa-solid fa-spinner fa-spin"/>:<><i className="fa-solid fa-paper-plane"/> Kirim</>}
-        </button>
-      </div>
     </div>
   );
 }
@@ -648,7 +751,25 @@ function ProductModal({ product, categories, af, onClose, onDone }) {
             <option value="">— Pilih —</option>{categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
           </select></Field>
           <Field label="Harga (Rp) *"><input type="number" value={f.price} onChange={e=>setF(p=>({...p,price:e.target.value}))} className="admin-input" required/></Field>
-          <Field label="Harga Coret (Rp)"><input type="number" value={f.original_price} onChange={e=>setF(p=>({...p,original_price:e.target.value}))} className="admin-input"/></Field>
+          <div>
+            <Field label="Harga Coret (Rp)"><input type="number" value={f.original_price} onChange={e=>setF(p=>({...p,original_price:e.target.value}))} className="admin-input"/></Field>
+            {(() => {
+              const orig = parseInt(f.original_price)||0;
+              const price = parseInt(f.price)||0;
+              if (orig > price && price > 0) {
+                const disc = Math.round((1 - price/orig)*100);
+                return (
+                  <div style={{background:'rgba(231,76,60,0.08)',border:'1px solid rgba(231,76,60,0.25)',borderRadius:8,padding:'8px 12px',marginTop:-8,display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+                    <span style={{background:'#e74c3c',color:'#fff',fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:4}}>-{disc}%</span>
+                    <span style={{fontSize:12,color:'var(--text-muted)',textDecoration:'line-through'}}>Rp {orig.toLocaleString('id-ID')}</span>
+                    <span style={{fontSize:13,color:'#2ecc71',fontWeight:700}}>→ Rp {price.toLocaleString('id-ID')}</span>
+                    <span style={{fontSize:11,color:'var(--text-muted)'}}>Hemat Rp {(orig-price).toLocaleString('id-ID')}</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+          </div>
           <Field label="Reward Trigger">
             <input value={f.reward_trigger} onChange={e=>setF(p=>({...p,reward_trigger:e.target.value}))} className="admin-input" placeholder="contoh: rank_vip" style={{fontFamily:'monospace'}}/>
             <p style={{fontSize:11,color:'var(--text-muted)',marginTop:5}}>ID reward di config.yml plugin ShadowynAPI</p>
