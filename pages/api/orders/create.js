@@ -18,6 +18,11 @@ export default async function handler(req, res) {
     const product = await ProductsAsync.byId(productId);
     if (!product || !product.is_active) return res.status(404).json({ success:false, message:'Produk tidak ditemukan' });
 
+    // reward_trigger wajib ada — ini adalah product_id yang dikenali plugin (contoh: rank-vip, coins-20)
+    if (!product.reward_trigger?.trim()) {
+      return res.status(400).json({ success:false, message:'Produk belum dikonfigurasi (reward_trigger kosong). Hubungi admin.' });
+    }
+
     if (product.purchase_limit > 0) {
       const count = await OrdersAsync.purchaseCount(user.username, product.id, product.limit_scope||'per_product', product.category_id);
       if (count >= product.purchase_limit)
