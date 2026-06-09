@@ -1,14 +1,16 @@
 import { useTransparentLogo, updateFavicon } from '../../components/LogoImage';
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
-import { Settings } from '../../lib/storage.js';
+// SettingsAsync loaded server-side via dynamic import in getServerSideProps
 import FancyNav from '../../components/FancyNav';
 import LoginModal from '../../components/LoginModal';
 import toast from 'react-hot-toast';
 
-export function getServerSideProps() {
-  try { return { props:{ settings: Settings.get() } }; }
-  catch { return { props:{ settings:{} } }; }
+export async function getServerSideProps() {
+  try {
+    const { SettingsAsync } = await import('../../lib/redis.js');
+    return { props:{ settings: await SettingsAsync.get() } };
+  } catch { return { props:{ settings:{} } }; }
 }
 
 const TYPES = [
@@ -43,6 +45,7 @@ export default function SupportPage({ settings }) {
   const [newMsg,      setNewMsg]      = useState('');
   const [sendingMsg,  setSendingMsg]  = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
+  const [sseStatus,   setSseStatus]   = useState('connecting'); // connecting | live | polling
   const chatEndRef = useRef(null);
   const pollingRef = useRef(null);
   const activeTicketRef = useRef(null);
