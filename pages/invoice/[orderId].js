@@ -61,13 +61,35 @@ export default function InvoicePage({ order, settings }) {
   const serverName = s.server_name || 'Fancy Network';
   const { src: logoSrc } = useTransparentLogo();
 
-  const [player,    setPlayer]    = useState(null);
-  const [showLogin, setShowLogin] = useState(false);
-  const [copied,    setCopied]    = useState(false);
-  const [printing,  setPrinting]  = useState(false);
+  const [player,      setPlayer]      = useState(null);
+  const [showLogin,   setShowLogin]   = useState(false);
+  const [copied,      setCopied]      = useState(false);
+  const [printing,    setPrinting]    = useState(false);
+  const [liveOrder,   setLiveOrder]   = useState(order);
+  const pollRef = useRef(null);
 
-  const statusKey = order?.payment_status || 'pending';
+  const statusKey = liveOrder?.payment_status || 'pending';
   const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG.pending;
+
+  // Polling: cek status setiap 3 detik jika masih pending
+  useEffect(() => {
+    const isPending = !['settlement','capture','expire','cancel','deny'].includes(liveOrder?.payment_status);
+    if (!isPending) return;
+    let attempts = 0;
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        const res  = await fetch('/api/orders/verify/' + order.order_id, { credentials: 'include' });
+        const data = await res.json();
+        if (data?.order) {
+          setLiveOrder(data.order);
+          const done = ['settlement','capture','expire','cancel','deny'].includes(data.liveOrder.payment_status);
+          if (done || attempts >= 20) clearInterval(pollRef.current);
+        }
+      } catch {}
+    }, 3000);
+    return () => clearInterval(pollRef.current);
+  }, []);
 
   /* ----- Copy order ID ----- */
   const copyOrderId = () => {
@@ -104,16 +126,16 @@ export default function InvoicePage({ order, settings }) {
   };
 
   /* ----- Amounts ----- */
-  const subtotal  = (order.amount || 0) + (order.discount_amount || 0);
-  const discount  = order.discount_amount || 0;
-  const serviceFee = Math.round((order.amount || 0) * 0.025); // 2.5% Midtrans fee estimate
-  const total     = (order.amount || 0) + serviceFee;
+  const subtotal  = (liveOrder.amount || 0) + (liveOrder.discount_amount || 0);
+  const discount  = liveOrder.discount_amount || 0;
+  const serviceFee = Math.round((liveOrder.amount || 0) * 0.025); // 2.5% Midtrans fee estimate
+  const total     = (liveOrder.amount || 0) + serviceFee;
 
   return (
     <>
       <Head>
         <title>Invoice #{order.order_id} | {serverName}</title>
-        <meta name="description" content={`Invoice pembelian ${order.product_name} di ${serverName}`} />
+        <meta name="description" content={`Invoice pembelian ${liveOrder.product_name} di ${serverName}`} />
         <meta name="robots" content="noindex,nofollow" />
         {logoSrc && <link rel="icon" type="image/png" href={logoSrc} />}
       </Head>
@@ -199,25 +221,25 @@ export default function InvoicePage({ order, settings }) {
               <h4 className="inv-block-label">Ditagih Kepada</h4>
               <div className="inv-player-row">
                 <img
-                  src={order.player_uuid
+                  src={liveOrder.player_uuid
                     ? `https://crafatar.com/avatars/${order.player_uuid}?size=64&overlay`
-                    : `https://minotar.net/helm/${encodeURIComponent(order.player_username || 'steve')}/64`}
-                  alt={order.player_username}
+                    : `https://minotar.net/helm/${encodeURIComponent(liveOrder.player_username || 'steve')}/64`}
+                  alt={liveOrder.player_username}
                   style={{ width: 40, height: 40, borderRadius: 6, imageRendering: 'pixelated', flexShrink: 0, border: '1px solid rgba(255,255,255,0.08)' }}
                   onError={e => { e.target.src = 'https://minotar.net/helm/steve/64'; }}
                 />
                 <div>
                   <div className="inv-ign">
                     <i className="fa-solid fa-gamepad" style={{ fontSize: 11, color: 'var(--primary)' }} />
-                    {order.player_username}
-                    {order.player_rank && order.player_rank !== 'default' && (
-                      <span className="inv-rank-badge">{order.player_rank.toUpperCase()}</span>
+                    {liveOrder.player_username}
+                    {liveOrder.player_rank && liveOrder.player_rank !== 'default' && (
+                      <span className="inv-rank-badge">{liveOrder.player_rank.toUpperCase()}</span>
                     )}
                   </div>
-                  {order.discord_username && (
+                  {liveOrder.discord_username && (
                     <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3, display: 'flex', alignItems: 'center', gap: 5 }}>
                       <i className="fa-brands fa-discord" style={{ fontSize: 11, color: '#5865F2' }} />
-                      {order.discord_username}
+                      {liveOrder.discord_username}
                     </div>
                   )}
                 </div>
@@ -228,16 +250,16 @@ export default function InvoicePage({ order, settings }) {
               <h4 className="inv-block-label">Rincian Transaksi</h4>
               <dl className="inv-dl">
                 <dt>Tanggal</dt>
-                <dd>{formatDate(order.created_at)}</dd>
+                <dd>{formatDate(liveOrder.created_at)}</dd>
                 <dt>Metode</dt>
-                <dd>{METHOD_LABELS[order.payment_method] || order.payment_method || 'QRIS'}</dd>
+                <dd>{METHOD_LABELS[liveOrder.payment_method] || liveOrder.payment_method || 'QRIS'}</dd>
                 <dt>ID Transaksi</dt>
                 <dd style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: 12 }}>{order.order_id}</dd>
-                {order.redeem_code && (
+                {liveOrder.redeem_code && (
                   <>
                     <dt>Kode Redeem</dt>
                     <dd style={{ color: '#2ecc71' }}>
-                      <i className="fa-solid fa-tag" style={{ fontSize: 10 }} /> {order.redeem_code}
+                      <i className="fa-solid fa-tag" style={{ fontSize: 10 }} /> {liveOrder.redeem_code}
                     </dd>
                   </>
                 )}
@@ -258,14 +280,14 @@ export default function InvoicePage({ order, settings }) {
               <tbody>
                 <tr>
                   <td>
-                    <div style={{ fontWeight: 600, color: '#fff' }}>{order.product_name}</div>
+                    <div style={{ fontWeight: 600, color: '#fff' }}>{liveOrder.product_name}</div>
                     <div className="inv-item-meta">
                       <i className="fa-solid fa-infinity" style={{ fontSize: 10 }} /> Durasi: Permanen (Lifetime)
                     </div>
                   </td>
                   <td className="text-right">
                     <span className="inv-cat-chip">
-                      {order.category_name || 'Produk'}
+                      {liveOrder.category_name || 'Produk'}
                     </span>
                   </td>
                   <td className="text-right" style={{ fontWeight: 600 }}>{idr(subtotal)}</td>
@@ -277,7 +299,7 @@ export default function InvoicePage({ order, settings }) {
                         <i className="fa-solid fa-tag" style={{ marginRight: 6 }} />
                         Diskon Kode Redeem
                       </div>
-                      <div className="inv-item-meta">Kode: {order.redeem_code}</div>
+                      <div className="inv-item-meta">Kode: {liveOrder.redeem_code}</div>
                     </td>
                     <td className="text-right">
                       <span className="inv-cat-chip" style={{ background: 'rgba(46,204,113,0.1)', borderColor: 'rgba(46,204,113,0.2)', color: '#2ecc71' }}>
@@ -296,7 +318,7 @@ export default function InvoicePage({ order, settings }) {
             <div className="inv-summary-box">
               <div className="inv-sum-row">
                 <span>Subtotal</span>
-                <span>{idr(order.amount || 0)}</span>
+                <span>{idr(liveOrder.amount || 0)}</span>
               </div>
               <div className="inv-sum-row">
                 <span>Biaya Layanan (Gateway)</span>
@@ -318,9 +340,9 @@ export default function InvoicePage({ order, settings }) {
           {/* ── Plugin / Delivery status chip ── */}
           {(statusKey === 'settlement' || statusKey === 'capture') && (
             <div className="inv-delivery-row">
-              <div className={`inv-delivery-chip ${order.plugin_notified ? 'delivered' : 'queued'}`}>
-                <i className={`fa-solid ${order.plugin_notified ? 'fa-cube' : 'fa-hourglass-half'}`} />
-                {order.plugin_notified ? 'Item telah dikirim ke server Minecraft' : 'Menunggu pengiriman item ke server'}
+              <div className={`inv-delivery-chip ${liveOrder.plugin_notified ? 'delivered' : 'queued'}`}>
+                <i className={`fa-solid ${liveOrder.plugin_notified ? 'fa-cube' : 'fa-hourglass-half'}`} />
+                {liveOrder.plugin_notified ? 'Item telah dikirim ke server Minecraft' : 'Menunggu pengiriman item ke server'}
               </div>
             </div>
           )}
