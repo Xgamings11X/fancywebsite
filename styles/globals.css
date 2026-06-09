@@ -20,7 +20,22 @@
   --bronze: #cd7f32;
 }
 
-* { margin:0; padding:0; box-sizing:border-box; scroll-behavior:smooth; }
+/* ── Reset Global & Hapus Warna Biru Default Browser ── */
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+  scroll-behavior: smooth; 
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  -webkit-focus-ring-color: transparent !important;
+}
+
+/* Memastikan fokus klik tidak memunculkan shadow/outline biru */
+:focus, :active, button:focus, input:focus, select:focus, textarea:focus, a:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
 
 body {
   background-color: var(--bg-main);
@@ -622,196 +637,141 @@ body {
 .toggle-switch input:checked + .toggle-slider { background:var(--primary); }
 .toggle-switch input:checked + .toggle-slider:before { transform:translateX(18px); }
 
+
 /* ═══════════════════════════════════════════
-   PRODUCT CARD — Enhanced Visual
+   PRODUCT CARD — AUTOMATIC COLOR & TRANSPARENT EFFECT
 ═══════════════════════════════════════════ */
 
-/* ── Product image area background ── */
 .product-img-bg {
   position: relative;
-  height: 160px;
+  height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  background-color: #0c0c12;
 }
 
-/* Animated gradient background */
+/* Background dinamis mengikuti isi custom property HTML */
 .product-img-bg::before {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(
     135deg,
-    var(--card-color-a, rgba(255,107,0,0.18)) 0%,
-    var(--card-color-b, rgba(10,10,20,0.95)) 60%,
-    var(--card-color-c, rgba(255,107,0,0.08)) 100%
+    var(--card-color-a, rgba(255,107,0,0.15)) 0%,
+    rgba(10,10,18,0.95) 70%,
+    rgba(5,5,10,1) 100%
   );
-  animation: cardBgShift 6s ease-in-out infinite alternate;
+  z-index: 1;
 }
 
-/* Radial glow di tengah */
+/* Efek lingkaran pancaran cahaya glow otomatis di tengah */
 .product-img-bg::after {
   content: '';
   position: absolute;
-  inset: 0;
+  width: 140px;
+  height: 140px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background: radial-gradient(
-    ellipse 70% 60% at 50% 60%,
-    var(--card-glow, rgba(255,107,0,0.15)) 0%,
+    circle,
+    var(--card-glow, rgba(255,107,0,0.45)) 0%,
     transparent 70%
   );
+  filter: blur(10px);
+  z-index: 2;
+  pointer-events: none;
   animation: cardGlowPulse 3s ease-in-out infinite alternate;
 }
 
-@keyframes cardBgShift {
-  0%   { opacity: 0.85; filter: hue-rotate(0deg); }
-  100% { opacity: 1;    filter: hue-rotate(15deg); }
-}
-
 @keyframes cardGlowPulse {
-  0%   { opacity: 0.6; transform: scale(0.95); }
-  100% { opacity: 1;   transform: scale(1.05); }
+  0%   { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
+  100% { opacity: 1;   transform: translate(-50%, -50%) scale(1.1); }
 }
 
-/* ── Floating orbs / particles ── */
-.product-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(18px);
-  pointer-events: none;
-  animation: orbFloat 4s ease-in-out infinite alternate;
-}
-.product-orb-1 {
-  width: 60px; height: 60px;
-  top: -10px; left: 10%;
-  opacity: 0.35;
-  animation-delay: 0s;
-  animation-duration: 4.5s;
-}
-.product-orb-2 {
-  width: 40px; height: 40px;
-  bottom: 0; right: 12%;
-  opacity: 0.25;
-  animation-delay: 1.5s;
-  animation-duration: 5s;
-}
-.product-orb-3 {
-  width: 25px; height: 25px;
-  top: 30%; left: 5%;
-  opacity: 0.2;
-  animation-delay: 0.8s;
-  animation-duration: 3.5s;
-}
-
-@keyframes orbFloat {
-  0%   { transform: translateY(0px)   scale(1);    }
-  100% { transform: translateY(-14px) scale(1.12); }
-}
-
-/* ── Shimmer line across top ── */
+/* Shimmer Otomatis Bergerak di Background */
 .product-shimmer {
   position: absolute;
   top: 0; left: -100%;
   width: 60%; height: 100%;
-  background: linear-gradient(
-    105deg,
-    transparent 30%,
-    rgba(255,255,255,0.07) 50%,
-    transparent 70%
-  );
-  animation: shimmerSlide 3.5s ease-in-out infinite;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%);
+  animation: shimmerSlide 4s ease-in-out infinite;
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 @keyframes shimmerSlide {
-  0%   { left: -80%; }
-  60%  { left: 140%; }
-  100% { left: 140%; }
+  0%   { left: -100%; }
+  70%  { left: 150%; }
+  100% { left: 150%; }
 }
 
-/* ── Product image — auto transparent bg + float animation ── */
+/* Gambar Produk: Menghapus Background Hitam Otomatis + Efek Floating */
 .product-img {
   position: relative;
-  z-index: 3;
-  max-height: 115px;
-  max-width: 82%;
+  z-index: 4;
+  max-height: 130px;
+  max-width: 85%;
   object-fit: contain;
-  mix-blend-mode: screen;
-  filter:
-    drop-shadow(0 0 14px var(--card-glow, rgba(255,107,0,0.5)))
-    drop-shadow(0 4px 20px rgba(0,0,0,0.6));
-  animation: imgFloat 3.2s ease-in-out infinite;
+  
+  /* SAKTI: Ini yang otomatis menghapus background hitam pekat pada file gambar jgp/png */
+  mix-blend-mode: screen; 
+  
+  /* Membuat produk terlihat menyatu, bersinar, dan memiliki bayangan realistis */
+  filter: 
+    brightness(1.05) 
+    contrast(1.02)
+    drop-shadow(0 0 16px var(--card-glow, rgba(255,107,0,0.4)))
+    drop-shadow(0 8px 25px rgba(0,0,0,0.8));
+    
+  animation: imgFloat 3.5s ease-in-out infinite;
   transition: filter 0.3s ease, transform 0.3s ease;
 }
-.product-img:hover {
-  filter:
-    drop-shadow(0 0 22px var(--card-glow, rgba(255,107,0,0.8)))
-    drop-shadow(0 6px 28px rgba(0,0,0,0.7));
-  transform: scale(1.06) translateY(-4px);
-}
 
+/* Animasi Mengambang Premium */
 @keyframes imgFloat {
-  0%   { transform: translateY(0px)  rotate(0deg);   }
-  33%  { transform: translateY(-6px) rotate(0.5deg); }
-  66%  { transform: translateY(-3px) rotate(-0.5deg);}
-  100% { transform: translateY(0px)  rotate(0deg);   }
+  0%   { transform: translateY(0px) rotate(0deg); }
+  50%  { transform: translateY(-6px) rotate(0.8deg); }
+  100% { transform: translateY(0px) rotate(0deg); }
 }
 
-/* ── Card hover — border glow + glint on image ── */
-.fn-card:hover .product-img-bg::before {
-  animation-duration: 2s;
-}
+/* Reaksi Gambar saat Kartu di-Hover */
 .fn-card:hover .product-img {
-  animation-duration: 1.8s;
+  filter: 
+    brightness(1.15)
+    drop-shadow(0 0 24px var(--card-glow, rgba(255,107,0,0.7)))
+    drop-shadow(0 12px 30px rgba(0,0,0,0.9));
+  transform: scale(1.05) translateY(-3px);
 }
 
-/* Glint overlay on product image ── */
+/* Layer Kilauan (Glint) Di Atas Gambar */
 .product-img-glint {
   position: absolute;
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  border-radius: 4px;
-  overflow: hidden;
 }
 .product-img-glint::after {
   content: '';
   position: absolute;
   top: -50%; left: -100%;
-  width: 50%; height: 200%;
+  width: 45%; height: 200%;
   background: linear-gradient(
     105deg,
     transparent 20%,
-    rgba(255,255,255,0.65) 50%,
+    rgba(255,255,255,0.4) 50%,
     transparent 80%
   );
   transform: rotate(-10deg);
   opacity: 0;
-  transition: none;
 }
 .fn-card:hover .product-img-glint::after {
-  animation: imgGlint 0.65s ease forwards;
+  animation: imgGlint 0.7s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
 }
-.product-img-glint::before {
-  content: '';
-  position: absolute;
-  top: -50%; left: -100%;
-  width: 40%; height: 200%;
-  background: linear-gradient(
-    105deg,
-    transparent 20%,
-    rgba(255,255,255,0.22) 50%,
-    transparent 80%
-  );
-  transform: rotate(-10deg);
-  animation: imgAutoGlint 5s ease-in-out infinite;
-}
+
 @keyframes imgGlint {
-  0%   { left: -80%;  opacity: 1; }
-  100% { left: 160%;  opacity: 0.6; }
-}
-@keyframes imgAutoGlint {
-  0%,40%  { left: -80%;  opacity: 0; }
-  50%     { opacity: 1; }
-  65%,100%{ left: 160%;  opacity: 0; }
+  0%   { left: -100%; opacity: 1; }
+  100% { left: 160%; opacity: 0; }
 }
