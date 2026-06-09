@@ -1,22 +1,24 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { Settings } from '../../lib/storage.js';
+// SettingsAsync loaded via dynamic import in getServerSideProps
 import FancyNav, { PlayerAvatar } from '../../components/FancyNav';
 import { useTransparentLogo } from '../../components/LogoImage';
 import LoginModal from '../../components/LoginModal';
 import toast from 'react-hot-toast';
 
-export function getServerSideProps() {
-  try { return { props:{ settings: Settings.get() } }; }
-  catch { return { props:{ settings:{} } }; }
+export async function getServerSideProps() {
+  try {
+    const { SettingsAsync } = await import('../../lib/redis.js');
+    return { props:{ settings: await SettingsAsync.get() } };
+  } catch { return { props:{ settings:{} } }; }
 }
 
 const BOARDS = {
   balance:      { label:'Top Balance', icon:'fa-coins',         color:'#f1c40f', unit:'Balance' },
   auraskills:   { label:'Top Skills',  icon:'fa-wand-sparkles', color:'#9b59b6', unit:'Level' },
   votes:        { label:'Top Votes',   icon:'fa-star',          color:'var(--primary)', unit:'Vote' },
-  playtime:     { label:'Top Playtime',icon:'fa-clock',         color:'#2ecc71', unit:'Playtime'   },
-  playerpoints: { label:'Top Points',  icon:'fa-gem',           color:'#3498db', unit:'Point'  },
+  playtime:     { label:'Top Playtime',icon:'fa-clock',         color:'#2ecc71', unit:'Jam'   },
+  playerpoints: { label:'Top Points',  icon:'fa-gem',           color:'#3498db', unit:'Poin'  },
 };
 
 const RANK_COLORS = {1:'var(--gold)', 2:'var(--silver)', 3:'var(--bronze)'};
@@ -24,7 +26,8 @@ const RANK_ICONS  = {1:'fa-trophy', 2:'fa-medal', 3:'fa-award'};
 
 function fmtScore(v, unit) {
   const n = Number(v||0);
-  if (unit==='Coins' && n>=1000000) return (n/1000000).toFixed(1)+'M';
+  if (unit==='Balance' && n>=1000000) return (n/1000000).toFixed(1)+'M';
+  if (unit==='Balance' && n>=1000) return (n/1000).toFixed(0)+'K';
   if (n>=1000) return (n/1000).toFixed(1)+'K';
   return n.toLocaleString('id-ID');
 }
