@@ -1,6 +1,6 @@
-import { Leaderboard } from '../../../lib/storage.js';
+import { LeaderboardAsync } from '../../../lib/redis.js';
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   const key = req.headers['x-server-key'] || req.body?.secret || '';
   const expected = process.env.PLUGIN_SERVER_KEY || '';
@@ -13,7 +13,7 @@ export default function handler(req, res) {
   if (!valid.includes(board)) return res.status(400).json({ error:`Board harus: ${valid.join(', ')}` });
 
   try {
-    Leaderboard.setBoard(board, entries.slice(0,50).map(e=>({
+    await LeaderboardAsync.setBoard(board, entries.slice(0,50).map(e=>({
       rank: parseInt(e.rank)||0, player: String(e.player||''), score: Number(e.value||0),
     })));
     return res.json({ success:true, received: entries.length });
