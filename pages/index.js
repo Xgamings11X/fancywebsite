@@ -17,7 +17,7 @@ export async function getServerSideProps() {
 export default function HomePage({ settings }) {
   const s          = settings || {};
   const serverName = s.server_name || 'Fancy Network';
-  const serverIp   = s.server_ip   || 'play.fancynet.my.id';
+  const serverIp   = s.server_ip   || 'fancynet.my.id';
   const { src: logoSrc } = useTransparentLogo();
 
   const [player,    setPlayer]    = useState(null);
