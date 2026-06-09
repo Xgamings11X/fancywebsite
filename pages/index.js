@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { Settings } from '../lib/storage.js';
+// SettingsAsync loaded via dynamic import in getServerSideProps
 import FancyNav from '../components/FancyNav';
 import LogoImage, { useTransparentLogo } from '../components/LogoImage';
 import LoginModal from '../components/LoginModal';
 import toast from 'react-hot-toast';
 
-export function getServerSideProps() {
-  try { return { props: { settings: Settings.get() } }; }
-  catch { return { props: { settings: {} } }; }
+export async function getServerSideProps() {
+  try {
+    const { SettingsAsync } = await import('../lib/redis.js');
+    return { props: { settings: await SettingsAsync.get() } };
+  } catch { return { props: { settings: {} } }; }
 }
 
 export default function HomePage({ settings }) {
