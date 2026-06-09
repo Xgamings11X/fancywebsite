@@ -33,6 +33,17 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const { orderId, action } = req.body;
+
+      if (action === 'delete_all') {
+        const all = await OrdersAsync.all();
+        if (all.length === 0) return res.json({ success:true, deleted:0, message:'Tidak ada order' });
+        // Arsip ke Discord dulu
+        try { await webhookOrderArchive(all); } catch(e) { console.error('[delete_all] archive error:', e.message); }
+        // Hapus semua
+        for (const o of all) await OrdersAsync.delete(o.order_id);
+        return res.json({ success:true, deleted:all.length });
+      }
+
       const order = await OrdersAsync.byId(orderId);
       if (!order) return res.status(404).json({ success:false, message:'Order tidak ditemukan' });
 
@@ -51,15 +62,6 @@ export default async function handler(req, res) {
       if (action === 'update_status') {
         await OrdersAsync.update(orderId, { payment_status:req.body.status });
         return res.json({ success:true });
-      }
-      if (action === 'delete_all') {
-        const all = await OrdersAsync.all();
-        if (all.length === 0) return res.json({ success:true, deleted:0, message:'Tidak ada order' });
-        // Arsip ke Discord dulu
-        try { await webhookOrderArchive(all); } catch(e) { console.error('[delete_all] archive error:', e.message); }
-        // Hapus semua
-        for (const o of all) await OrdersAsync.delete(o.order_id);
-        return res.json({ success:true, deleted:all.length });
       }
     }
     return res.status(405).end();
