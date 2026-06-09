@@ -59,22 +59,29 @@ export default async function handler(req, res) {
     if (finalStatus === 'success' && !order.plugin_notified) {
       try {
         const r = await notifyTransaction({
-          order_id:   order.order_id,
-          player_name:order.player_username,
-          player_uuid:order.player_uuid,
-          product_id: order.reward_trigger || String(order.product_id),
-          amount:     order.amount,
-          status:     'success',
-          timestamp:  new Date().toISOString(),
+          transaction_id: order.order_id,   // plugin expects "transaction_id", not "order_id"
+          player_name:    order.player_username,
+          player_uuid:    order.player_uuid || '',
+          product_id:     order.reward_trigger || String(order.product_id),
+          amount:         order.amount,
+          status:         'success',
+          timestamp:      new Date().toISOString(),
         });
+        if (!r.ok) {
+          console.error('[webhook] Plugin reject:', r.error || JSON.stringify(r));
+        }
         await OrdersAsync.update(n.order_id, {
           plugin_notified:  r.ok,
-          plugin_queued:    !r.ok,
+          plugin_queued:    r.queued || false,
           plugin_response:  JSON.stringify(r),
         });
       } catch (e) {
         console.error('[webhook] Plugin notify error:', e.message);
-        await OrdersAsync.update(n.order_id, { plugin_response: e.message });
+        await OrdersAsync.update(n.order_id, {
+          plugin_notified: false,
+          plugin_queued:   false,
+          plugin_response: e.message,
+        });
       }
     }
 
