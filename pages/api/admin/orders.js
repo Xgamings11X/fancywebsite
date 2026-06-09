@@ -39,8 +39,7 @@ export default async function handler(req, res) {
       if (action === 'retry_plugin') {
         const r = await notifyTransaction({
           transaction_id: order.order_id,
-          player_name:    (order.player_username || '').replace(/^\./, ''), // strip Bedrock dot prefix
-          player_uuid:    order.player_uuid || '',
+          player_name:    order.player_username || '',
           product_id:     order.reward_trigger || String(order.product_id),
           amount:         order.amount,
           status:         'success',
