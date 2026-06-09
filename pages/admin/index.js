@@ -74,6 +74,10 @@ export default function AdminPanel() {
   const [showRedeemModal,   setShowRedeemModal]   = useState(false);
   const [editProduct,       setEditProduct]       = useState(null);
   const [editCategory,      setEditCategory]      = useState(null);
+  const [showTestPlugin,    setShowTestPlugin]    = useState(false);
+  const [testPluginResult,  setTestPluginResult]  = useState(null);
+  const [testPluginLoading, setTestPluginLoading] = useState(false);
+  const [testPluginForm,    setTestPluginForm]    = useState({player_name:'',product_id:''});
 
   const af = useAF();
 
@@ -450,8 +454,8 @@ export default function AdminPanel() {
                     </div>
                   ))}
                 </div>
-                {/* Filter */}
-                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {/* Filter + Action buttons */}
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
                   {['all','pending','success','failed','expired'].map(s=>(
                     <button key={s} onClick={()=>setOrderFilter(s)}
                       style={{padding:'7px 14px',borderRadius:8,border:'1px solid',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Plus Jakarta Sans',
@@ -461,6 +465,21 @@ export default function AdminPanel() {
                       {s.toUpperCase()}
                     </button>
                   ))}
+                  <div style={{display:'flex',gap:6,marginLeft:'auto'}}>
+                    <button className="btn-ghost-fn" style={{fontSize:12}}
+                      onClick={()=>{ setTestPluginResult(null); setShowTestPlugin(true); }}>
+                      <i className="fa-solid fa-plug"/> Test Plugin
+                    </button>
+                    <button className="btn-ghost-fn" style={{fontSize:12,color:'#e74c3c',borderColor:'rgba(231,76,60,0.3)'}}
+                      onClick={async()=>{
+                        if(!confirm('Hapus SEMUA log transaksi sekarang?\n\nSemua order akan diarsipkan ke Discord lalu dihapus permanen.\n\nTidak bisa dibatalkan!')) return;
+                        const r=await af('/api/admin/orders',{method:'POST',body:JSON.stringify({action:'delete_all'})});
+                        if(r.success) { toast.success(`${r.deleted} order dihapus`); load(); }
+                        else toast.error(r.message||'Gagal');
+                      }}>
+                      <i className="fa-solid fa-trash"/> Hapus Semua
+                    </button>
+                  </div>
                 </div>
                 <div className="admin-card" style={{overflow:'hidden'}}>
                   <div style={{overflowX:'auto'}}>
@@ -551,6 +570,56 @@ export default function AdminPanel() {
       {showProductModal  && <ProductModal  product={editProduct}   categories={categories} af={af} onClose={()=>{setShowProductModal(false);setEditProduct(null);}}    onDone={()=>{setShowProductModal(false);load();}}/>}
       {showCategoryModal && <CategoryModal category={editCategory} af={af}                 onClose={()=>{setShowCategoryModal(false);setEditCategory(null);}}            onDone={()=>{setShowCategoryModal(false);load();}}/>}
       {showRedeemModal   && <RedeemModal   af={af}                                          onClose={()=>setShowRedeemModal(false)}                                        onDone={()=>{setShowRedeemModal(false);load();}}/>}
+      {showTestPlugin && (
+        <div className="fn-modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) setShowTestPlugin(false); }}>
+          <div className="fn-modal animate-in" style={{maxWidth:520}}>
+            <div style={{height:3,background:'linear-gradient(90deg,var(--primary),var(--primary-light))'}}/>
+            <div style={{padding:'22px 24px 26px'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+                <h2 className="font-space" style={{fontSize:17,fontWeight:700}}><i className="fa-solid fa-plug" style={{marginRight:8,color:'var(--primary)'}}/>Test Plugin</h2>
+                <button onClick={()=>setShowTestPlugin(false)} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-muted)',width:30,height:30,borderRadius:7,cursor:'pointer',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center'}}><i className="fa-solid fa-xmark"/></button>
+              </div>
+              {/* Ping */}
+              <button className="btn-ghost-fn" style={{width:'100%',justifyContent:'center',marginBottom:14}}
+                onClick={async()=>{
+                  setTestPluginLoading(true); setTestPluginResult(null);
+                  const r=await af('/api/admin/test-plugin',{method:'POST',body:JSON.stringify({action:'ping'})});
+                  setTestPluginResult(r); setTestPluginLoading(false);
+                }}>
+                <i className="fa-solid fa-wifi"/> Ping Plugin
+              </button>
+              {/* Manual test */}
+              <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:14}}>
+                <p style={{fontSize:12,color:'var(--text-muted)',fontWeight:600}}>TEST MANUAL KIRIM REWARD</p>
+                <input value={testPluginForm.player_name} onChange={e=>setTestPluginForm(p=>({...p,player_name:e.target.value}))}
+                  placeholder="Username player (persis seperti di MC)" className="admin-input" style={{fontSize:13}}/>
+                <input value={testPluginForm.product_id} onChange={e=>setTestPluginForm(p=>({...p,product_id:e.target.value}))}
+                  placeholder="reward_trigger (contoh: rank-vip, coins-20)" className="admin-input" style={{fontSize:13,fontFamily:'monospace'}}/>
+                <button className="btn-primary-fn" style={{justifyContent:'center',padding:'9px'}}
+                  disabled={!testPluginForm.player_name||!testPluginForm.product_id||testPluginLoading}
+                  onClick={async()=>{
+                    setTestPluginLoading(true); setTestPluginResult(null);
+                    const r=await af('/api/admin/test-plugin',{method:'POST',body:JSON.stringify({action:'manual',...testPluginForm})});
+                    setTestPluginResult(r); setTestPluginLoading(false);
+                  }}>
+                  {testPluginLoading?<><span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> Mengirim...</>:<><i className="fa-solid fa-paper-plane"/> Kirim Test Reward</>}
+                </button>
+              </div>
+              {/* Result */}
+              {testPluginResult && (
+                <div style={{background:testPluginResult.success?'rgba(46,204,113,0.06)':'rgba(231,76,60,0.06)',border:`1px solid ${testPluginResult.success?'rgba(46,204,113,0.2)':'rgba(231,76,60,0.2)'}`,borderRadius:10,padding:'12px 14px'}}>
+                  <p style={{fontSize:13,fontWeight:700,color:testPluginResult.success?'#2ecc71':'#e74c3c',marginBottom:8}}>
+                    {testPluginResult.success?'✅ Berhasil':'❌ Gagal'}
+                    {testPluginResult.response?.queued&&' (Player offline — masuk pending)'}
+                  </p>
+                  {testPluginResult.config&&<p style={{fontSize:11,color:'var(--text-muted)',marginBottom:6}}>URL: <code style={{color:'var(--primary-light)'}}>{testPluginResult.config.url}</code> | Key: <code>{testPluginResult.config.key}</code></p>}
+                  <pre style={{fontSize:11,color:'var(--text-muted)',background:'rgba(0,0,0,0.3)',borderRadius:6,padding:'8px 10px',overflow:'auto',maxHeight:160,margin:0}}>{JSON.stringify(testPluginResult.response||testPluginResult,null,2)}</pre>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
