@@ -1,6 +1,7 @@
 import { OrdersAsync } from '../../../lib/redis.js';
 import { verifyToken } from '../../../lib/auth.js';
 import { notifyTransaction } from '../../../lib/plugin.js';
+import { webhookOrderArchive } from '../../../lib/discord.js';
 import { parse } from 'cookie';
 
 function auth(req) {
@@ -37,8 +38,8 @@ export default async function handler(req, res) {
 
       if (action === 'retry_plugin') {
         const r = await notifyTransaction({
-          transaction_id: order.order_id,   // plugin expects "transaction_id", not "order_id"
-          player_name:    order.player_username,
+          transaction_id: order.order_id,
+          player_name:    (order.player_username || '').replace(/^\./, ''), // strip Bedrock dot prefix
           player_uuid:    order.player_uuid || '',
           product_id:     order.reward_trigger || String(order.product_id),
           amount:         order.amount,
@@ -51,6 +52,15 @@ export default async function handler(req, res) {
       if (action === 'update_status') {
         await OrdersAsync.update(orderId, { payment_status:req.body.status });
         return res.json({ success:true });
+      }
+      if (action === 'delete_all') {
+        const all = await OrdersAsync.all();
+        if (all.length === 0) return res.json({ success:true, deleted:0, message:'Tidak ada order' });
+        // Arsip ke Discord dulu
+        try { await webhookOrderArchive(all); } catch(e) { console.error('[delete_all] archive error:', e.message); }
+        // Hapus semua
+        for (const o of all) await OrdersAsync.delete(o.order_id);
+        return res.json({ success:true, deleted:all.length });
       }
     }
     return res.status(405).end();
