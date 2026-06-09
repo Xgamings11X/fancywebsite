@@ -637,7 +637,6 @@ body {
 .toggle-switch input:checked + .toggle-slider { background:var(--primary); }
 .toggle-switch input:checked + .toggle-slider:before { transform:translateX(18px); }
 
-
 /* ═══════════════════════════════════════════
    PRODUCT CARD — AUTOMATIC COLOR & TRANSPARENT EFFECT
 ═══════════════════════════════════════════ */
@@ -708,7 +707,7 @@ body {
   100% { left: 150%; }
 }
 
-/* Gambar Produk: Menghapus Background Hitam Otomatis + Efek Floating */
+/* Gambar Produk: Menghapus Kotak Hitam/Abu-abu Otomatis + Efek Floating */
 .product-img {
   position: relative;
   z-index: 4;
@@ -716,13 +715,13 @@ body {
   max-width: 85%;
   object-fit: contain;
   
-  /* SAKTI: Ini yang otomatis menghapus background hitam pekat pada file gambar jgp/png */
+  /* Menghilangkan background non-solid */
   mix-blend-mode: screen; 
   
-  /* Membuat produk terlihat menyatu, bersinar, dan memiliki bayangan realistis */
+  /* UPDATE SAKTI: Menaikkan kontras & menurunkan kecerahan hitam agar abu-abu ikut hilang */
   filter: 
-    brightness(1.05) 
-    contrast(1.02)
+    contrast(1.2)
+    brightness(1.1)
     drop-shadow(0 0 16px var(--card-glow, rgba(255,107,0,0.4)))
     drop-shadow(0 8px 25px rgba(0,0,0,0.8));
     
@@ -737,10 +736,12 @@ body {
   100% { transform: translateY(0px) rotate(0deg); }
 }
 
-/* Reaksi Gambar saat Kartu di-Hover */
-.fn-card:hover .product-img {
+/* Reaksi Gambar saat Kartu di-Hover (PC) atau di-Klik/Sentuh (HP) */
+.fn-card:hover .product-img,
+.fn-card:active .product-img {
   filter: 
-    brightness(1.15)
+    contrast(1.3)
+    brightness(1.2)
     drop-shadow(0 0 24px var(--card-glow, rgba(255,107,0,0.7)))
     drop-shadow(0 12px 30px rgba(0,0,0,0.9));
   transform: scale(1.05) translateY(-3px);
@@ -761,13 +762,16 @@ body {
   background: linear-gradient(
     105deg,
     transparent 20%,
-    rgba(255,255,255,0.4) 50%,
+    rgba(255,255,255,0.5) 50%,
     transparent 80%
   );
   transform: rotate(-10deg);
   opacity: 0;
 }
-.fn-card:hover .product-img-glint::after {
+
+/* Pemicu Glint: Jalan saat di-hover (PC) DAN saat di-klik/sentuh (HP) */
+.fn-card:hover .product-img-glint::after,
+.fn-card:active .product-img-glint::after {
   animation: imgGlint 0.7s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
 }
 
@@ -775,3 +779,4 @@ body {
   0%   { left: -100%; opacity: 1; }
   100% { left: 160%; opacity: 0; }
 }
+
