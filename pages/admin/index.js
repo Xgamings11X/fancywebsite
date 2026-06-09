@@ -506,8 +506,8 @@ export default function AdminPanel() {
             {/* ═══ REPORTS ═════════════════════════════════ */}
             {tab==='reports' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                {/* Filter */}
-                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {/* Filter + Cleanup button */}
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
                   {['all','open','in_review','resolved','rejected'].map(s=>(
                     <button key={s} onClick={()=>setReportFilter(s)}
                       style={{padding:'7px 14px',borderRadius:8,border:'1px solid',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'Plus Jakarta Sans',
@@ -517,6 +517,15 @@ export default function AdminPanel() {
                       {s==='all'?'SEMUA':TICKET_STATUS_LABEL[s]?.toUpperCase()||s.toUpperCase()}
                     </button>
                   ))}
+                  {/* Manual cleanup trigger */}
+                  <button className="btn-ghost-fn" style={{marginLeft:'auto',fontSize:12}}
+                    onClick={async()=>{
+                      const r = await af('/api/cron/cleanup',{method:'POST'});
+                      if(r.success) { toast.success(r.message||'Cleanup selesai'); load(); }
+                      else toast.error(r.message||'Cleanup gagal');
+                    }}>
+                    <i className="fa-solid fa-broom"/> Jalankan Cleanup
+                  </button>
                 </div>
 
                 {tickets.length===0 ? (
