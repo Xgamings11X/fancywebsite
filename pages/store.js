@@ -1,22 +1,31 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { Settings, Products, Categories } from '../lib/storage.js';
+// Redis modules loaded via dynamic import in getServerSideProps
 import FancyNav, { PlayerAvatar } from '../components/FancyNav';
 import { useTransparentLogo } from '../components/LogoImage';
 import LoginModal from '../components/LoginModal';
 import CartModal  from '../components/CartModal';
 import toast from 'react-hot-toast';
 
-export function getServerSideProps() {
+export async function getServerSideProps() {
   try {
-    const settings   = Settings.get();
-    const categories = Categories.active().sort((a,b)=>a.sort_order-b.sort_order);
-    const allProds   = Products.active().sort((a,b)=>a.sort_order-b.sort_order);
-    const products   = allProds.map(p=>{
-      const cat = Categories.byId(p.category_id);
-      return {...p,category_name:cat?.name||null,category_slug:cat?.slug||null,category_icon:cat?.icon||null};
-    });
+    const { SettingsAsync, ProductsAsync, CategoriesAsync } = await import('../lib/redis.js');
+    const [settings, allCats, allProds] = await Promise.all([
+      SettingsAsync.get(),
+      CategoriesAsync.active(),
+      ProductsAsync.active(),
+    ]);
+    const categories = allCats.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+    const catMap     = Object.fromEntries(categories.map(c=>[c.id,c]));
+    const products   = allProds
+      .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
+      .map(p=>({
+        ...p,
+        category_name: catMap[p.category_id]?.name||null,
+        category_slug: catMap[p.category_id]?.slug||null,
+        category_icon: catMap[p.category_id]?.icon||null,
+      }));
     return { props:{settings,categories,products} };
   } catch(e) { return { props:{settings:{},categories:[],products:[]} }; }
 }
