@@ -17,7 +17,7 @@ export async function getServerSideProps() {
 export default function HomePage({ settings }) {
   const s          = settings || {};
   const serverName = s.server_name || 'Fancy Network';
-  const serverIp   = s.server_ip   || 'fancynet.my.id';
+  const serverIp   = s.server_ip   || 'play.fancynet.my.id';
   const { src: logoSrc } = useTransparentLogo();
 
   const [player,    setPlayer]    = useState(null);
@@ -65,7 +65,7 @@ export default function HomePage({ settings }) {
   return (
     <>
       <Head>
-        <title>{serverName} | Premium Minecraft Server</title>
+        <title>{serverName} | Minecraft Server Indonesia</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content={s.server_description || `Server Minecraft Indonesia — ${serverName}`}/>
         {/* Favicon: pakai logo_url jika ada, fallback emoji */}
