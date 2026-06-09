@@ -37,9 +37,13 @@ export default async function handler(req, res) {
 
       if (action === 'retry_plugin') {
         const r = await notifyTransaction({
-          order_id:order.order_id, player_name:order.player_username,
-          player_uuid:order.player_uuid, product_id:order.reward_trigger||String(order.product_id),
-          amount:order.amount, status:'success', timestamp:new Date().toISOString(),
+          transaction_id: order.order_id,   // plugin expects "transaction_id", not "order_id"
+          player_name:    order.player_username,
+          player_uuid:    order.player_uuid || '',
+          product_id:     order.reward_trigger || String(order.product_id),
+          amount:         order.amount,
+          status:         'success',
+          timestamp:      new Date().toISOString(),
         });
         await OrdersAsync.update(orderId, { plugin_notified:r.ok, plugin_response:JSON.stringify(r) });
         return res.json({ success:r.ok, result:r });
