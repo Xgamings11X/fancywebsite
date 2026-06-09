@@ -538,81 +538,82 @@ body {
 ═══════════════════════════════════════════ */
 .product-img-bg {
   position: relative;
-  height: 200px;
+  height: 220px; /* Diperbesar sedikit agar lega */
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   border-radius: 14px 14px 0 0;
-  border-bottom: 1px solid rgba(255, 107, 0, 0.08);
-  background: radial-gradient(circle at 50% 50%, rgba(20, 20, 30, 0.6) 0%, #09090d 100%);
+  border-bottom: 1px solid rgba(255, 107, 0, 0.15); /* Border glow dipertegas */
+  background: radial-gradient(circle at 50% 50%, rgba(30, 20, 15, 0.8) 0%, #09090d 100%);
 }
 
-/* Pola Grid Digital Samar */
+/* Pola Grid Digital Samar (Cyberpunk Feel yang dipertajam warnanya) */
 .product-img-bg::before {
   content: '';
   position: absolute;
   inset: 0;
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.008) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.008) 1px, transparent 1px);
-  background-size: 18px 18px;
+    linear-gradient(rgba(255, 107, 0, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 107, 0, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
   background-position: center;
   z-index: 1;
 }
 
-/* Aura Cahaya Halus di Belakang Logo */
+/* Aura Cahaya Halus di Belakang Logo/Gambar (Lebih besar dan menyebar) */
 .product-img-bg::after {
   content: '';
   position: absolute;
-  width: 140px;
-  height: 140px;
+  width: 160px;
+  height: 160px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: radial-gradient(circle, var(--card-glow, rgba(255, 107, 0, 0.45)) 0%, rgba(255, 107, 0, 0.05) 50%, transparent 70%);
-  filter: blur(14px);
+  background: radial-gradient(circle, var(--primary-glow, rgba(255, 107, 0, 0.5)) 0%, rgba(255, 107, 0, 0.1) 40%, transparent 70%);
+  filter: blur(18px);
   z-index: 2;
   pointer-events: none;
-  animation: logoAuraPulse 4s ease-in-out infinite alternate;
+  animation: logoAuraPulse 3s ease-in-out infinite alternate;
 }
 
 @keyframes logoAuraPulse {
-  0%   { opacity: 0.4; transform: translate(-50%, -50%) scale(0.88); filter: blur(12px); }
-  100% { opacity: 0.85; transform: translate(-50%, -50%) scale(1.12); filter: blur(16px); }
+  0%   { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); filter: blur(15px); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); filter: blur(22px); }
 }
 
 /* Ukuran Gambar Stabil & Efek Mengapung */
 .product-img {
   position: relative;
   z-index: 4;
-  max-height: 115px;
-  max-width: 75%;
+  max-height: 130px;
+  max-width: 80%;
   object-fit: contain;
-  transition: filter 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 12px var(--card-glow, rgba(255, 107, 0, 0.4)));
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 15px rgba(255, 107, 0, 0.3));
   animation: premiumFloat 4s ease-in-out infinite;
 }
 
 @keyframes premiumFloat {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  50%      { transform: translateY(-6px) rotate(0.5deg); }
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50%      { transform: translateY(-8px) scale(1.02); }
 }
 
-/* HIGH-CONTRAST GLINT PREMIUM PADA LOGO (1.4s) */
-.fn-card:hover .product-img,
-.fn-card:active .product-img {
-  animation: logoGlintPremium 1.4s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+/* EFEK POP-OUT & HIGH-CONTRAST GLINT SAAT HOVER (Kartu di hover) */
+.fn-card:hover .product-img {
+  animation: logoGlintPremium 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+  /* Membuat gambar sedikit membesar dan naik saat cursor diarahkan */
+  transform: scale(1.1) translateY(-5px); 
 }
 
 @keyframes logoGlintPremium {
   0% {
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.7)) drop-shadow(0 0 12px var(--card-glow, rgba(255, 107, 0, 0.4)));
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.8)) drop-shadow(0 0 15px rgba(255, 107, 0, 0.3));
   }
-  25% {
-    filter: brightness(1.4) contrast(1.15) drop-shadow(0 0 30px #ffffff);
+  30% {
+    filter: brightness(1.3) contrast(1.2) drop-shadow(0 0 35px rgba(255, 255, 255, 0.8));
   }
   100% {
-    filter: brightness(1.05) contrast(1.02) drop-shadow(0 0 22px var(--card-glow, rgba(255, 107, 0, 0.8)));
+    filter: brightness(1.1) contrast(1.05) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 25px rgba(255, 107, 0, 0.7));
   }
 }
