@@ -43,6 +43,14 @@ export default function CartModal({ product, player, onClose }) {
       const res  = await fetch('/api/orders/create',{method:'POST',headers,credentials:'include',
         body:JSON.stringify({productId:product.id,redeemCode:redeemInfo?.code||null,discord_username:discordUser.trim()})});
       const data = await res.json();
+      if (res.status === 401) {
+        // Session expired / cookie hilang — bersihkan localStorage dan minta login ulang
+        try { localStorage.removeItem('mc_player'); localStorage.removeItem('mc_token'); } catch {}
+        toast.error('Sesi kamu sudah berakhir. Silakan login ulang.', { duration: 4000 });
+        setLoading(false);
+        onClose();
+        return;
+      }
       if (!res.ok||!data.success) { toast.error(data.message||'Gagal membuat order'); setLoading(false); return; }
 
       if (data.snapToken) {
