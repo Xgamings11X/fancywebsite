@@ -69,7 +69,32 @@ export default function StorePage({ settings, categories: initCategories, produc
   }, []);
 
   useEffect(() => {
-    try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
+    // Restore player dari localStorage, tapi validasi session masih aktif
+    try {
+      const r = localStorage.getItem('mc_player');
+      if (r) {
+        const savedPlayer = JSON.parse(r);
+        // Verifikasi token masih valid (cookie atau localStorage token)
+        const token = localStorage.getItem('mc_token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        fetch('/api/auth/me', { credentials: 'include', headers })
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (data && data.success) {
+              setPlayer(savedPlayer);
+            } else {
+              // Session sudah tidak valid, bersihkan state
+              localStorage.removeItem('mc_player');
+              localStorage.removeItem('mc_token');
+            }
+          })
+          .catch(() => {
+            // Kalau endpoint tidak ada, fallback ke restore biasa
+            setPlayer(savedPlayer);
+          });
+      }
+    } catch {}
     const { order, status } = router.query;
     if (order && status) {
       if (status==='success') toast.success('Pembayaran berhasil! Item dikirim ke Minecraft kamu 🎉');
