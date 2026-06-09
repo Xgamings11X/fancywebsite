@@ -12,6 +12,7 @@ export default function CartModal({ product, player, onClose }) {
   const [redeemInfo,    setRedeemInfo]    = useState(null);
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [discordUser,   setDiscordUser]   = useState('');
+  const [pendingOrderId, setPendingOrderId] = useState(null);
 
   const basePrice  = product.price;
   const finalPrice = redeemInfo ? redeemInfo.finalPrice : basePrice;
@@ -57,6 +58,7 @@ export default function CartModal({ product, player, onClose }) {
 
       if (data.snapToken) {
         setStep('paying');
+        setPendingOrderId(data.orderId);
         const env = process.env.NEXT_PUBLIC_MIDTRANS_ENV==='production'?'app':'app.sandbox';
         if (!window.snap) {
           await new Promise(resolve => {
@@ -67,11 +69,37 @@ export default function CartModal({ product, player, onClose }) {
             document.head.appendChild(sc);
           });
         }
+        const goToInvoice = (oid) => router.push(`/invoice/${oid}`);
         window.snap.pay(data.snapToken,{
-          onSuccess: async () => { await fetch(`/api/orders/verify/${data.orderId}`,{credentials:'include'}); router.push(`/invoice/${data.orderId}`); },
-          onPending: () => { toast('Selesaikan pembayaran sebelum 24 jam.',{icon:'⏳'}); router.push(`/invoice/${data.orderId}`); },
-          onError:   () => { toast.error('Pembayaran gagal.'); setStep('confirm'); setLoading(false); },
-          onClose:   () => { setStep('confirm'); setLoading(false); },
+          onSuccess: async (result) => {
+            // result.order_id dari Midtrans kadang beda, pakai orderId kita sendiri
+            goToInvoice(data.orderId);
+          },
+          onPending: () => {
+            goToInvoice(data.orderId);
+          },
+          onError: () => {
+            goToInvoice(data.orderId);
+          },
+          onClose: async () => {
+            // Snap ditutup — cek dulu apakah payment sudah berhasil di backend
+            // (Sandbox sering trigger onClose alih-alih onSuccess)
+            try {
+              const res = await fetch(`/api/orders/verify/${data.orderId}`, {credentials:'include'});
+              const d   = await res.json();
+              const paid = ['settlement','capture','success'].includes(d?.order?.payment_status || d?.status);
+              if (paid) {
+                goToInvoice(data.orderId);
+              } else {
+                // Belum bayar, balik ke modal
+                setStep('confirm');
+                setLoading(false);
+              }
+            } catch {
+              setStep('confirm');
+              setLoading(false);
+            }
+          },
         });
       }
     } catch(e) { toast.error('Kesalahan: '+e.message); setLoading(false); }
