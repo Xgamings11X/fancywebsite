@@ -88,14 +88,44 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: all 0.2s;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+}
+/* Glint sweep on hover */
+.btn-primary-fn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255,255,255,0.35) 50%,
+    transparent 70%
+  );
+  transition: none;
+  pointer-events: none;
+}
+.btn-primary-fn:hover::before {
+  animation: btnGlint 0.5s ease forwards;
+}
+/* Active press */
+.btn-primary-fn:active {
+  transform: scale(0.96) translateY(1px);
+  box-shadow: 0 0 18px rgba(255,107,0,0.6), inset 0 0 10px rgba(255,255,255,0.1);
 }
 .btn-primary-fn:hover {
   background: var(--primary-light);
-  box-shadow: 0 4px 15px var(--primary-glow);
-  transform: translateY(-1px);
+  box-shadow: 0 4px 20px var(--primary-glow), 0 0 30px rgba(255,107,0,0.2);
+  transform: translateY(-2px);
 }
 .btn-primary-fn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+@keyframes btnGlint {
+  0%   { left: -80%; opacity: 1; }
+  100% { left: 150%;  opacity: 0.5; }
+}
 
 .btn-ghost-fn {
   background: rgba(255,255,255,0.03);
@@ -106,12 +136,29 @@ body {
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.25s;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  position: relative;
+  overflow: hidden;
 }
-.btn-ghost-fn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.btn-ghost-fn::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255,255,255,0.18) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+.btn-ghost-fn:hover::before { animation: btnGlint 0.5s ease forwards; }
+.btn-ghost-fn:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.18); }
+.btn-ghost-fn:active { transform: scale(0.96); }
 
 .btn-login-nav {
   background: rgba(255,255,255,0.04);
@@ -127,8 +174,20 @@ body {
   gap: 6px;
   transition: all 0.3s;
   text-decoration: none;
+  position: relative;
+  overflow: hidden;
 }
+.btn-login-nav::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
+  pointer-events: none;
+}
+.btn-login-nav:hover::before { animation: btnGlint 0.5s ease forwards; }
 .btn-login-nav:hover { background: rgba(255,255,255,0.08); }
+.btn-login-nav:active { transform: scale(0.96); }
 
 /* ── Tabs ──────────────────────── */
 .tabs-container {
@@ -431,7 +490,9 @@ body {
 .admin-main { flex:1; overflow:auto; }
 .admin-topbar { position:sticky; top:0; z-index:20; background:rgba(10,10,15,0.9); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,107,0,0.08); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
 
-.admin-nav-btn { width:100%; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; border:none; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:600; transition:all 0.2s; text-align:left; }
+.admin-nav-btn { width:100%; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; border:none; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:600; transition:all 0.2s; text-align:left; position:relative; overflow:hidden; }
+.admin-nav-btn::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.12) 50%,transparent 70%); pointer-events:none; }
+.admin-nav-btn:hover::before { animation:btnGlint 0.45s ease forwards; }
 .admin-nav-btn:hover { background:rgba(255,255,255,0.05); color:#fff; }
 .admin-nav-btn.active { background:rgba(255,107,0,0.12); color:#ff6b00; border:1px solid rgba(255,107,0,0.25); }
 
@@ -462,3 +523,199 @@ body {
 .toggle-slider:before { content:""; position:absolute; height:16px; width:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.3s; }
 .toggle-switch input:checked + .toggle-slider { background:var(--primary); }
 .toggle-switch input:checked + .toggle-slider:before { transform:translateX(18px); }
+
+/* ═══════════════════════════════════════════
+   PRODUCT CARD — Enhanced Visual
+═══════════════════════════════════════════ */
+
+/* ── Product image area background ── */
+.product-img-bg {
+  position: relative;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* Animated gradient background */
+.product-img-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    var(--card-color-a, rgba(255,107,0,0.18)) 0%,
+    var(--card-color-b, rgba(10,10,20,0.95)) 60%,
+    var(--card-color-c, rgba(255,107,0,0.08)) 100%
+  );
+  animation: cardBgShift 6s ease-in-out infinite alternate;
+}
+
+/* Radial glow di tengah */
+.product-img-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 70% 60% at 50% 60%,
+    var(--card-glow, rgba(255,107,0,0.15)) 0%,
+    transparent 70%
+  );
+  animation: cardGlowPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes cardBgShift {
+  0%   { opacity: 0.85; filter: hue-rotate(0deg); }
+  100% { opacity: 1;    filter: hue-rotate(15deg); }
+}
+
+@keyframes cardGlowPulse {
+  0%   { opacity: 0.6; transform: scale(0.95); }
+  100% { opacity: 1;   transform: scale(1.05); }
+}
+
+/* ── Floating orbs / particles ── */
+.product-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(18px);
+  pointer-events: none;
+  animation: orbFloat 4s ease-in-out infinite alternate;
+}
+.product-orb-1 {
+  width: 60px; height: 60px;
+  top: -10px; left: 10%;
+  opacity: 0.35;
+  animation-delay: 0s;
+  animation-duration: 4.5s;
+}
+.product-orb-2 {
+  width: 40px; height: 40px;
+  bottom: 0; right: 12%;
+  opacity: 0.25;
+  animation-delay: 1.5s;
+  animation-duration: 5s;
+}
+.product-orb-3 {
+  width: 25px; height: 25px;
+  top: 30%; left: 5%;
+  opacity: 0.2;
+  animation-delay: 0.8s;
+  animation-duration: 3.5s;
+}
+
+@keyframes orbFloat {
+  0%   { transform: translateY(0px)   scale(1);    }
+  100% { transform: translateY(-14px) scale(1.12); }
+}
+
+/* ── Shimmer line across top ── */
+.product-shimmer {
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255,255,255,0.07) 50%,
+    transparent 70%
+  );
+  animation: shimmerSlide 3.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+}
+@keyframes shimmerSlide {
+  0%   { left: -80%; }
+  60%  { left: 140%; }
+  100% { left: 140%; }
+}
+
+/* ── Product image — auto transparent bg + float animation ── */
+.product-img {
+  position: relative;
+  z-index: 3;
+  max-height: 115px;
+  max-width: 82%;
+  object-fit: contain;
+  /* Auto transparent bg: mix-blend-mode removes white/dark bg */
+  mix-blend-mode: screen;
+  filter:
+    drop-shadow(0 0 14px var(--card-glow, rgba(255,107,0,0.5)))
+    drop-shadow(0 4px 20px rgba(0,0,0,0.6));
+  animation: imgFloat 3.2s ease-in-out infinite;
+  transition: filter 0.3s ease, transform 0.3s ease;
+}
+.product-img:hover {
+  filter:
+    drop-shadow(0 0 22px var(--card-glow, rgba(255,107,0,0.8)))
+    drop-shadow(0 6px 28px rgba(0,0,0,0.7));
+  transform: scale(1.06) translateY(-4px);
+}
+
+@keyframes imgFloat {
+  0%   { transform: translateY(0px)  rotate(0deg);   }
+  33%  { transform: translateY(-6px) rotate(0.5deg); }
+  66%  { transform: translateY(-3px) rotate(-0.5deg);}
+  100% { transform: translateY(0px)  rotate(0deg);   }
+}
+
+/* ── Card hover — border glow + glint on image ── */
+.fn-card:hover .product-img-bg::before {
+  animation-duration: 2s;
+}
+.fn-card:hover .product-img {
+  animation-duration: 1.8s;
+}
+
+/* Glint overlay on product image — triggered by card hover */
+.product-img-glint {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.product-img-glint::after {
+  content: '';
+  position: absolute;
+  top: -50%; left: -100%;
+  width: 50%; height: 200%;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255,255,255,0.55) 50%,
+    transparent 80%
+  );
+  transform: rotate(-10deg);
+  opacity: 0;
+  transition: none;
+}
+.fn-card:hover .product-img-glint::after {
+  animation: imgGlint 0.65s ease forwards;
+}
+/* Extra: periodic auto glint every few seconds even without hover */
+.product-img-glint::before {
+  content: '';
+  position: absolute;
+  top: -50%; left: -100%;
+  width: 40%; height: 200%;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255,255,255,0.22) 50%,
+    transparent 80%
+  );
+  transform: rotate(-10deg);
+  animation: imgAutoGlint 5s ease-in-out infinite;
+}
+@keyframes imgGlint {
+  0%   { left: -80%;  opacity: 1; }
+  100% { left: 160%;  opacity: 0.6; }
+}
+@keyframes imgAutoGlint {
+  0%,40%  { left: -80%;  opacity: 0; }
+  50%     { opacity: 1; }
+  65%,100%{ left: 160%;  opacity: 0; }
+}
