@@ -73,7 +73,7 @@ export default function LoginModal({ onClose, onSuccess, product }) {
                   {preview.rank}
                 </span>
               )}
-              <p style={{color:'var(--text-muted)',fontSize:13,marginTop:8}}>Mengarahkan ke store...</p>
+              <p style={{color:'var(--text-muted)',fontSize:13,marginTop:8}}>Back To Homepage...</p>
             </div>
 
           ) : (
@@ -154,7 +154,7 @@ export default function LoginModal({ onClose, onSuccess, product }) {
                   style={{width:'100%',justifyContent:'center',padding:'13px',fontSize:14,borderRadius:10}}>
                   {loading
                     ? <><span className="fn-spinner" style={{width:16,height:16,borderWidth:2}}/> Memeriksa...</>
-                    : <><i className="fa-solid fa-right-to-bracket"/> Masuk ke Store</>
+                    : <><i className="fa-solid fa-right-to-bracket"/> Masuk</>
                   }
                 </button>
               </form>
