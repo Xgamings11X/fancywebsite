@@ -57,41 +57,44 @@ export default function CartModal({ product, player, onClose }) {
       if (!res.ok||!data.success) { toast.error(data.message||'Gagal membuat order'); setLoading(false); return; }
 
       if (data.snapToken) {
+        const orderId = data.orderId;
+        const snapToken = data.snapToken;
+        const clientKey = data.clientKey || '';
         setStep('paying');
-        setPendingOrderId(data.orderId);
-        const env = process.env.NEXT_PUBLIC_MIDTRANS_ENV==='production'?'app':'app.sandbox';
-        if (!window.snap) {
-          await new Promise(resolve => {
-            const sc = document.createElement('script');
-            sc.src = `https://${env}.midtrans.com/snap/snap.js`;
-            sc.setAttribute('data-client-key', data.clientKey||'');
-            sc.onload = resolve;
-            document.head.appendChild(sc);
-          });
-        }
-        const goToInvoice = (oid) => router.push(`/invoice/${oid}`);
-        window.snap.pay(data.snapToken,{
-          onSuccess: async (result) => {
-            // result.order_id dari Midtrans kadang beda, pakai orderId kita sendiri
-            goToInvoice(data.orderId);
-          },
-          onPending: () => {
-            goToInvoice(data.orderId);
-          },
-          onError: () => {
-            goToInvoice(data.orderId);
-          },
-          onClose: async () => {
-            // Snap ditutup — cek dulu apakah payment sudah berhasil di backend
-            // (Sandbox sering trigger onClose alih-alih onSuccess)
+        setPendingOrderId(orderId);
+
+        const goToInvoice = () => router.push('/invoice/' + orderId);
+
+        // Selalu hapus snap lama dan inject ulang — hindari stale clientKey
+        delete window.snap;
+        const oldScript = document.querySelector('script[src*="midtrans.com/snap"]');
+        if (oldScript) oldScript.remove();
+
+        const env = process.env.NEXT_PUBLIC_MIDTRANS_ENV === 'production' ? 'app' : 'app.sandbox';
+        await new Promise((resolve, reject) => {
+          const sc = document.createElement('script');
+          sc.src = `https://${env}.midtrans.com/snap/snap.js`;
+          sc.setAttribute('data-client-key', clientKey);
+          sc.onload = resolve;
+          sc.onerror = reject;
+          document.head.appendChild(sc);
+        });
+
+        window.snap.pay(snapToken, {
+          onSuccess: () => goToInvoice(),
+          onPending: () => goToInvoice(),
+          onError:   () => goToInvoice(),
+          onClose:   async () => {
+            // Sandbox sering fire onClose bukan onSuccess — cek status dulu
             try {
-              const res = await fetch(`/api/orders/verify/${data.orderId}`, {credentials:'include'});
-              const d   = await res.json();
-              const paid = ['settlement','capture','success'].includes(d?.order?.payment_status || d?.status);
+              const r = await fetch('/api/orders/verify/' + orderId, { credentials: 'include' });
+              const d = await r.json();
+              const paid = ['settlement', 'capture', 'success', 'paid'].includes(
+                d?.order?.payment_status || d?.status || ''
+              );
               if (paid) {
-                goToInvoice(data.orderId);
+                goToInvoice();
               } else {
-                // Belum bayar, balik ke modal
                 setStep('confirm');
                 setLoading(false);
               }
@@ -133,7 +136,22 @@ export default function CartModal({ product, player, onClose }) {
             <div style={{textAlign:'center',padding:'24px 0'}}>
               <div className="fn-spinner" style={{width:44,height:44,borderWidth:3,margin:'0 auto 20px'}}/>
               <h2 className="font-space" style={{fontSize:20,fontWeight:700,marginBottom:8}}>Memproses Pembayaran...</h2>
-              <p style={{color:'var(--text-muted)',fontSize:13}}>Selesaikan di popup Midtrans. Jangan tutup halaman ini.</p>
+              <p style={{color:'var(--text-muted)',fontSize:13,marginBottom:20}}>Selesaikan di popup Midtrans. Jangan tutup halaman ini.</p>
+              {pendingOrderId && (
+                <button
+                  className="btn-ghost-fn"
+                  style={{fontSize:12,padding:'8px 16px',margin:'0 auto',display:'inline-flex',alignItems:'center',gap:6}}
+                  onClick={async () => {
+                    try {
+                      const r = await fetch('/api/orders/verify/' + pendingOrderId, {credentials:'include'});
+                      const d = await r.json();
+                      router.push('/invoice/' + pendingOrderId);
+                    } catch { router.push('/invoice/' + pendingOrderId); }
+                  }}
+                >
+                  <i className="fa-solid fa-receipt"/> Sudah bayar? Lihat Invoice
+                </button>
+              )}
             </div>
           )}
 
