@@ -259,20 +259,47 @@ export default function StorePage({ settings, categories: initCategories, produc
                 ? Math.round((1-product.price/product.original_price)*100) : 0;
               const features = (() => { try { return typeof product.features==='string' ? JSON.parse(product.features) : product.features||[]; } catch{ return []; } })();
 
+  // Warna orb & glow otomatis berdasarkan kategori
+  const CATEGORY_COLORS = {
+    rank:       { a:'rgba(255,215,0,0.22)',  b:'rgba(10,8,0,0.95)',   c:'rgba(255,180,0,0.1)',  glow:'rgba(255,200,0,0.55)',  orb:'#ffd700' },
+    weapon:     { a:'rgba(231,76,60,0.22)',  b:'rgba(12,5,5,0.95)',   c:'rgba(200,50,30,0.1)',  glow:'rgba(220,60,40,0.55)',  orb:'#e74c3c' },
+    sellwand:   { a:'rgba(46,204,113,0.2)',  b:'rgba(5,12,8,0.95)',   c:'rgba(30,180,90,0.1)',  glow:'rgba(46,200,100,0.5)',  orb:'#2ecc71' },
+    auraskills: { a:'rgba(155,89,182,0.22)', b:'rgba(8,5,12,0.95)',   c:'rgba(130,60,180,0.1)', glow:'rgba(150,80,200,0.55)', orb:'#9b59b6' },
+    'crate-key':{ a:'rgba(52,152,219,0.22)', b:'rgba(5,8,15,0.95)',   c:'rgba(30,120,200,0.1)', glow:'rgba(52,150,220,0.55)', orb:'#3498db' },
+    kit:        { a:'rgba(26,188,156,0.2)',  b:'rgba(5,12,10,0.95)',  c:'rgba(20,170,140,0.1)', glow:'rgba(26,188,156,0.5)',  orb:'#1abc9c' },
+  };
+  const defaultColor = { a:'rgba(255,107,0,0.18)', b:'rgba(10,10,20,0.95)', c:'rgba(255,107,0,0.08)', glow:'rgba(255,107,0,0.5)', orb:'#ff6b00' };
+
+              const col = CATEGORY_COLORS[product.category_slug] || defaultColor;
+              const cardStyle = {
+                '--card-color-a': col.a, '--card-color-b': col.b,
+                '--card-color-c': col.c, '--card-glow': col.glow,
+              };
+
               return (
                 <div key={product.id} className="fn-card" style={{padding:0,overflow:'hidden',display:'flex',flexDirection:'column'}}>
-                  {/* Product image */}
-                  <div style={{position:'relative',height:140,background:'linear-gradient(135deg,rgba(255,107,0,0.05),rgba(20,20,28,0.8))',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  {/* Product image area */}
+                  <div className="product-img-bg" style={cardStyle}>
+                    {/* Orbs */}
+                    <div className="product-orb product-orb-1" style={{background:col.orb}}/>
+                    <div className="product-orb product-orb-2" style={{background:col.orb}}/>
+                    <div className="product-orb product-orb-3" style={{background:col.orb}}/>
+                    {/* Shimmer */}
+                    <div className="product-shimmer"/>
+                    {/* Image or icon */}
                     {product.image_url
-                      ? <img src={product.image_url} alt={product.name} style={{maxHeight:110,maxWidth:'85%',objectFit:'contain',filter:'drop-shadow(0 4px 12px rgba(0,0,0,0.5))'}} onError={e=>e.target.style.display='none'}/>
-                      : <span style={{fontSize:52,opacity:0.7}}>{product.category_icon||'📦'}</span>
+                      ? <>
+                          <img src={product.image_url} alt={product.name} className="product-img" onError={e=>e.target.style.display='none'}/>
+                          <div className="product-img-glint"/>
+                        </>
+                      : <span style={{fontSize:54,opacity:0.85,position:'relative',zIndex:3,filter:`drop-shadow(0 0 12px ${col.glow})`}}>{product.category_icon||'📦'}</span>
                     }
                     {/* Badges */}
                     {discount>0 && (
-                      <span style={{position:'absolute',top:10,left:10,background:'#e74c3c',color:'#fff',fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:5}}>-{discount}%</span>
+                      <span style={{position:'absolute',top:10,left:10,background:'#e74c3c',color:'#fff',fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:5,zIndex:4}}>-{discount}%</span>
                     )}
                     {product.badge && (
-                      <span style={{position:'absolute',top:10,right:10,background:badgeColor[product.badge_color||'orange']||'var(--primary)',color:'#fff',fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:5,textTransform:'uppercase'}}>
+                      <span style={{position:'absolute',top:10,right:10,background:badgeColor[product.badge_color||'orange']||'var(--primary)',color:'#fff',fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:5,textTransform:'uppercase',zIndex:4}}>
                         {product.badge}
                       </span>
                     )}
