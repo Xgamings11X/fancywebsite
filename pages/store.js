@@ -95,12 +95,17 @@ export default function StorePage({ settings, categories: initCategories, produc
           });
       }
     } catch {}
-    const { order, status } = router.query;
+    const { order, status, order_id, transaction_status } = router.query;
+
+    // Redirect dari Midtrans deeplink (GoPay, dll) — pakai order_id dari query
+    if (order_id) {
+      router.replace('/invoice/' + order_id);
+      return;
+    }
+
+    // Redirect lama dari snap popup callback
     if (order && status) {
-      if (status==='success') toast.success('Pembayaran berhasil! Item dikirim ke Minecraft kamu 🎉');
-      if (status==='error')   toast.error('Pembayaran gagal. Silakan coba lagi.');
-      if (status==='pending') toast('Selesaikan pembayaran sebelum 24 jam.', {icon:'⏳'});
-      router.replace('/store', undefined, {shallow:true});
+      router.replace('/invoice/' + order);
     }
   }, [router.query]);
 
