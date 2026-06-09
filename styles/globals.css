@@ -116,7 +116,8 @@ body {
   box-shadow: 0 8px 24px rgba(255,107,0,0.08);
 }
 
-/* ── Buttons ───────────────────── */
+
+/* ── BUTTONS (Dengan Efek Glint Diagonal Kanan Atas ke Kiri Bawah) ── */
 .btn-primary-fn {
   background: var(--primary);
   color: #fff;
@@ -131,32 +132,45 @@ body {
   gap: 8px;
   transition: all 0.25s;
   position: relative;
-  overflow: hidden;
+  overflow: hidden; 
 }
+
+/* Element Cahaya Diagonal */
 .btn-primary-fn::before {
   content: '';
   position: absolute;
-  top: 0; left: -100%;
-  width: 60%; height: 100%;
+  top: -150%; 
+  left: 150%;
+  width: 200%; 
+  height: 200%; 
   background: linear-gradient(
-    105deg,
-    transparent 30%,
-    rgba(255,255,255,0.4) 50%,
-    transparent 70%
+    225deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.6) 50%,
+    transparent 60%
   );
   pointer-events: none;
 }
-.btn-primary-fn:hover::before {
-  animation: btnGlint 0.5s ease forwards;
+
+/* Pemicu Glint Diagonal saat di-hover (PC) atau disentuh (HP) */
+.btn-primary-fn:hover::before,
+.btn-primary-fn:active::before {
+  animation: diagonalGlint 0.6s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
 }
-.btn-primary-fn:active {
-  transform: scale(0.96) translateY(1px);
-  box-shadow: 0 0 18px rgba(255,107,0,0.6), inset 0 0 10px rgba(255,255,255,0.1);
+
+@keyframes diagonalGlint {
+  0% { top: -150%; left: 150%; }
+  100% { top: 150%; left: -150%; }
 }
+
 .btn-primary-fn:hover {
   background: var(--primary-light);
   box-shadow: 0 4px 20px var(--primary-glow), 0 0 30px rgba(255,107,0,0.2);
   transform: translateY(-2px);
+}
+.btn-primary-fn:active {
+  transform: scale(0.96) translateY(1px);
+  box-shadow: 0 0 18px rgba(255,107,0,0.6);
 }
 .btn-primary-fn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
@@ -179,17 +193,12 @@ body {
 .btn-ghost-fn::before {
   content: '';
   position: absolute;
-  top: 0; left: -100%;
-  width: 60%; height: 100%;
-  background: linear-gradient(
-    105deg,
-    transparent 30%,
-    rgba(255,255,255,0.25) 50%,
-    transparent 70%
-  );
+  top: -150%; left: 150%;
+  width: 200%; height: 200%;
+  background: linear-gradient(225deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
   pointer-events: none;
 }
-.btn-ghost-fn:hover::before { animation: btnGlint 0.5s ease forwards; }
+.btn-ghost-fn:hover::before, .btn-ghost-fn:active::before { animation: diagonalGlint 0.6s cubic-bezier(0.2, 0.6, 0.4, 1) forwards; }
 .btn-ghost-fn:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.18); }
 .btn-ghost-fn:active { transform: scale(0.96); }
 
@@ -213,14 +222,15 @@ body {
 .btn-login-nav::before {
   content: '';
   position: absolute;
-  top: 0; left: -100%;
-  width: 60%; height: 100%;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+  top: -150%; left: 150%;
+  width: 200%; height: 200%;
+  background: linear-gradient(225deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
   pointer-events: none;
 }
-.btn-login-nav:hover::before { animation: btnGlint 0.5s ease forwards; }
+.btn-login-nav:hover::before, .btn-login-nav:active::before { animation: diagonalGlint 0.6s cubic-bezier(0.2, 0.6, 0.4, 1) forwards; }
 .btn-login-nav:hover { background: rgba(255,255,255,0.08); }
 .btn-login-nav:active { transform: scale(0.96); }
+
 
 /* ── Tabs ──────────────────────── */
 .tabs-container {
@@ -624,80 +634,63 @@ body {
 .toggle-switch input { opacity:0; width:0; height:0; }
 .toggle-slider { position:absolute; inset:0; background:rgba(255,255,255,0.1); border-radius:22px; transition:0.3s; }
 .toggle-slider:before { content:""; position:absolute; height:16px; width:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.3s; z-index:2; }
-/* White glint effect inside switch */
-.toggle-slider::after {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 50%; height: 100%;
-  background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%);
-  pointer-events: none;
-}
+.toggle-slider::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%); pointer-events: none; }
 .toggle-switch:hover .toggle-slider::after { animation: btnGlint 0.5s ease forwards; }
 .toggle-switch input:checked + .toggle-slider { background:var(--primary); }
 .toggle-switch input:checked + .toggle-slider:before { transform:translateX(18px); }
 
+
 /* ═══════════════════════════════════════════
-   PRODUCT CARD — AUTOMATIC COLOR & TRANSPARENT EFFECT
+   PRODUCT CARD — ZENYLAND STYLE (PURE LOGO GLOW)
 ═══════════════════════════════════════════ */
 
 .product-img-bg {
   position: relative;
-  height: 180px;
+  height: 190px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   border-radius: 12px 12px 0 0;
-  background-color: #0c0c12;
+  
+  /* Latar belakang box gelap solid agar pendaran glow lebih memukau */
+  background-color: #0b0b12; 
 }
 
-/* Background dinamis mengikuti isi custom property HTML */
-.product-img-bg::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    var(--card-color-a, rgba(255,107,0,0.15)) 0%,
-    rgba(10,10,18,0.95) 70%,
-    rgba(5,5,10,1) 100%
-  );
-  z-index: 1;
-}
-
-/* Efek lingkaran pancaran cahaya glow otomatis di tengah */
+/* Lingkaran cahaya lembut (Glow Aura) murni tepat di belakang logo */
 .product-img-bg::after {
   content: '';
   position: absolute;
-  width: 140px;
-  height: 140px;
+  width: 110px;
+  height: 110px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  
+  /* Mengambil variabel warna --card-glow dari properti HTML */
   background: radial-gradient(
     circle,
-    var(--card-glow, rgba(255,107,0,0.45)) 0%,
+    var(--card-glow, rgba(255,107,0,0.5)) 0%,
     transparent 70%
   );
-  filter: blur(10px);
+  filter: blur(8px);
   z-index: 2;
   pointer-events: none;
-  animation: cardGlowPulse 3s ease-in-out infinite alternate;
+  animation: logoGlowPulse 2.5s ease-in-out infinite alternate;
 }
 
-@keyframes cardGlowPulse {
-  0%   { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
-  100% { opacity: 1;   transform: translate(-50%, -50%) scale(1.1); }
+@keyframes logoGlowPulse {
+  0%   { opacity: 0.6; transform: translate(-50%, -50%) scale(0.92); }
+  100% { opacity: 1;   transform: translate(-50%, -50%) scale(1.08); }
 }
 
-/* Shimmer Otomatis Bergerak di Background */
+/* Shimmer tipis pemanis visual area box */
 .product-shimmer {
   position: absolute;
   top: 0; left: -100%;
   width: 60%; height: 100%;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%);
-  animation: shimmerSlide 4s ease-in-out infinite;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.02) 50%, transparent 70%);
+  animation: shimmerSlide 4.5s ease-in-out infinite;
   pointer-events: none;
   z-index: 3;
 }
@@ -707,47 +700,44 @@ body {
   100% { left: 150%; }
 }
 
-/* Gambar Produk: Menghapus Kotak Hitam/Abu-abu Otomatis + Efek Floating */
+/* Gambar Produk — Bersih tanpa kotak hitam, Mengambang, dan Berpendar */
 .product-img {
   position: relative;
   z-index: 4;
-  max-height: 130px;
-  max-width: 85%;
+  max-height: 125px;
+  max-width: 80%;
   object-fit: contain;
   
-  /* Menghilangkan background non-solid */
+  /* Menyaring warna gelap non-solid untuk melenyapkan kotak abu/hitam pada logo */
   mix-blend-mode: screen; 
   
-  /* UPDATE SAKTI: Menaikkan kontras & menurunkan kecerahan hitam agar abu-abu ikut hilang */
+  /* Menghasilkan cahaya drop-shadow yang presisi mengikuti bentuk lekukan logo */
   filter: 
-    contrast(1.2)
-    brightness(1.1)
-    drop-shadow(0 0 16px var(--card-glow, rgba(255,107,0,0.4)))
-    drop-shadow(0 8px 25px rgba(0,0,0,0.8));
+    brightness(1.05)
+    contrast(1.05)
+    drop-shadow(0 0 12px var(--card-glow, rgba(255,107,0,0.5)));
     
-  animation: imgFloat 3.5s ease-in-out infinite;
+  animation: logoFloat 3.5s ease-in-out infinite;
   transition: filter 0.3s ease, transform 0.3s ease;
 }
 
-/* Animasi Mengambang Premium */
-@keyframes imgFloat {
-  0%   { transform: translateY(0px) rotate(0deg); }
-  50%  { transform: translateY(-6px) rotate(0.8deg); }
-  100% { transform: translateY(0px) rotate(0deg); }
+@keyframes logoFloat {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-5px); }
+  100% { transform: translateY(0px); }
 }
 
-/* Reaksi Gambar saat Kartu di-Hover (PC) atau di-Klik/Sentuh (HP) */
+/* Reaksi pancaran logo saat Kartu di-Hover (PC) atau di-Klik/Sentuh (HP) */
 .fn-card:hover .product-img,
 .fn-card:active .product-img {
   filter: 
-    contrast(1.3)
-    brightness(1.2)
-    drop-shadow(0 0 24px var(--card-glow, rgba(255,107,0,0.7)))
-    drop-shadow(0 12px 30px rgba(0,0,0,0.9));
-  transform: scale(1.05) translateY(-3px);
+    brightness(1.15)
+    contrast(1.1)
+    drop-shadow(0 0 20px var(--card-glow, rgba(255,107,0,0.85)));
+  transform: scale(1.04) translateY(-2px);
 }
 
-/* Layer Kilauan (Glint) Di Atas Gambar */
+/* Efek Lapisan Kilat Putih (Glint) */
 .product-img-glint {
   position: absolute;
   inset: 0;
@@ -762,21 +752,18 @@ body {
   background: linear-gradient(
     105deg,
     transparent 20%,
-    rgba(255,255,255,0.5) 50%,
+    rgba(255,255,255,0.35) 50%,
     transparent 80%
   );
   transform: rotate(-10deg);
   opacity: 0;
 }
-
-/* Pemicu Glint: Jalan saat di-hover (PC) DAN saat di-klik/sentuh (HP) */
 .fn-card:hover .product-img-glint::after,
 .fn-card:active .product-img-glint::after {
-  animation: imgGlint 0.7s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+  animation: imgGlint 0.65s cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
 }
 
 @keyframes imgGlint {
   0%   { left: -100%; opacity: 1; }
   100% { left: 160%; opacity: 0; }
 }
-
