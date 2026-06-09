@@ -1,34 +1,42 @@
 /**
  * /api/cron/cleanup — Pembersihan tiket otomatis
  *
+ * Dipanggil oleh:
+ *   1. Vercel Cron (vercel.json)
+ *   2. Admin panel (tombol manual, pakai admin_token cookie)
+ *
  * Aturan:
- *  1. Status resolved / rejected → arsip + hapus setelah 2 menit (grace period untuk admin cancel)
- *  2. Tidak ada aktivitas > 5 hari → arsip + hapus (tiket ditinggal)
- *
- * Vercel Cron (vercel.json):
- *   Pro  : "schedule": "* * * * *"  (setiap menit)
- *   Hobby: "schedule": "0 * * * *"  (setiap jam — cukup untuk cleanup harian)
- *
- * Bisa juga dipanggil manual dari admin panel.
+ *   • resolved / rejected  → arsip + hapus setelah 2 menit (admin bisa batalkan)
+ *   • tidak aktif > 5 hari → arsip + hapus otomatis
  */
-import { TicketsAsync } from '../../../lib/redis.js';
+import { TicketsAsync }        from '../../../lib/redis.js';
 import { webhookTicketArchive } from '../../../lib/discord.js';
+import { verifyToken }          from '../../../lib/auth.js';
+import { parse }                from 'cookie';
 
-const FIVE_DAYS_MS  = 5 * 24 * 60 * 60 * 1000;
+const FIVE_DAYS_MS   = 5 * 24 * 60 * 60 * 1000;
 const TWO_MINUTES_MS = 2 * 60 * 1000;
 
-export default async function handler(req, res) {
-  // Keamanan: hanya bisa dipanggil dari Vercel Cron atau admin dengan secret
+function isAuthorized(req) {
+  // 1. Vercel Cron header
+  if (req.headers['x-vercel-cron']) return true;
+  // 2. CRON_SECRET Bearer token
   const authHeader = req.headers['authorization'];
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    // Vercel Cron juga mengirim header x-vercel-cron
-    if (!req.headers['x-vercel-cron']) {
-      return res.status(401).json({ error:'Unauthorized' });
-    }
-  }
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) return true;
+  // 3. Admin JWT (dari admin panel)
+  const cookies = parse(req.headers.cookie || '');
+  const t = cookies.admin_token || authHeader?.replace('Bearer ', '');
+  const user = verifyToken(t);
+  if (user?.type === 'admin') return true;
+  // Jika CRON_SECRET tidak di-set, allow semua (dev mode)
+  if (!cronSecret) return true;
+  return false;
+}
 
+export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'POST') return res.status(405).end();
+  if (!isAuthorized(req)) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     const now     = Date.now();
@@ -37,51 +45,52 @@ export default async function handler(req, res) {
     const skipped  = [];
 
     for (const ticket of tickets) {
-      const updatedMs    = new Date(ticket.updated_at||ticket.created_at).getTime();
-      const closedMs     = ticket.closed_at ? new Date(ticket.closed_at).getTime() : null;
-      const isClosedStatus = ticket.status==='resolved' || ticket.status==='rejected';
-      const inactiveMs   = now - updatedMs;
+      const updatedMs      = new Date(ticket.updated_at || ticket.created_at).getTime();
+      const closedMs       = ticket.closed_at ? new Date(ticket.closed_at).getTime() : null;
+      const isClosedStatus = ticket.status === 'resolved' || ticket.status === 'rejected' || ticket.status === 'expired';
+      const inactiveMs     = now - updatedMs;
 
       let shouldArchive = false;
       let reason        = '';
 
-      // Rule 1: closed status + sudah > 2 menit sejak closed_at
-      if (isClosedStatus && closedMs && (now - closedMs) >= TWO_MINUTES_MS) {
-        shouldArchive = true;
-        reason        = `status=${ticket.status}, closed ${Math.round((now-closedMs)/1000)}s ago`;
-      }
-      // Rule 2: closed status tapi closed_at tidak di-set → set sekarang (grace period mulai)
-      else if (isClosedStatus && !closedMs) {
+      if (isClosedStatus && closedMs) {
+        const waitedMs = now - closedMs;
+        if (waitedMs >= TWO_MINUTES_MS) {
+          shouldArchive = true;
+          reason = `status=${ticket.status}, closed ${Math.round(waitedMs / 1000)}s ago`;
+        } else {
+          // Masih dalam grace period
+          const secsLeft = Math.ceil((TWO_MINUTES_MS - waitedMs) / 1000);
+          skipped.push({ id: ticket.ticket_id, reason: `grace period, ${secsLeft}s tersisa` });
+          continue;
+        }
+      } else if (isClosedStatus && !closedMs) {
+        // Pertama kali cleanup melihat tiket ini closed — mulai grace period
         await TicketsAsync.update(ticket.ticket_id, { closed_at: new Date().toISOString() });
-        skipped.push({ id:ticket.ticket_id, reason:'grace period dimulai' });
+        skipped.push({ id: ticket.ticket_id, reason: 'grace period dimulai sekarang' });
         continue;
-      }
-      // Rule 3: tidak aktif > 5 hari
-      else if (!isClosedStatus && inactiveMs >= FIVE_DAYS_MS) {
+      } else if (!isClosedStatus && inactiveMs >= FIVE_DAYS_MS) {
+        // Tidak aktif > 5 hari
+        await TicketsAsync.update(ticket.ticket_id, { status: 'expired', closed_at: new Date().toISOString() });
         shouldArchive = true;
-        reason        = `tidak aktif ${Math.round(inactiveMs/86400000)} hari`;
-        // Update status ke expired sebelum arsip
-        await TicketsAsync.update(ticket.ticket_id, { status:'expired' });
+        reason = `tidak aktif ${Math.round(inactiveMs / 86400000)} hari`;
       }
 
       if (shouldArchive) {
-        // Ambil data terbaru setelah update
         const fresh = await TicketsAsync.byId(ticket.ticket_id);
-        // Kirim arsip ke Discord webhook
         if (fresh) {
           await webhookTicketArchive(fresh).catch(e =>
             console.error('[cleanup] archive webhook error:', e.message));
         }
-        // Hapus dari Redis/file
         await TicketsAsync.delete(ticket.ticket_id);
-        archived.push({ id:ticket.ticket_id, reason });
+        archived.push({ id: ticket.ticket_id, reason });
       }
     }
 
-    console.log(`[cleanup] done — archived: ${archived.length}, skipped: ${skipped.length}`);
-    return res.json({ success:true, archived, skipped, total: tickets.length });
-  } catch(e) {
+    return res.json({ success: true, archived, skipped, total: tickets.length,
+      message: `Dibersihkan: ${archived.length} tiket, Ditunda: ${skipped.length} tiket` });
+  } catch (e) {
     console.error('[cleanup] error:', e.message);
-    return res.status(500).json({ success:false, message:e.message });
+    return res.status(500).json({ success: false, message: e.message });
   }
 }
