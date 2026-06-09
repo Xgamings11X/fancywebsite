@@ -31,7 +31,6 @@
   -webkit-focus-ring-color: transparent !important;
 }
 
-/* Memastikan fokus klik tidak memunculkan shadow/outline biru */
 :focus, :active, button:focus, input:focus, select:focus, textarea:focus, a:focus {
   outline: none !important;
   box-shadow: none !important;
@@ -55,12 +54,6 @@ body {
 
 /* ── Typography ────────────────── */
 .font-space { font-family: 'Space Grotesk', sans-serif; }
-
-/* ── Global Glint Effect Keyframe ── */
-@keyframes btnGlint {
-  0%   { left: -100%; opacity: 1; }
-  100% { left: 200%;  opacity: 0; }
-}
 
 /* ── Capsule Navbar ────────────── */
 .fn-nav {
@@ -91,24 +84,6 @@ body {
   position: relative;
   overflow: hidden;
 }
-/* Glint on card hover */
-.fn-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 50%; height: 100%;
-  background: linear-gradient(
-    105deg,
-    transparent 30%,
-    rgba(255,255,255,0.12) 50%,
-    transparent 70%
-  );
-  z-index: 5;
-  pointer-events: none;
-}
-.fn-card:hover::before {
-  animation: btnGlint 0.6s ease forwards;
-}
 .fn-card:hover {
   border-color: rgba(255,107,0,0.4);
   background: rgba(18,18,24,0.85);
@@ -117,7 +92,7 @@ body {
 }
 
 
-/* ── BUTTONS (EFEK GLINT SUPER JELAS - DIAGONAL KANAN ATAS KE KIRI BAWAH) ── */
+/* ── BUTTONS (GLINT DIAGONAL LAMBAT & JELAS BGT) ── */
 .btn-primary-fn {
   background: var(--primary);
   color: #fff;
@@ -135,7 +110,7 @@ body {
   overflow: hidden; 
 }
 
-/* Cahaya Kilatan Dipertebal & Diperterang (Putih Solid di Tengah Gradasi) */
+/* Cahaya Kilatan Tombol Utama (Dipertebal & Lebih Terang) */
 .btn-primary-fn::before {
   content: '';
   position: absolute;
@@ -146,18 +121,18 @@ body {
   background: linear-gradient(
     225deg,
     transparent 35%,
-    rgba(255, 255, 255, 0.3) 45%,
-    rgba(255, 255, 255, 0.9) 50%,
-    rgba(255, 255, 255, 0.3) 55%,
-    transparent 65
+    rgba(255, 255, 255, 0.4) 45%,
+    rgba(255, 255, 255, 0.95) 50%,
+    rgba(255, 255, 255, 0.4) 55%,
+    transparent 65%
   );
   pointer-events: none;
 }
 
-/* Animasi Glint dipicu saat di-hover maupun saat ditekan di HP */
+/* Durasi diperlambat menjadi 1.2s agar transisi tebasan cahaya sangat dramatis */
 .btn-primary-fn:hover::before,
 .btn-primary-fn:active::before {
-  animation: diagonalGlint 0.75s cubic-bezier(0.1, 0.5, 0.3, 1) forwards;
+  animation: diagonalGlint 1.2s cubic-bezier(0.2, 0.5, 0.25, 1) forwards;
 }
 
 @keyframes diagonalGlint {
@@ -176,6 +151,7 @@ body {
 }
 .btn-primary-fn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+/* Tombol Ghost */
 .btn-ghost-fn {
   background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.08);
@@ -197,13 +173,14 @@ body {
   position: absolute;
   top: -150%; left: 150%;
   width: 250%; height: 250%;
-  background: linear-gradient(225deg, transparent 42%, rgba(255,255,255,0.7) 50%, transparent 58%);
+  background: linear-gradient(225deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%);
   pointer-events: none;
 }
-.btn-ghost-fn:hover::before, .btn-ghost-fn:active::before { animation: diagonalGlint 0.75s cubic-bezier(0.1, 0.5, 0.3, 1) forwards; }
+.btn-ghost-fn:hover::before, .btn-ghost-fn:active::before { animation: diagonalGlint 1.2s cubic-bezier(0.2, 0.5, 0.25, 1) forwards; }
 .btn-ghost-fn:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.18); }
 .btn-ghost-fn:active { transform: scale(0.96); }
 
+/* Tombol Login Navbar */
 .btn-login-nav {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08);
@@ -226,10 +203,10 @@ body {
   position: absolute;
   top: -150%; left: 150%;
   width: 250%; height: 250%;
-  background: linear-gradient(225deg, transparent 42%, rgba(255,255,255,0.7) 50%, transparent 58%);
+  background: linear-gradient(225deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%);
   pointer-events: none;
 }
-.btn-login-nav:hover::before, .btn-login-nav:active::before { animation: diagonalGlint 0.75s cubic-bezier(0.1, 0.5, 0.3, 1) forwards; }
+.btn-login-nav:hover::before, .btn-login-nav:active::before { animation: diagonalGlint 1.2s cubic-bezier(0.2, 0.5, 0.25, 1) forwards; }
 .btn-login-nav:hover { background: rgba(255,255,255,0.08); }
 .btn-login-nav:active { transform: scale(0.96); }
 
@@ -260,18 +237,7 @@ body {
   gap: 8px;
   white-space: nowrap;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  position: relative;
-  overflow: hidden;
 }
-.tab-btn::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 60%; height: 100%;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%);
-  pointer-events: none;
-}
-.tab-btn:hover::before { animation: btnGlint 0.5s ease forwards; }
 .tab-btn:hover { color: #fff; }
 .tab-btn.active {
   background: var(--primary);
@@ -335,18 +301,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  position: relative;
-  overflow: hidden;
 }
-.status-pill::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 50%; height: 100%;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
-  pointer-events: none;
-}
-.status-pill:hover::before { animation: btnGlint 0.6s ease forwards; }
 
 /* ── IP Card ───────────────────── */
 .ip-card {
@@ -359,18 +314,7 @@ body {
   gap: 12px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-  position: relative;
-  overflow: hidden;
 }
-.ip-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 40%; height: 100%;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
-  pointer-events: none;
-}
-.ip-card:hover::before { animation: btnGlint 0.6s ease forwards; }
 .ip-card:hover {
   border-color: var(--primary);
   background: rgba(255,107,0,0.03);
@@ -390,29 +334,13 @@ body {
   gap: 8px;
   text-decoration: none;
   transition: transform 0.2s, opacity 0.2s;
-  position: relative;
-  overflow: hidden;
 }
-.social-btn::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 60%; height: 100%;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.35) 50%, transparent 70%);
-  pointer-events: none;
-}
-.social-btn:hover::before { animation: btnGlint 0.5s ease forwards; }
 .social-btn:hover { transform: translateY(-2px); opacity: 0.9; }
 .btn-vote    { background: #e67e22; }
 .btn-discord { background: #5865F2; }
 .btn-wa      { background: #25D366; }
 .btn-tiktok  { background: #000; border: 1px solid #333; }
 .btn-ig      { background: #FF0000; }
-
-@keyframes logoFloat {
-  0%, 100% { transform: translateY(0px) rotate(0deg); filter: drop-shadow(0 0 8px rgba(255,107,0,0.5)); }
-  50% { transform: translateY(-3px) rotate(1deg); filter: drop-shadow(0 0 14px rgba(255,107,0,0.8)); }
-}
 
 /* ── Form styles ───────────────── */
 .fn-input {
@@ -483,18 +411,7 @@ body {
   padding: 14px 20px;
   border-radius: 12px;
   transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
 }
-.lb-row::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 40%; height: 100%;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.15) 50%, transparent 70%);
-  pointer-events: none;
-}
-.lb-row:hover::before { animation: btnGlint 0.6s ease forwards; }
 .lb-row:hover { background: rgba(255,107,0,0.04); }
 .lb-row.rank-1 { background: rgba(255,215,0,0.08); border: 1px solid rgba(255,215,0,0.2); }
 .lb-row.rank-2 { background: rgba(176,179,184,0.08); border: 1px solid rgba(176,179,184,0.2); }
@@ -511,18 +428,7 @@ body {
   align-items: center;
   gap: 14px;
   transition: all 0.2s;
-  position: relative;
-  overflow: hidden;
 }
-.support-cat-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 40%; height: 100%;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
-  pointer-events: none;
-}
-.support-cat-card:hover::before { animation: btnGlint 0.6s ease forwards; }
 .support-cat-card:hover, .support-cat-card.selected {
   border-color: var(--primary);
   background: rgba(255,107,0,0.05);
@@ -601,14 +507,10 @@ body {
 .admin-topbar { position:sticky; top:0; z-index:20; background:rgba(10,10,15,0.9); backdrop-filter:blur(12px); border-bottom:1px solid rgba(255,107,0,0.08); padding:16px 24px; display:flex; align-items:center; justify-content:space-between; }
 
 .admin-nav-btn { width:100%; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px; border:none; cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:600; transition:all 0.2s; text-align:left; position:relative; overflow:hidden; }
-.admin-nav-btn::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.3) 50%,transparent 70%); pointer-events:none; }
-.admin-nav-btn:hover::before { animation:btnGlint 0.45s ease forwards; }
 .admin-nav-btn:hover { background:rgba(255,255,255,0.05); color:#fff; }
 .admin-nav-btn.active { background:rgba(255,107,0,0.12); color:#ff6b00; border:1px solid rgba(255,107,0,0.25); }
 
 .admin-card { background:rgba(15,15,20,0.8); border:1px solid rgba(255,107,0,0.1); border-radius:14px; position:relative; overflow:hidden; }
-.admin-card::before { content:''; position:absolute; top:0; left:-100%; width:40%; height:100%; background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.08) 50%,transparent 70%); pointer-events:none; }
-.admin-card:hover::before { animation:btnGlint 0.6s ease forwards; }
 
 .admin-table { width:100%; border-collapse:collapse; }
 .admin-table th { padding:12px 16px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-muted); border-bottom:1px solid rgba(255,107,0,0.08); white-space:nowrap; }
@@ -617,8 +519,6 @@ body {
 .admin-table tr:last-child td { border-bottom:none; }
 
 .admin-badge { display:inline-block; padding:3px 10px; border-radius:6px; font-size:11px; font-weight:700; position:relative; overflow:hidden; }
-.admin-badge::before { content:''; position:absolute; top:0; left:-100%; width:60%; height:100%; background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.25) 50%,transparent 70%); pointer-events:none; }
-.admin-badge:hover::before { animation:btnGlint 0.5s ease forwards; }
 .admin-badge-green  { background:rgba(46,204,113,0.12); color:#2ecc71; border:1px solid rgba(46,204,113,0.25); }
 .admin-badge-yellow { background:rgba(241,196,15,0.12);  color:#f1c40f; border:1px solid rgba(241,196,15,0.25); }
 .admin-badge-red    { background:rgba(231,76,60,0.12);   color:#e74c3c; border:1px solid rgba(231,76,60,0.25); }
@@ -636,14 +536,12 @@ body {
 .toggle-switch input { opacity:0; width:0; height:0; }
 .toggle-slider { position:absolute; inset:0; background:rgba(255,255,255,0.1); border-radius:22px; transition:0.3s; }
 .toggle-slider:before { content:""; position:absolute; height:16px; width:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:0.3s; z-index:2; }
-.toggle-slider::after { content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%; background: linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%); pointer-events: none; }
-.toggle-switch:hover .toggle-slider::after { animation: btnGlint 0.5s ease forwards; }
 .toggle-switch input:checked + .toggle-slider { background:var(--primary); }
 .toggle-switch input:checked + .toggle-slider:before { transform:translateX(18px); }
 
 
 /* ═══════════════════════════════════════════
-   PRODUCT CARD — ADVANCED GLOW & TECH GRID BACKGROUND
+   PRODUCT CARD — ADVANCED NEON GLOW & LIGHT CYBER GRID
 ═══════════════════════════════════════════ */
 
 .product-img-bg {
@@ -654,68 +552,115 @@ body {
   justify-content: center;
   overflow: hidden;
   border-radius: 12px 12px 0 0;
-  background-color: #09090e; 
   
-  /* Efek Grid Cyber halus agar background bervariasi (tidak polos hitam pekat) */
+  /* Latar belakang box abu-abu gelap dengan corak teknologi mikro */
+  background-color: #0b0b11; 
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-  background-size: 16px 16px;
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
+  background-size: 14px 14px;
   background-position: center;
 }
 
-/* Partikel pendaran warna halus menyebar di sudut background */
+/* Partikel pendaran warna halus menyebar di sudut kiri atas background */
 .product-img-bg::before {
   content: '';
   position: absolute;
   inset: 0;
   background: radial-gradient(
     circle at 20% 20%,
-    var(--card-glow, rgba(255,107,0,0.15)) 0%,
-    transparent 40%
+    var(--card-glow, rgba(255,107,0,0.12)) 0%,
+    transparent 50%
   );
   z-index: 1;
 }
 
-/* Ring Cahaya (Aura Glow) Utama persis di belakang logo */
+/* Ring Cahaya Utama persis di belakang logo (Warna Menyesuaikan Rank) */
 .product-img-bg::after {
   content: '';
   position: absolute;
-  width: 120px;
-  height: 120px;
+  width: 125px;
+  height: 125px;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   background: radial-gradient(
     circle,
-    var(--card-glow, rgba(255,107,0,0.55)) 0%,
+    var(--card-glow, rgba(255,107,0,0.5)) 0%,
     transparent 70%
   );
   filter: blur(10px);
   z-index: 2;
   pointer-events: none;
-  animation: logoGlowPulse 2.5s ease-in-out infinite alternate;
+  animation: logoGlowPulse 3s ease-in-out infinite alternate;
 }
 
 @keyframes logoGlowPulse {
-  0%   { opacity: 0.5; transform: translate(-50%, -50%) scale(0.9); }
-  100% { opacity: 1;   transform: translate(-50%, -50%) scale(1.1); }
+  0%   { opacity: 0.5; transform: translate(-50%, -50%) scale(0.92); }
+  100% { opacity: 0.9;  transform: translate(-50%, -50%) scale(1.08); }
 }
 
-/* Shimmer overlay bergerak lembut melintasi box */
-.product-shimmer {
+/* Gambar Produk (PNG Transparan Murni) - Ukuran Stabil Sesuai Awal */
+.product-img {
+  position: relative;
+  z-index: 4;
+  max-height: 125px;
+  max-width: 80%;
+  object-fit: contain;
+  transition: filter 0.3s ease;
+  
+  /* Pendaran neon drop-shadow mengikuti pola lekukan logo */
+  filter: 
+    brightness(1.0)
+    contrast(1.0)
+    drop-shadow(0 0 12px var(--card-glow, rgba(255,107,0,0.5)));
+    
+  animation: logoFloat 3.5s ease-in-out infinite;
+}
+
+@keyframes logoFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-4px); }
+}
+
+/* GLINT DIAGNOL KHUSUS GAMBAR LOGO (LAMBAT & SANGAT KELIHAN) */
+/* Kita manfaatkan mask-image untuk melemparkan kilatan putih lambat memotong objek logo */
+.product-img::after {
+  content: '';
   position: absolute;
-  top: 0; left: -100%;
-  width: 60%; height: 100%;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.03) 50%, transparent 70%);
-  animation: shimmerSlide 4.5s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 3;
-}
-@keyframes shimmerSlide {
-  0%   { left: -100%; }
-  70%  { left: 150%; }
-  100% { left: 150%; }
+  inset: 0;
+  background: linear-gradient(
+    225deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.8) 50%,
+    transparent 60%
+  );
+  z-index: 5;
+  mix-blend-mode: overlay;
+  opacity: 0;
 }
 
-/* Gambar Produk — Pengaturan khusus untuk aset PNG transparan asli */
+/* Saat kartu disentuh/hover, pendaran neon drop shadow gambar menguat tajam tanpa merubah ukuran gambar */
+.fn-card:hover .product-img,
+.fn-card:active .product-img {
+  filter: 
+    brightness(1.08)
+    contrast(1.02)
+    drop-shadow(0 0 20px var(--card-glow, rgba(255,107,0,0.85)));
+  
+  /* Menjalankan kilatan glint internal tepat pada logo lambat selama 1.2 detik */
+  animation: logoGlintAnim 1.2s cubic-bezier(0.2, 0.5, 0.25, 1) forwards;
+}
+
+@keyframes logoGlintAnim {
+  0% {
+    /* Trik saktinya adalah memainkan kecerahan sekilas yang melintas miring */
+    filter: brightness(1) contrast(1) drop-shadow(0 0 12px var(--card-glow, rgba(255,107,0,0.5)));
+  }
+  30% {
+    filter: brightness(1.3) contrast(1.1) drop-shadow(0 0 24px #fff);
+  }
+  100% {
+    filter: brightness(1.08) contrast(1.02) drop-shadow(0 0 20px var(--card-glow, rgba(255,107,0,0.85)));
+  }
+}
