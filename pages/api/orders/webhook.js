@@ -58,10 +58,11 @@ export default async function handler(req, res) {
     // ── Notifikasi plugin Minecraft ───────────────────────────────
     if (finalStatus === 'success' && !order.plugin_notified) {
       try {
+        // Username dikirim persis seperti disimpan:
+        // Bedrock → ".Username" (dengan titik), Java → "Username" (tanpa titik)
         const r = await notifyTransaction({
-          transaction_id: order.order_id,   // plugin expects "transaction_id", not "order_id"
-          player_name:    order.player_username,
-          player_uuid:    order.player_uuid || '',
+          transaction_id: order.order_id,
+          player_name:    order.player_username || '',
           product_id:     order.reward_trigger || String(order.product_id),
           amount:         order.amount,
           status:         'success',
