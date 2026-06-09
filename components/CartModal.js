@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
 const idr = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
 
 export default function CartModal({ product, player, onClose }) {
+  const router = useRouter();
   const [step,          setStep]          = useState('confirm');
   const [loading,       setLoading]       = useState(false);
   const [redeemInput,   setRedeemInput]   = useState('');
@@ -66,8 +68,8 @@ export default function CartModal({ product, player, onClose }) {
           });
         }
         window.snap.pay(data.snapToken,{
-          onSuccess: async () => { setStep('success'); await fetch(`/api/orders/verify/${data.orderId}`,{credentials:'include'}); },
-          onPending: () => { toast('Selesaikan pembayaran sebelum 24 jam.',{icon:'⏳'}); onClose(); },
+          onSuccess: async () => { await fetch(`/api/orders/verify/${data.orderId}`,{credentials:'include'}); router.push(`/invoice/${data.orderId}`); },
+          onPending: () => { toast('Selesaikan pembayaran sebelum 24 jam.',{icon:'⏳'}); router.push(`/invoice/${data.orderId}`); },
           onError:   () => { toast.error('Pembayaran gagal.'); setStep('confirm'); setLoading(false); },
           onClose:   () => { setStep('confirm'); setLoading(false); },
         });
