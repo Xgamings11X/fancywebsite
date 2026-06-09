@@ -1,4 +1,5 @@
-import { TicketsAsync } from '../../../lib/redis.js';
+import { TicketsAsync }  from '../../../lib/redis.js';
+import { runCleanup }   from '../../../lib/cleanup.js';
 import { verifyToken }  from '../../../lib/auth.js';
 import { parse }        from 'cookie';
 import { randomBytes }  from 'crypto';
@@ -12,6 +13,8 @@ export default async function handler(req, res) {
   if (!auth(req)) return res.status(401).json({ error:'Unauthorized' });
   try {
     if (req.method === 'GET') {
+      // Lazy cleanup — fire-and-forget, tidak block response
+      runCleanup().catch(()=>{});
       const { status, type, page=1, id } = req.query;
       if (id) {
         const tk = await TicketsAsync.byId(id);
