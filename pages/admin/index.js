@@ -311,7 +311,9 @@ export default function AdminPanel() {
                       <thead><tr>
                         {['','Gambar','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
                       </tr></thead>
-                      <tbody>
+                      <tbody
+                        onDragOver={e=>e.preventDefault()}
+                      >
                         {products.map((p,idx)=>(
                           <tr key={p.id}
                             onDragOver={e=>{ e.preventDefault(); e.currentTarget.style.background='rgba(255,107,0,0.07)'; }}
@@ -390,7 +392,7 @@ export default function AdminPanel() {
                     <i className="fa-solid fa-plus"/> Tambah Kategori
                   </button>
                 </div>
-                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}} onDragOver={e=>e.preventDefault()}>
                   {categories.map((c,idx)=>(
                     <div key={c.id} className="admin-card" style={{padding:'16px 18px',transition:'opacity 0.15s, box-shadow 0.15s'}}
                       onDragOver={e=>{ e.preventDefault(); e.currentTarget.style.boxShadow='0 0 0 2px var(--primary)'; }}
