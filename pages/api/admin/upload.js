@@ -63,8 +63,16 @@ async function uploadToCloudinary(base64Data, mimeType, filename) {
 
   // Buat signature untuk auth (tanpa SDK, pure HTTP)
   const timestamp  = Math.floor(Date.now() / 1000).toString();
-  const publicId   = `${folder}/${Date.now()}_${filename.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0,40)}`;
-  const toSign     = `folder=${folder}&public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
+  const safeFilename = filename.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40);
+  const publicId   = `${folder}/${timestamp}_${safeFilename}`;
+
+  // Cloudinary signature: params sorted alphabetically, NO apiSecret in public_id path
+  // Format: key1=val1&key2=val2...{apiSecret}  (sorted, no trailing &)
+  const signParams = { folder, public_id: publicId, timestamp };
+  const toSign = Object.keys(signParams)
+    .sort()
+    .map(k => `${k}=${signParams[k]}`)
+    .join('&') + apiSecret;
 
   // SHA-1 signature — pakai crypto bawaan Node.js
   const { createHash } = await import('crypto');
