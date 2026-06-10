@@ -297,7 +297,7 @@ export default function AdminPanel() {
             {tab==='products' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <p style={{color:'var(--text-muted)',fontSize:13}}>{products.length} produk terdaftar · <span style={{color:'rgba(255,255,255,0.3)'}}>ubah nomor urut untuk mengatur posisi</span></p>
+                  <p style={{color:'var(--text-muted)',fontSize:13}}>{products.length} produk terdaftar · <span style={{color:'rgba(255,255,255,0.3)'}}>klik ↑↓ untuk mengatur posisi</span></p>
                   <button className="btn-primary-fn" onClick={()=>{setEditProduct({});setShowProductModal(true);}}>
                     <i className="fa-solid fa-plus"/> Tambah Produk
                   </button>
@@ -306,31 +306,39 @@ export default function AdminPanel() {
                   <div style={{overflowX:'auto'}}>
                     <table className="admin-table" style={{minWidth:700}}>
                       <thead><tr>
-                        {['No.','Gambar','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
+                        {['Urutan','Gambar','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
                       </tr></thead>
                       <tbody>
                         {products.map((p,idx)=>(
                           <tr key={p.id}>
-                            <td style={{width:60}}>
-                              <input
-                                key={`prod-sort-${p.id}-${idx}`}
-                                type="number"
-                                min={1}
-                                max={products.length}
-                                defaultValue={idx+1}
-                                style={{width:50,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:6,color:'#fff',padding:'4px 6px',fontSize:13,textAlign:'center'}}
-                                onBlur={async e=>{
-                                  const newPos = Math.max(1,Math.min(products.length, parseInt(e.target.value)||idx+1)) - 1;
-                                  if(newPos===idx){e.target.value=idx+1;return;}
-                                  const reordered=[...products];
-                                  const [moved]=reordered.splice(idx,1);
-                                  reordered.splice(newPos,0,moved);
-                                  setProducts(reordered);
-                                  await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
-                                  await load();
-                                }}
-                                onKeyDown={e=>{ if(e.key==='Enter') e.currentTarget.blur(); }}
-                              />
+                            <td style={{width:80}}>
+                              <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
+                                <button
+                                  disabled={idx===0}
+                                  onClick={async()=>{
+                                    if(idx===0) return;
+                                    const reordered=[...products];
+                                    [reordered[idx-1],reordered[idx]]=[reordered[idx],reordered[idx-1]];
+                                    setProducts(reordered);
+                                    await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                                  }}
+                                  style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===0?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===0?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                  ↑
+                                </button>
+                                <span style={{fontSize:11,color:'var(--text-muted)',fontWeight:700,minWidth:20,textAlign:'center'}}>{idx+1}</span>
+                                <button
+                                  disabled={idx===products.length-1}
+                                  onClick={async()=>{
+                                    if(idx===products.length-1) return;
+                                    const reordered=[...products];
+                                    [reordered[idx],reordered[idx+1]]=[reordered[idx+1],reordered[idx]];
+                                    setProducts(reordered);
+                                    await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                                  }}
+                                  style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===products.length-1?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===products.length-1?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                  ↓
+                                </button>
+                              </div>
                             </td>
                             <td>
                               {p.image_url
@@ -382,7 +390,7 @@ export default function AdminPanel() {
             {tab==='categories' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <p style={{color:'var(--text-muted)',fontSize:13}}>{categories.length} kategori · <span style={{color:'rgba(255,255,255,0.3)'}}>ubah nomor untuk mengatur urutan</span></p>
+                  <p style={{color:'var(--text-muted)',fontSize:13}}>{categories.length} kategori · <span style={{color:'rgba(255,255,255,0.3)'}}>klik ↑↓ untuk mengatur urutan</span></p>
                   <button className="btn-primary-fn" onClick={()=>{setEditCategory({});setShowCategoryModal(true);}}>
                     <i className="fa-solid fa-plus"/> Tambah Kategori
                   </button>
@@ -392,28 +400,32 @@ export default function AdminPanel() {
                     <div key={c.id} className="admin-card" style={{padding:'16px 18px'}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
                         <div style={{display:'flex',alignItems:'center',gap:12}}>
-                          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
-                            <span style={{fontSize:10,color:'rgba(255,255,255,0.35)',fontWeight:600}}>No.</span>
-                            <input
-                              key={`cat-sort-${c.id}-${idx}`}
-                              type="number"
-                              min={1}
-                              max={categories.length}
-                              defaultValue={idx+1}
-                              title="Ubah nomor urut"
-                              style={{width:40,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:6,color:'#fff',padding:'3px 4px',fontSize:12,textAlign:'center'}}
-                              onBlur={async e=>{
-                                const newPos = Math.max(1,Math.min(categories.length, parseInt(e.target.value)||idx+1)) - 1;
-                                if(newPos===idx){e.target.value=idx+1;return;}
+                          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
+                            <button
+                              disabled={idx===0}
+                              onClick={async()=>{
+                                if(idx===0) return;
                                 const reordered=[...categories];
-                                const [moved]=reordered.splice(idx,1);
-                                reordered.splice(newPos,0,moved);
+                                [reordered[idx-1],reordered[idx]]=[reordered[idx],reordered[idx-1]];
                                 setCategories(reordered);
                                 await af('/api/admin/categories',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
-                                await load();
                               }}
-                              onKeyDown={e=>{ if(e.key==='Enter') e.currentTarget.blur(); }}
-                            />
+                              style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===0?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===0?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                              ↑
+                            </button>
+                            <span style={{fontSize:10,color:'rgba(255,255,255,0.4)',fontWeight:700}}>{idx+1}</span>
+                            <button
+                              disabled={idx===categories.length-1}
+                              onClick={async()=>{
+                                if(idx===categories.length-1) return;
+                                const reordered=[...categories];
+                                [reordered[idx],reordered[idx+1]]=[reordered[idx+1],reordered[idx]];
+                                setCategories(reordered);
+                                await af('/api/admin/categories',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                              }}
+                              style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===categories.length-1?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===categories.length-1?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                              ↓
+                            </button>
                           </div>
                           <span style={{fontSize:28}}>{c.icon}</span>
                           <div>
