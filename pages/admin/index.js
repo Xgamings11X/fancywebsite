@@ -314,25 +314,25 @@ export default function AdminPanel() {
                       <tbody>
                         {products.map((p,idx)=>(
                           <tr key={p.id}
-                            draggable
-                            onDragStart={e=>{ dragProdIdx.current=idx; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); e.currentTarget.style.opacity='0.4'; }}
-                            onDragEnd={e=>{ dragProdIdx.current=null; e.currentTarget.style.opacity='1'; }}
-                            onDragOver={e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.style.background='rgba(255,107,0,0.07)'; }}
+                            onDragOver={e=>{ e.preventDefault(); e.currentTarget.style.background='rgba(255,107,0,0.07)'; }}
                             onDragLeave={e=>{ e.currentTarget.style.background=''; }}
                             onDrop={async e=>{
-                              e.preventDefault(); e.stopPropagation(); e.currentTarget.style.background='';
-                              const fromIdx = dragProdIdx.current !== null ? dragProdIdx.current : parseInt(e.dataTransfer.getData('text/plain'));
+                              e.preventDefault(); e.currentTarget.style.background='';
+                              const fromIdx = dragProdIdx.current;
                               dragProdIdx.current = null;
-                              if(fromIdx === null || isNaN(Number(fromIdx)) || fromIdx === idx) return;
+                              if(fromIdx === null || fromIdx === idx) return;
                               const reordered=[...products];
                               const [moved]=reordered.splice(fromIdx,1);
                               reordered.splice(idx,0,moved);
                               setProducts(reordered);
                               await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
                             }}
-                            style={{cursor:'grab'}}
                           >
-                            <td style={{width:24,color:'rgba(255,255,255,0.2)',fontSize:13,cursor:'grab'}}>
+                            <td style={{width:24,color:'rgba(255,255,255,0.2)',fontSize:13,cursor:'grab',userSelect:'none'}}
+                              draggable
+                              onDragStart={e=>{ e.stopPropagation(); dragProdIdx.current=idx; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); const tr=e.currentTarget.closest('tr'); if(tr) tr.style.opacity='0.4'; }}
+                              onDragEnd={e=>{ e.stopPropagation(); const tr=e.currentTarget.closest('tr'); if(tr) tr.style.opacity='1'; }}
+                            >
                               <i className="fa-solid fa-grip-vertical"/>
                             </td>
                             <td>
@@ -392,17 +392,14 @@ export default function AdminPanel() {
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
                   {categories.map((c,idx)=>(
-                    <div key={c.id} className="admin-card" style={{padding:'16px 18px',cursor:'grab',transition:'opacity 0.15s, box-shadow 0.15s'}}
-                      draggable
-                      onDragStart={e=>{ dragCatIdx.current=idx; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); e.currentTarget.style.opacity='0.4'; }}
-                      onDragEnd={e=>{ dragCatIdx.current=null; e.currentTarget.style.opacity='1'; e.currentTarget.style.boxShadow=''; }}
-                      onDragOver={e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.style.boxShadow='0 0 0 2px var(--primary)'; }}
+                    <div key={c.id} className="admin-card" style={{padding:'16px 18px',transition:'opacity 0.15s, box-shadow 0.15s'}}
+                      onDragOver={e=>{ e.preventDefault(); e.currentTarget.style.boxShadow='0 0 0 2px var(--primary)'; }}
                       onDragLeave={e=>{ e.currentTarget.style.boxShadow=''; }}
                       onDrop={async e=>{
-                        e.preventDefault(); e.stopPropagation(); e.currentTarget.style.boxShadow='';
-                        const fromIdx = dragCatIdx.current !== null ? dragCatIdx.current : parseInt(e.dataTransfer.getData('text/plain'));
+                        e.preventDefault(); e.currentTarget.style.boxShadow='';
+                        const fromIdx = dragCatIdx.current;
                         dragCatIdx.current = null;
-                        if(fromIdx === null || isNaN(Number(fromIdx)) || fromIdx === idx) return;
+                        if(fromIdx === null || fromIdx === idx) return;
                         const reordered=[...categories];
                         const [moved]=reordered.splice(fromIdx,1);
                         reordered.splice(idx,0,moved);
@@ -412,6 +409,13 @@ export default function AdminPanel() {
                     >
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
                         <div style={{display:'flex',alignItems:'center',gap:12}}>
+                          <span
+                            draggable
+                            title="Drag untuk ubah urutan"
+                            onDragStart={e=>{ e.stopPropagation(); dragCatIdx.current=idx; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); const card=e.currentTarget.closest('.admin-card'); if(card) card.style.opacity='0.4'; }}
+                            onDragEnd={e=>{ e.stopPropagation(); const card=e.currentTarget.closest('.admin-card'); if(card){ card.style.opacity='1'; card.style.boxShadow=''; } }}
+                            style={{cursor:'grab',color:'rgba(255,255,255,0.2)',fontSize:14,padding:'2px 4px',userSelect:'none'}}
+                          ><i className="fa-solid fa-grip-vertical"/></span>
                           <span style={{fontSize:28,pointerEvents:'none'}}>{c.icon}</span>
                           <div style={{pointerEvents:'none'}}>
                             <p style={{fontWeight:700,color:'#fff',fontSize:14}}>{c.name}</p>
