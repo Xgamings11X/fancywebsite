@@ -7,7 +7,7 @@ module.exports = {
 
   images: {
     domains: ['crafatar.com','minotar.net','i.imgur.com','cdn.discordapp.com'],
-    unoptimized: false,         // aktifkan optimasi gambar Next.js
+    unoptimized: true,          // izinkan gambar lokal dari /uploads/
     minimumCacheTTL: 86400,     // cache gambar 24 jam
     formats: ['image/webp'],
   },
@@ -22,6 +22,11 @@ module.exports = {
       // Gambar publik — cache 7 hari
       {
         source: '/images/(.*)',
+        headers: [{ key:'Cache-Control', value:'public, max-age=604800, stale-while-revalidate=86400' }],
+      },
+      // Gambar upload user — cache 7 hari
+      {
+        source: '/uploads/(.*)',
         headers: [{ key:'Cache-Control', value:'public, max-age=604800, stale-while-revalidate=86400' }],
       },
       // API tidak di-cache
