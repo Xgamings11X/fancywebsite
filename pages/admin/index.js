@@ -79,6 +79,10 @@ export default function AdminPanel() {
   const [testPluginLoading, setTestPluginLoading] = useState(false);
   const [testPluginForm,    setTestPluginForm]    = useState({player_name:'',product_id:''});
 
+  // Drag & drop sort
+  const dragItem     = useRef(null);
+  const dragOverItem = useRef(null);
+
   const af = useAF();
 
   useEffect(() => { if (localStorage.getItem('admin_token')) setLoggedIn(true); }, []);
@@ -108,6 +112,25 @@ export default function AdminPanel() {
       if (tab==='redeem')                           { const r=await af('/api/admin/redeem'); if(r.success) setCodes(r.codes||[]); }
     } catch {}
     setLoading(false);
+  };
+
+  // ── DRAG & DROP ──────────────────────────────────────────────
+  const handleDragStart = (idx) => { dragItem.current = idx; };
+  const handleDragEnter = (idx) => { dragOverItem.current = idx; };
+  const handleDragEnd   = async (list, setList, apiUrl) => {
+    const arr  = [...list];
+    const from = dragItem.current;
+    const to   = dragOverItem.current;
+    dragItem.current = null; dragOverItem.current = null;
+    if (from === null || to === null || from === to) return;
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    const updated = arr.map((item, i) => ({ ...item, sort_order: i }));
+    setList(updated);
+    try {
+      const r = await af(apiUrl, { method:'PATCH', body: JSON.stringify({ action:'reorder', items: updated.map((item,i)=>({id:item.id,sort_order:i})) }) });
+      if (!r.success) toast.error('Gagal menyimpan urutan');
+    } catch { toast.error('Gagal menyimpan urutan'); }
   };
 
   const login = async e => {
@@ -302,11 +325,21 @@ export default function AdminPanel() {
                   <div style={{overflowX:'auto'}}>
                     <table className="admin-table" style={{minWidth:700}}>
                       <thead><tr>
+                        <th style={{width:32}}></th>
                         {['Gambar','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
                       </tr></thead>
                       <tbody>
-                        {products.map(p=>(
-                          <tr key={p.id}>
+                        {products.map((p,pidx)=>(
+                          <tr key={p.id}
+                            draggable
+                            onDragStart={()=>handleDragStart(pidx)}
+                            onDragEnter={()=>handleDragEnter(pidx)}
+                            onDragEnd={()=>handleDragEnd(products,setProducts,'/api/admin/products')}
+                            onDragOver={e=>e.preventDefault()}
+                            style={{cursor:'grab',opacity:dragItem.current===pidx?0.4:1,transition:'opacity 0.15s'}}>
+                            <td style={{textAlign:'center',color:'var(--text-muted)',fontSize:14,cursor:'grab'}}>
+                              <i className="fa-solid fa-grip-vertical"/>
+                            </td>
                             <td>
                               {p.image_url
                                 ?<img src={p.image_url} alt="" style={{width:40,height:40,objectFit:'cover',borderRadius:8,border:'1px solid rgba(255,107,0,0.1)'}} onError={e=>e.target.style.display='none'}/>
@@ -363,8 +396,14 @@ export default function AdminPanel() {
                   </button>
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
-                  {categories.map(c=>(
-                    <div key={c.id} className="admin-card" style={{padding:'16px 18px'}}>
+                  {categories.map((c,cidx)=>(
+                    <div key={c.id} className="admin-card"
+                      draggable
+                      onDragStart={()=>handleDragStart(cidx)}
+                      onDragEnter={()=>handleDragEnter(cidx)}
+                      onDragEnd={()=>handleDragEnd(categories,setCategories,'/api/admin/categories')}
+                      onDragOver={e=>e.preventDefault()}
+                      style={{padding:'16px 18px',cursor:'grab',opacity:dragItem.current===cidx?0.4:1,transition:'opacity 0.15s'}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
                         <div style={{display:'flex',alignItems:'center',gap:12}}>
                           <span style={{fontSize:28}}>{c.icon}</span>
