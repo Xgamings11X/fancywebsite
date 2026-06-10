@@ -490,50 +490,6 @@ body {
 @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 .animate-in { animation: fadeIn 0.4s ease forwards; }
 
-/* ── Page-load & Scroll Reveal Animations ── */
-.anim-pop {
-  opacity: 0;
-  transform: scale(0.88) translateY(14px);
-  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.anim-up {
-  opacity: 0;
-  transform: translateY(32px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.anim-left {
-  opacity: 0;
-  transform: translateX(-40px);
-  transition: opacity 0.65s ease,
-              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.anim-right {
-  opacity: 0;
-  transform: translateX(40px);
-  transition: opacity 0.65s ease,
-              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
-}
-/* Triggered when body.page-loaded OR element has .revealed */
-body.page-loaded .anim-pop,
-.revealed.anim-pop  { opacity: 1; transform: scale(1) translateY(0); }
-body.page-loaded .anim-up,
-.revealed.anim-up   { opacity: 1; transform: translateY(0); }
-body.page-loaded .anim-left,
-.revealed.anim-left { opacity: 1; transform: translateX(0); }
-body.page-loaded .anim-right,
-.revealed.anim-right { opacity: 1; transform: translateX(0); }
-
-.anim-d1 { transition-delay: 0.08s !important; }
-.anim-d2 { transition-delay: 0.18s !important; }
-.anim-d3 { transition-delay: 0.28s !important; }
-.anim-d4 { transition-delay: 0.38s !important; }
-.anim-d5 { transition-delay: 0.48s !important; }
-.anim-d6 { transition-delay: 0.58s !important; }
-.anim-d7 { transition-delay: 0.68s !important; }
-.anim-d8 { transition-delay: 0.78s !important; }
-
 /* ── Responsive ─────────────────── */
 @media (max-width: 768px) {
   .fn-nav {
@@ -666,4 +622,358 @@ body.page-loaded .anim-right,
   100% {
     filter: brightness(1.1) contrast(1.05) drop-shadow(0 8px 16px rgba(0, 0, 0, 0.6)) drop-shadow(0 0 25px rgba(255, 107, 0, 0.7));
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   🎬 GLOBAL ANIMATION SYSTEM
+   - Page transitions (fade+slide on every route change)
+   - Scroll-triggered reveal for [data-anim] elements
+   - Stagger delays, hover micro-interactions
+   - Logo float & glow pulse
+═══════════════════════════════════════════════════════════════════ */
+
+/* ── Page transition overlay ──────────────────────────────────────── */
+#page-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: linear-gradient(135deg, #060608 60%, rgba(255,107,0,0.08) 100%);
+  opacity: 0;
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: opacity 0.32s cubic-bezier(0.4,0,0.2,1), transform 0.32s cubic-bezier(0.4,0,0.2,1);
+}
+#page-transition-overlay.transitioning {
+  opacity: 1;
+  transform: scaleY(1);
+  pointer-events: all;
+}
+
+/* ── Page wrapper — slides in on mount ───────────────────────────── */
+#__next > * {
+  animation: pageFadeIn 0.55s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Scroll-triggered base states ────────────────────────────────── */
+[data-anim] {
+  will-change: opacity, transform;
+}
+
+/* Fade up (default) */
+[data-anim="fade-up"] {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.72s cubic-bezier(0.22,1,0.36,1),
+              transform 0.72s cubic-bezier(0.22,1,0.36,1);
+}
+[data-anim="fade-up"].anim-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Fade in */
+[data-anim="fade-in"] {
+  opacity: 0;
+  transition: opacity 0.65s ease;
+}
+[data-anim="fade-in"].anim-visible {
+  opacity: 1;
+}
+
+/* Fade left */
+[data-anim="fade-left"] {
+  opacity: 0;
+  transform: translateX(-50px);
+  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1),
+              transform 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+[data-anim="fade-left"].anim-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Fade right */
+[data-anim="fade-right"] {
+  opacity: 0;
+  transform: translateX(50px);
+  transition: opacity 0.7s cubic-bezier(0.22,1,0.36,1),
+              transform 0.7s cubic-bezier(0.22,1,0.36,1);
+}
+[data-anim="fade-right"].anim-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Scale pop */
+[data-anim="scale-pop"] {
+  opacity: 0;
+  transform: scale(0.82) translateY(16px);
+  transition: opacity 0.65s cubic-bezier(0.34,1.56,0.64,1),
+              transform 0.65s cubic-bezier(0.34,1.56,0.64,1);
+}
+[data-anim="scale-pop"].anim-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* Slide down (for top elements) */
+[data-anim="slide-down"] {
+  opacity: 0;
+  transform: translateY(-30px);
+  transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1),
+              transform 0.6s cubic-bezier(0.22,1,0.36,1);
+}
+[data-anim="slide-down"].anim-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Flip card in */
+[data-anim="flip-in"] {
+  opacity: 0;
+  transform: rotateX(-18deg) translateY(30px);
+  transition: opacity 0.7s ease,
+              transform 0.7s cubic-bezier(0.22,1,0.36,1);
+  transform-style: preserve-3d;
+}
+[data-anim="flip-in"].anim-visible {
+  opacity: 1;
+  transform: rotateX(0) translateY(0);
+}
+
+/* ── Stagger delays ──────────────────────────────────────────────── */
+[data-delay="1"]  { transition-delay: 0.05s !important; }
+[data-delay="2"]  { transition-delay: 0.12s !important; }
+[data-delay="3"]  { transition-delay: 0.19s !important; }
+[data-delay="4"]  { transition-delay: 0.26s !important; }
+[data-delay="5"]  { transition-delay: 0.33s !important; }
+[data-delay="6"]  { transition-delay: 0.40s !important; }
+[data-delay="7"]  { transition-delay: 0.47s !important; }
+[data-delay="8"]  { transition-delay: 0.54s !important; }
+
+/* ── Hero load animation (page-loaded class on body) ─────────────── */
+.anim-hero {
+  opacity: 0;
+  transform: scale(0.9) translateY(14px);
+  transition: opacity 0.9s cubic-bezier(0.1,1,0.1,1),
+              transform 0.9s cubic-bezier(0.1,1,0.1,1);
+}
+.anim-hero-up {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.8s ease,
+              transform 0.8s cubic-bezier(0.1,1,0.1,1);
+}
+body.page-loaded .anim-hero    { opacity: 1; transform: scale(1) translateY(0); }
+body.page-loaded .anim-hero-up { opacity: 1; transform: translateY(0); }
+
+.anim-d1 { transition-delay: 0.08s !important; }
+.anim-d2 { transition-delay: 0.20s !important; }
+.anim-d3 { transition-delay: 0.32s !important; }
+.anim-d4 { transition-delay: 0.44s !important; }
+.anim-d5 { transition-delay: 0.56s !important; }
+.anim-d6 { transition-delay: 0.68s !important; }
+
+/* ── Logo float ──────────────────────────────────────────────────── */
+@keyframes logoFloat {
+  0%,100% { transform: translateY(0px) rotate(-1deg); }
+  50%     { transform: translateY(-12px) rotate(1deg); }
+}
+
+/* ── Glow pulse ring ─────────────────────────────────────────────── */
+@keyframes glowPulse {
+  0%,100% { box-shadow: 0 0 18px rgba(255,107,0,0.25), 0 0 40px rgba(255,107,0,0.08); }
+  50%     { box-shadow: 0 0 32px rgba(255,107,0,0.50), 0 0 70px rgba(255,107,0,0.20); }
+}
+
+/* ── Number counter roll-in ──────────────────────────────────────── */
+@keyframes counterRoll {
+  from { opacity: 0; transform: translateY(-24px) scale(0.8); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.counter-anim { animation: counterRoll 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* ── Card hover lift (global upgrade) ───────────────────────────── */
+.fn-card {
+  transition: transform 0.35s cubic-bezier(0.22,1,0.36,1),
+              box-shadow 0.35s ease,
+              border-color 0.35s ease,
+              background 0.35s ease !important;
+}
+.fn-card:hover {
+  transform: translateY(-6px) scale(1.012) !important;
+  box-shadow: 0 16px 40px rgba(255,107,0,0.12), 0 4px 12px rgba(0,0,0,0.4) !important;
+}
+
+/* ── Tagline pill shimmer ────────────────────────────────────────── */
+.tagline-pill {
+  position: relative;
+  overflow: hidden;
+}
+.tagline-pill::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  animation: shimmerPill 3.5s ease-in-out infinite 1.5s;
+}
+@keyframes shimmerPill {
+  0%   { left: -80%; }
+  100% { left: 160%; }
+}
+
+/* ── Stats bar number pop ───────────────────────────────────────── */
+.stats-bar h3 {
+  display: inline-block;
+  animation: statPop 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes statPop {
+  from { opacity: 0; transform: scale(0.6) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ── Ambient background particle drift ──────────────────────────── */
+@keyframes particleDrift {
+  0%   { transform: translateY(0) translateX(0) scale(1); opacity: 0.4; }
+  33%  { transform: translateY(-30px) translateX(15px) scale(1.1); opacity: 0.7; }
+  66%  { transform: translateY(-15px) translateX(-10px) scale(0.95); opacity: 0.5; }
+  100% { transform: translateY(0) translateX(0) scale(1); opacity: 0.4; }
+}
+
+/* ── Nav entrance ───────────────────────────────────────────────── */
+.fn-nav {
+  animation: navSlideIn 0.6s cubic-bezier(0.22,1,0.36,1) both 0.1s;
+}
+@keyframes navSlideIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-24px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── Social button bounce on hover ──────────────────────────────── */
+.social-btn {
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.3s ease,
+              background 0.3s ease !important;
+}
+.social-btn:hover {
+  transform: translateY(-4px) scale(1.05) !important;
+}
+
+/* ── IP card tap feedback ───────────────────────────────────────── */
+.ip-card {
+  transition: transform 0.25s cubic-bezier(0.22,1,0.36,1),
+              border-color 0.25s ease,
+              box-shadow 0.25s ease !important;
+}
+.ip-card:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow: 0 8px 24px rgba(255,107,0,0.15) !important;
+}
+.ip-card:active {
+  transform: scale(0.97) !important;
+}
+
+/* ── Leaderboard row slide in ───────────────────────────────────── */
+.leaderboard-row {
+  opacity: 0;
+  transform: translateX(-20px);
+  animation: lbRowIn 0.5s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+@keyframes lbRowIn {
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Store product card entrance ────────────────────────────────── */
+.product-card-enter {
+  opacity: 0;
+  transform: translateY(24px) scale(0.96);
+  animation: productIn 0.55s cubic-bezier(0.22,1,0.36,1) forwards;
+}
+@keyframes productIn {
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Modal backdrop + slide-up ──────────────────────────────────── */
+.modal-backdrop-anim {
+  animation: backdropFadeIn 0.28s ease both;
+}
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.modal-content-anim {
+  animation: modalSlideUp 0.36s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(32px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Section heading underline draw ────────────────────────────── */
+.section-heading-line {
+  position: relative;
+  display: inline-block;
+}
+.section-heading-line::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: linear-gradient(90deg, var(--primary), transparent);
+  transition: width 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s;
+  border-radius: 2px;
+}
+.anim-visible .section-heading-line::after,
+body.page-loaded .section-heading-line::after {
+  width: 100%;
+}
+
+/* ── Reduce motion support ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  [data-anim], .anim-hero, .anim-hero-up, .fn-nav,
+  #page-transition-overlay, #__next > * {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ── Scroll progress bar at top of page ─────────────────────────── */
+#scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), var(--primary-light), #fff8);
+  z-index: 10000;
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 0.1s linear;
+  pointer-events: none;
+  box-shadow: 0 0 8px rgba(255,107,0,0.6);
+}
+
+/* ── Cursor glow ──────────────────────────────────────────────────
+   Small orange dot that follows cursor for premium feel
+───────────────────────────────────────────────────────────────── */
+#cursor-glow {
+  position: fixed;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,107,0,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.3s ease;
+  will-change: transform;
 }
