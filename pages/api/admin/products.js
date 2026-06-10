@@ -21,12 +21,14 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       const [products, categories] = await Promise.all([ProductsAsync.all(), CategoriesAsync.all()]);
       const catMap = Object.fromEntries(categories.map(c=>[c.id,c]));
-      return res.json({ success:true, products: products.map(p => ({
-        ...p,
-        category_name: catMap[p.category_id]?.name||null,
-        category_slug: catMap[p.category_id]?.slug||null,
-        category_icon: catMap[p.category_id]?.icon||null,
-      }))});
+      return res.json({ success:true, products: products
+        .sort((a,b) => (a.sort_order||0)-(b.sort_order||0))
+        .map(p => ({
+          ...p,
+          category_name: catMap[p.category_id]?.name||null,
+          category_slug: catMap[p.category_id]?.slug||null,
+          category_icon: catMap[p.category_id]?.icon||null,
+        }))});
     }
 
     if (req.method === 'POST') {
@@ -79,7 +81,13 @@ export default async function handler(req, res) {
       const { id, action, ids } = req.body;
       if (action === 'reorder') {
         if (!Array.isArray(ids)) return res.status(400).json({ success:false });
-        await Promise.all(ids.map((pid, idx) => ProductsAsync.update(pid, { sort_order: idx + 1 })));
+        // Save entire array in the new position order (fixes input-reset bug)
+        const all = await ProductsAsync.all();
+        const idMap = Object.fromEntries(all.map(p => [String(p.id), p]));
+        const reordered = ids.map((pid, idx) => ({ ...idMap[String(pid)], sort_order: idx + 1 }));
+        const idsSet = new Set(ids.map(String));
+        const rest = all.filter(p => !idsSet.has(String(p.id)));
+        await ProductsAsync.save([...reordered, ...rest]);
         return res.json({ success:true });
       }
       if (action === 'duplicate') {
