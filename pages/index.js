@@ -28,6 +28,9 @@ export default function HomePage({ settings }) {
   useEffect(() => {
     try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
     fetch('/api/server/status').then(r=>r.json()).then(setStatus).catch(()=>{});
+    // Trigger page-load animation
+    const t = setTimeout(() => document.body.classList.add('page-loaded'), 80);
+    return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); };
   }, []);
 
   const copyIP = (text, label) => {
@@ -74,13 +77,41 @@ export default function HomePage({ settings }) {
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
+      {/* ── Page-load animation styles ── */}
+      <style>{`
+        .anim-pop {
+          opacity: 0;
+          transform: scale(0.88) translateY(12px);
+          transition: opacity 0.9s cubic-bezier(0.1,1,0.1,1), transform 0.9s cubic-bezier(0.1,1,0.1,1);
+        }
+        .anim-up {
+          opacity: 0;
+          transform: translateY(28px);
+          transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.1,1,0.1,1);
+        }
+        .anim-left {
+          opacity: 0;
+          transform: translateX(-40px);
+          transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.1,1,0.1,1);
+        }
+        body.page-loaded .anim-pop  { opacity: 1; transform: scale(1) translateY(0); }
+        body.page-loaded .anim-up   { opacity: 1; transform: translateY(0); }
+        body.page-loaded .anim-left { opacity: 1; transform: translateX(0); }
+        .anim-d1 { transition-delay: 0.1s !important; }
+        .anim-d2 { transition-delay: 0.22s !important; }
+        .anim-d3 { transition-delay: 0.34s !important; }
+        .anim-d4 { transition-delay: 0.46s !important; }
+        .anim-d5 { transition-delay: 0.58s !important; }
+        .anim-d6 { transition-delay: 0.70s !important; }
+      `}</style>
+
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
       {/* HERO */}
       <header style={{minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'160px 24px 60px'}}>
 
         {/* Logo hero — transparent PNG via canvas processing */}
-        <div style={{margin:'0 auto 32px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div className="anim-pop anim-d1" style={{margin:'0 auto 32px',display:'flex',alignItems:'center',justifyContent:'center'}}>
           {s.logo_url
             ? <img src={s.logo_url} alt={serverName} style={{
                 maxWidth:180,maxHeight:180,display:'block',
@@ -96,18 +127,18 @@ export default function HomePage({ settings }) {
           }
         </div>
 
-        <span className="tagline-pill" style={{marginBottom:24}}>SERVER ECONOMY | JAVA &amp; BEDROCK</span>
+        <span className="tagline-pill anim-up anim-d2" style={{marginBottom:24}}>SERVER ECONOMY | JAVA &amp; BEDROCK</span>
 
-        <h1 className="font-space" style={{fontSize:'clamp(28px,6vw,48px)',fontWeight:700,lineHeight:1.2,marginBottom:16,maxWidth:800}}>
+        <h1 className="font-space anim-pop anim-d3" style={{fontSize:'clamp(28px,6vw,48px)',fontWeight:700,lineHeight:1.2,marginBottom:16,maxWidth:800}}>
           {s.hero_title || <>Selamat <span style={{color:'var(--primary)',textShadow:'0 0 30px var(--primary-glow)'}}>Datang</span></>}
         </h1>
 
-        <p style={{color:'var(--text-muted)',fontSize:15,maxWidth:540,lineHeight:1.6,marginBottom:40}}>
+        <p className="anim-up anim-d4" style={{color:'var(--text-muted)',fontSize:15,maxWidth:540,lineHeight:1.6,marginBottom:40}}>
           {s.server_description || 'Server Minecraft Indonesia dengan komunitas solid, event seru, dan dunia tanpa batas.'}
         </p>
 
         {/* Triple IP Grid */}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,width:'100%',maxWidth:750,marginBottom:24}} className="ip-grid">
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,width:'100%',maxWidth:750,marginBottom:24}} className="ip-grid anim-up anim-d5">
           {[
             {label:'Java Edition IP',   addr:serverIp,   icon:'fa-computer',              copy:serverIp,   copyLabel:'IP Java'},
             {label:'Bedrock Edition IP', addr:serverIp,   icon:'fa-mobile-screen-button',  copy:serverIp,   copyLabel:'IP Bedrock'},
