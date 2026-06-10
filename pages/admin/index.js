@@ -82,9 +82,6 @@ export default function AdminPanel() {
   const [settings,          setSettings]          = useState({});
   const [settingsSaving,    setSettingsSaving]    = useState(false);
   const [testPluginForm,    setTestPluginForm]    = useState({player_name:'',product_id:''});
-  const dragProdIdx = useRef(null);
-  const dragCatIdx  = useRef(null);
-
   const af = useAF();
 
   useEffect(() => { if (localStorage.getItem('admin_token')) setLoggedIn(true); }, []);
@@ -300,7 +297,7 @@ export default function AdminPanel() {
             {tab==='products' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <p style={{color:'var(--text-muted)',fontSize:13}}>{products.length} produk terdaftar · <span style={{color:'rgba(255,255,255,0.3)'}}>drag <i className="fa-solid fa-grip-vertical" style={{fontSize:10}}/> untuk ubah urutan</span></p>
+                  <p style={{color:'var(--text-muted)',fontSize:13}}>{products.length} produk terdaftar · <span style={{color:'rgba(255,255,255,0.3)'}}>ubah nomor urut untuk mengatur posisi</span></p>
                   <button className="btn-primary-fn" onClick={()=>{setEditProduct({});setShowProductModal(true);}}>
                     <i className="fa-solid fa-plus"/> Tambah Produk
                   </button>
@@ -309,33 +306,29 @@ export default function AdminPanel() {
                   <div style={{overflowX:'auto'}}>
                     <table className="admin-table" style={{minWidth:700}}>
                       <thead><tr>
-                        {['','Gambar','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
+                        {['No.','Gambar','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
                       </tr></thead>
-                      <tbody
-                        onDragOver={e=>e.preventDefault()}
-                      >
+                      <tbody>
                         {products.map((p,idx)=>(
-                          <tr key={p.id}
-                            onDragOver={e=>{ e.preventDefault(); e.currentTarget.style.background='rgba(255,107,0,0.07)'; }}
-                            onDragLeave={e=>{ e.currentTarget.style.background=''; }}
-                            onDrop={async e=>{
-                              e.preventDefault(); e.currentTarget.style.background='';
-                              const fromIdx = dragProdIdx.current;
-                              dragProdIdx.current = null;
-                              if(fromIdx === null || fromIdx === idx) return;
-                              const reordered=[...products];
-                              const [moved]=reordered.splice(fromIdx,1);
-                              reordered.splice(idx,0,moved);
-                              setProducts(reordered);
-                              await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
-                            }}
-                          >
-                            <td style={{width:24,color:'rgba(255,255,255,0.2)',fontSize:13,cursor:'grab',userSelect:'none'}}
-                              draggable
-                              onDragStart={e=>{ e.stopPropagation(); dragProdIdx.current=idx; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); const tr=e.currentTarget.closest('tr'); if(tr) tr.style.opacity='0.4'; }}
-                              onDragEnd={e=>{ e.stopPropagation(); const tr=e.currentTarget.closest('tr'); if(tr) tr.style.opacity='1'; }}
-                            >
-                              <i className="fa-solid fa-grip-vertical"/>
+                          <tr key={p.id}>
+                            <td style={{width:60}}>
+                              <input
+                                type="number"
+                                min={1}
+                                max={products.length}
+                                defaultValue={idx+1}
+                                style={{width:50,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:6,color:'#fff',padding:'4px 6px',fontSize:13,textAlign:'center'}}
+                                onBlur={async e=>{
+                                  const newPos = Math.max(1,Math.min(products.length, parseInt(e.target.value)||idx+1)) - 1;
+                                  if(newPos===idx){e.target.value=idx+1;return;}
+                                  const reordered=[...products];
+                                  const [moved]=reordered.splice(idx,1);
+                                  reordered.splice(newPos,0,moved);
+                                  setProducts(reordered);
+                                  await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                                }}
+                                onKeyDown={e=>{ if(e.key==='Enter') e.currentTarget.blur(); }}
+                              />
                             </td>
                             <td>
                               {p.image_url
@@ -387,39 +380,39 @@ export default function AdminPanel() {
             {tab==='categories' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <p style={{color:'var(--text-muted)',fontSize:13}}>{categories.length} kategori · <span style={{color:'rgba(255,255,255,0.3)'}}>drag kartu untuk ubah urutan</span></p>
+                  <p style={{color:'var(--text-muted)',fontSize:13}}>{categories.length} kategori · <span style={{color:'rgba(255,255,255,0.3)'}}>ubah nomor untuk mengatur urutan</span></p>
                   <button className="btn-primary-fn" onClick={()=>{setEditCategory({});setShowCategoryModal(true);}}>
                     <i className="fa-solid fa-plus"/> Tambah Kategori
                   </button>
                 </div>
-                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}} onDragOver={e=>e.preventDefault()}>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
                   {categories.map((c,idx)=>(
-                    <div key={c.id} className="admin-card" style={{padding:'16px 18px',transition:'opacity 0.15s, box-shadow 0.15s'}}
-                      onDragOver={e=>{ e.preventDefault(); e.currentTarget.style.boxShadow='0 0 0 2px var(--primary)'; }}
-                      onDragLeave={e=>{ e.currentTarget.style.boxShadow=''; }}
-                      onDrop={async e=>{
-                        e.preventDefault(); e.currentTarget.style.boxShadow='';
-                        const fromIdx = dragCatIdx.current;
-                        dragCatIdx.current = null;
-                        if(fromIdx === null || fromIdx === idx) return;
-                        const reordered=[...categories];
-                        const [moved]=reordered.splice(fromIdx,1);
-                        reordered.splice(idx,0,moved);
-                        setCategories(reordered);
-                        await af('/api/admin/categories',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
-                      }}
-                    >
+                    <div key={c.id} className="admin-card" style={{padding:'16px 18px'}}>
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
                         <div style={{display:'flex',alignItems:'center',gap:12}}>
-                          <span
-                            draggable
-                            title="Drag untuk ubah urutan"
-                            onDragStart={e=>{ e.stopPropagation(); dragCatIdx.current=idx; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); const card=e.currentTarget.closest('.admin-card'); if(card) card.style.opacity='0.4'; }}
-                            onDragEnd={e=>{ e.stopPropagation(); const card=e.currentTarget.closest('.admin-card'); if(card){ card.style.opacity='1'; card.style.boxShadow=''; } }}
-                            style={{cursor:'grab',color:'rgba(255,255,255,0.2)',fontSize:14,padding:'2px 4px',userSelect:'none'}}
-                          ><i className="fa-solid fa-grip-vertical"/></span>
-                          <span style={{fontSize:28,pointerEvents:'none'}}>{c.icon}</span>
-                          <div style={{pointerEvents:'none'}}>
+                          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
+                            <span style={{fontSize:10,color:'rgba(255,255,255,0.35)',fontWeight:600}}>No.</span>
+                            <input
+                              type="number"
+                              min={1}
+                              max={categories.length}
+                              defaultValue={idx+1}
+                              title="Ubah nomor urut"
+                              style={{width:40,background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.12)',borderRadius:6,color:'#fff',padding:'3px 4px',fontSize:12,textAlign:'center'}}
+                              onBlur={async e=>{
+                                const newPos = Math.max(1,Math.min(categories.length, parseInt(e.target.value)||idx+1)) - 1;
+                                if(newPos===idx){e.target.value=idx+1;return;}
+                                const reordered=[...categories];
+                                const [moved]=reordered.splice(idx,1);
+                                reordered.splice(newPos,0,moved);
+                                setCategories(reordered);
+                                await af('/api/admin/categories',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                              }}
+                              onKeyDown={e=>{ if(e.key==='Enter') e.currentTarget.blur(); }}
+                            />
+                          </div>
+                          <span style={{fontSize:28}}>{c.icon}</span>
+                          <div>
                             <p style={{fontWeight:700,color:'#fff',fontSize:14}}>{c.name}</p>
                             <p style={{fontSize:11,color:'var(--text-muted)'}}>{c.product_count||0} produk</p>
                           </div>
@@ -435,7 +428,7 @@ export default function AdminPanel() {
                           </button>
                         </div>
                       </div>
-                      {c.description&&<p style={{fontSize:12,color:'var(--text-muted)',lineHeight:1.5,pointerEvents:'none'}}>{c.description}</p>}
+                      {c.description&&<p style={{fontSize:12,color:'var(--text-muted)',lineHeight:1.5}}>{c.description}</p>}
                     </div>
                   ))}
                   {categories.length===0&&<p style={{color:'var(--text-muted)',fontSize:13}}>Belum ada kategori</p>}
