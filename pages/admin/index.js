@@ -82,6 +82,8 @@ export default function AdminPanel() {
   const [settings,          setSettings]          = useState({});
   const [settingsSaving,    setSettingsSaving]    = useState(false);
   const [testPluginForm,    setTestPluginForm]    = useState({player_name:'',product_id:''});
+  const dragProdIdx = useRef(null);
+  const dragCatIdx  = useRef(null);
 
   const af = useAF();
 
@@ -313,14 +315,15 @@ export default function AdminPanel() {
                         {products.map((p,idx)=>(
                           <tr key={p.id}
                             draggable
-                            onDragStart={e=>{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); e.currentTarget.style.opacity='0.4'; }}
-                            onDragEnd={e=>{ e.currentTarget.style.opacity='1'; }}
+                            onDragStart={e=>{ dragProdIdx.current=idx; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); e.currentTarget.style.opacity='0.4'; }}
+                            onDragEnd={e=>{ dragProdIdx.current=null; e.currentTarget.style.opacity='1'; }}
                             onDragOver={e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.style.background='rgba(255,107,0,0.07)'; }}
                             onDragLeave={e=>{ e.currentTarget.style.background=''; }}
                             onDrop={async e=>{
-                              e.preventDefault(); e.currentTarget.style.background='';
-                              const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
-                              if(isNaN(fromIdx)||fromIdx===idx) return;
+                              e.preventDefault(); e.stopPropagation(); e.currentTarget.style.background='';
+                              const fromIdx = dragProdIdx.current !== null ? dragProdIdx.current : parseInt(e.dataTransfer.getData('text/plain'));
+                              dragProdIdx.current = null;
+                              if(fromIdx === null || isNaN(Number(fromIdx)) || fromIdx === idx) return;
                               const reordered=[...products];
                               const [moved]=reordered.splice(fromIdx,1);
                               reordered.splice(idx,0,moved);
@@ -391,14 +394,15 @@ export default function AdminPanel() {
                   {categories.map((c,idx)=>(
                     <div key={c.id} className="admin-card" style={{padding:'16px 18px',cursor:'grab',transition:'opacity 0.15s, box-shadow 0.15s'}}
                       draggable
-                      onDragStart={e=>{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); e.currentTarget.style.opacity='0.4'; }}
-                      onDragEnd={e=>{ e.currentTarget.style.opacity='1'; e.currentTarget.style.boxShadow=''; }}
+                      onDragStart={e=>{ dragCatIdx.current=idx; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); e.currentTarget.style.opacity='0.4'; }}
+                      onDragEnd={e=>{ dragCatIdx.current=null; e.currentTarget.style.opacity='1'; e.currentTarget.style.boxShadow=''; }}
                       onDragOver={e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.style.boxShadow='0 0 0 2px var(--primary)'; }}
                       onDragLeave={e=>{ e.currentTarget.style.boxShadow=''; }}
                       onDrop={async e=>{
-                        e.preventDefault(); e.currentTarget.style.boxShadow='';
-                        const fromIdx=parseInt(e.dataTransfer.getData('text/plain'));
-                        if(isNaN(fromIdx)||fromIdx===idx) return;
+                        e.preventDefault(); e.stopPropagation(); e.currentTarget.style.boxShadow='';
+                        const fromIdx = dragCatIdx.current !== null ? dragCatIdx.current : parseInt(e.dataTransfer.getData('text/plain'));
+                        dragCatIdx.current = null;
+                        if(fromIdx === null || isNaN(Number(fromIdx)) || fromIdx === idx) return;
                         const reordered=[...categories];
                         const [moved]=reordered.splice(fromIdx,1);
                         reordered.splice(idx,0,moved);
