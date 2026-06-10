@@ -61,7 +61,8 @@ export default function InvoicePage({ order: initialOrder, settings }) {
   const router     = useRouter();
   const s          = settings || {};
   const serverName = s.server_name || 'Fancy Network';
-  const { src: logoSrc } = useTransparentLogo();
+  const logoUrl    = s.logo_url || '';
+  const { src: logoSrc } = useTransparentLogo(logoUrl);
 
   const [player,      setPlayer]      = useState(null);
   const [showLogin,   setShowLogin]   = useState(false);
@@ -89,6 +90,18 @@ export default function InvoicePage({ order: initialOrder, settings }) {
     setPlayer(null); localStorage.removeItem('mc_player'); localStorage.removeItem('mc_token');
   };
   const handleLoginSuccess = p => { setPlayer(p); localStorage.setItem('mc_player',JSON.stringify(p)); setShowLogin(false); };
+
+  // ── Verifikasi langsung saat halaman dibuka (untuk return dari payment gateway) ──
+  useEffect(() => {
+    const checkNow = async () => {
+      try {
+        const res  = await fetch('/api/orders/verify/'+initialOrder.order_id, { credentials:'include' });
+        const data = await res.json();
+        if (data?.order) setLiveOrder(data.order);
+      } catch {}
+    };
+    checkNow();
+  }, []);
 
   // ── Polling status ──────────────────────────────────────────────
   useEffect(() => {
@@ -202,7 +215,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
 
   // ── Download PDF ────────────────────────────────────────────────
   const handleDownloadPdf = () => {
-    const html = generateInvoiceHtml(liveOrder, serverName);
+    const html = generateInvoiceHtml(liveOrder, serverName, logoSrc);
     const win  = window.open('','_blank');
     if (!win) { alert('Izinkan popup untuk download PDF'); return; }
     win.document.write(html);
@@ -270,7 +283,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           {/* Header */}
           <header style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',borderBottom:'1px solid rgba(255,255,255,0.06)',paddingBottom:28,marginBottom:28,flexWrap:'wrap',gap:16}}>
             <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <LogoImage alt={serverName} style={{height:38,width:38,objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.55))'}}/>
+              <LogoImage src={logoUrl||undefined} alt={serverName} style={{height:38,width:38,objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.55))'}}/>
               <div>
                 <div style={{fontFamily:'Space Grotesk,sans-serif',fontWeight:700,fontSize:20,letterSpacing:0.5}}>
                   <span style={{color:'var(--primary)'}}>FANCY</span>{' '}
@@ -378,8 +391,8 @@ export default function InvoicePage({ order: initialOrder, settings }) {
             <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
               {isPending ? (
                 <button onClick={openSnap} disabled={snapLoading} className="btn-primary-fn" style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600,opacity:snapLoading?0.6:1}}>
-                  <i className={`fa-solid ${snapLoading?'fa-spinner fa-spin':snapClosed?'fa-rotate-right':'fa-credit-card'}`}/>
-                  {snapLoading?'Memuat...':snapClosed?'Buka Payment Gateway Lagi':'Bayar Sekarang'}
+                  <i className={`fa-solid ${snapLoading?'fa-spinner fa-spin':'fa-credit-card'}`}/>
+                  {snapLoading?'Memuat...':'Bayar Sekarang'}
                 </button>
               ) : (
                 <button onClick={handleDownloadPdf} className="btn-ghost-fn" style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600}}>
@@ -403,7 +416,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
   );
 }
 
-function generateInvoiceHtml(order, serverName) {
+function generateInvoiceHtml(order, serverName, logoSrc) {
   const idrFmt     = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
   const subtotal   = (order.amount||0)+(order.discount_amount||0);
   const discount   = order.discount_amount||0;
@@ -412,62 +425,173 @@ function generateInvoiceHtml(order, serverName) {
   const formatDate = iso => iso ? new Date(iso).toLocaleString('id-ID',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})+' WIB' : '-';
   const statusMap  = { success:'LUNAS', settlement:'LUNAS', capture:'LUNAS', pending:'MENUNGGU', failed:'GAGAL', cancelled:'DIBATALKAN', cancel:'DIBATALKAN', expired:'KADALUARSA', expire:'KADALUARSA' };
   const colorMap   = { success:'#22c55e', settlement:'#22c55e', capture:'#22c55e', pending:'#f59e0b', failed:'#ef4444', cancelled:'#6b7280', cancel:'#6b7280', expired:'#6b7280', expire:'#6b7280' };
-  const sl = statusMap[order.payment_status] || order.payment_status?.toUpperCase();
+  const sl = statusMap[order.payment_status] || (order.payment_status||'').toUpperCase();
   const sc = colorMap[order.payment_status] || '#6b7280';
+  const sName = (serverName||'NETWORK').replace(/fancy/gi,'').trim()||'NETWORK';
 
-  return `<!DOCTYPE html><html lang="id"><head><meta charset="UTF-8"/><title>Invoice #${order.order_id}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Arial,sans-serif;background:#fff;color:#111;padding:40px;}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #f0f0f0;}
-.brand{font-size:22px;font-weight:900;color:#ff6b00;}.brand span{color:#111;}
-.badge{padding:5px 14px;border-radius:4px;font-size:12px;font-weight:700;letter-spacing:1px;background:${sc}22;color:${sc};border:1px solid ${sc}55;}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:28px;}
-.lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#888;margin-bottom:6px;font-weight:700;}
-table{width:100%;border-collapse:collapse;margin-bottom:20px;}
-th{font-size:10px;text-align:left;text-transform:uppercase;color:#888;padding:8px 12px;background:#f9f9f9;border-bottom:2px solid #eee;font-weight:700;}
-td{padding:14px 12px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:top;}
-.tr{text-align:right;}.sum-wrap{display:flex;justify-content:flex-end;margin-bottom:24px;}
-.sum{width:280px;}.sr{display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#555;}
-.st{border-top:2px solid #111;padding-top:10px;margin-top:6px;font-size:17px;font-weight:700;color:#111;display:flex;justify-content:space-between;}
-.st span:last-child{color:#ff6b00;}.foot{margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:11px;color:#aaa;text-align:center;}
-@media print{body{padding:20px;}}</style></head>
+  return `<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<title>Invoice #${order.order_id}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; background: #ffffff; color: #111111; font-size: 13px; line-height: 1.5; }
+  .page { width: 680px; margin: 0 auto; padding: 40px 40px 50px; }
+
+  /* ── Header ── */
+  .hdr-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #eeeeee; }
+  .brand-name { font-size: 22px; font-weight: 900; color: #ff6b00; }
+  .brand-name span { color: #111111; }
+  .brand-sub { font-size: 11px; color: #888888; margin-top: 2px; }
+  .inv-title { font-size: 22px; font-weight: 800; color: #111111; text-align: right; }
+  .inv-id { font-size: 12px; color: #888888; text-align: right; margin-top: 2px; }
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 1px; border: 1px solid; }
+
+  /* ── Info grid ── */
+  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
+  .info-table td { width: 50%; vertical-align: top; padding: 0; }
+  .info-table td:last-child { padding-left: 30px; }
+  .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: #888888; font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid #eeeeee; padding-bottom: 4px; }
+  .info-row { font-size: 12px; color: #444444; margin-bottom: 4px; }
+  .info-val { font-weight: 600; color: #111111; }
+
+  /* ── Products table ── */
+  .prod-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+  .prod-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #888888; padding: 9px 12px; background: #f7f7f7; border-top: 1px solid #e8e8e8; border-bottom: 2px solid #e8e8e8; font-weight: 700; }
+  .prod-table th.tr { text-align: right; }
+  .prod-table td { padding: 14px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
+  .prod-table td.tr { text-align: right; }
+  .prod-name { font-weight: 700; font-size: 13px; color: #111111; margin-bottom: 2px; }
+  .prod-sub { font-size: 11px; color: #888888; }
+  .cat-tag { display: inline-block; background: #fff3e8; border: 1px solid #ffcc99; color: #cc5500; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+  .disc-tag { display: inline-block; background: #eafaf1; border: 1px solid #a9dfbf; color: #1a8a45; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
+
+  /* ── Summary ── */
+  .sum-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
+  .sum-table td { padding: 5px 0; font-size: 13px; }
+  .sum-table .sum-inner { width: 280px; margin-left: auto; }
+  .sum-row-label { color: #555555; }
+  .sum-row-val { text-align: right; color: #333333; }
+  .sum-disc { color: #1a8a45; }
+  .sum-total-row td { border-top: 2px solid #111111; padding-top: 10px; margin-top: 6px; }
+  .sum-total-label { font-size: 16px; font-weight: 800; color: #111111; }
+  .sum-total-val { font-size: 16px; font-weight: 800; color: #ff6b00; text-align: right; }
+
+  /* ── Footer ── */
+  .foot { margin-top: 36px; padding-top: 14px; border-top: 1px solid #eeeeee; font-size: 11px; color: #aaaaaa; text-align: center; }
+
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page { padding: 20px; }
+  }
+</style>
+</head>
 <body>
-<div class="header">
-  <div><div class="brand">FANCY<span> ${(serverName||'NETWORK').replace(/fancy/gi,'').trim()||'NETWORK'}</span></div>
-  <div style="font-size:12px;color:#888;margin-top:2px;">Premium Minecraft Server Shop</div>
-  <div style="margin-top:10px;font-size:20px;font-weight:700;">INVOICE</div>
-  <div style="font-size:12px;color:#888;">#${order.order_id}</div></div>
-  <div style="text-align:right;"><div class="badge">${sl}</div>
-  <div style="font-size:12px;color:#888;margin-top:10px;">${formatDate(order.created_at)}</div></div>
-</div>
-<div class="grid">
-  <div><div class="lbl">Ditagih Kepada</div>
-  <div style="font-weight:600;font-size:14px;">${order.player_username||'-'}</div>
-  ${order.discord_username?`<div style="font-size:12px;color:#555;">Discord: ${order.discord_username}</div>`:''}
-  </div>
-  <div><div class="lbl">Detail Transaksi</div>
-  <div style="font-size:12px;color:#555;">Tanggal: ${formatDate(order.created_at)}</div>
-  <div style="font-size:12px;color:#555;">Metode: ${order.payment_method||'QRIS'}</div>
-  <div style="font-size:12px;color:#555;">ID: ${order.order_id}</div>
-  ${order.redeem_code?`<div style="font-size:12px;color:#555;">Kode: ${order.redeem_code}</div>`:''}
-  </div>
-</div>
-<table>
-  <thead><tr><th>Produk</th><th class="tr">Kategori</th><th class="tr">Harga</th></tr></thead>
-  <tbody>
+<div class="page">
+
+  <!-- Header -->
+  <table class="hdr-table">
     <tr>
-      <td><strong>${order.product_name||'-'}</strong><br/><span style="font-size:11px;color:#888;">Permanen · Lifetime</span></td>
-      <td class="tr">${order.category_name||'Produk'}</td>
-      <td class="tr"><strong>${idrFmt(subtotal)}</strong></td>
+      <td style="vertical-align:top;">
+        <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:4px;">
+          ${logoSrc ? `<img src="${logoSrc}" alt="Logo" style="width:44px;height:44px;object-fit:contain;vertical-align:middle;"/>` : ''}
+          <div>
+            <div class="brand-name">FANCY<span> ${sName}</span></div>
+            <div class="brand-sub">Premium Minecraft Server Shop</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;font-size:19px;font-weight:800;color:#111;">INVOICE</div>
+        <div style="font-size:12px;color:#888;margin-top:2px;">#${order.order_id}</div>
+      </td>
+      <td style="vertical-align:top;text-align:right;">
+        <div class="badge" style="color:${sc};border-color:${sc};background:${sc}18;">${sl}</div>
+        <div style="font-size:12px;color:#888;margin-top:8px;">${formatDate(order.created_at)}</div>
+      </td>
     </tr>
-    ${discount>0?`<tr><td style="color:#22a85a;"><strong>Diskon Redeem</strong><br/><span style="font-size:11px;color:#888;">Kode: ${order.redeem_code}</span></td><td class="tr" style="color:#22a85a;">Diskon</td><td class="tr" style="color:#22a85a;"><strong>-${idrFmt(discount)}</strong></td></tr>`:''}
-  </tbody>
-</table>
-<div class="sum-wrap"><div class="sum">
-  <div class="sr"><span>Subtotal</span><span>${idrFmt(order.amount||0)}</span></div>
-  <div class="sr"><span>Biaya Layanan (2.5%)</span><span>${idrFmt(serviceFee)}</span></div>
-  ${discount>0?`<div class="sr" style="color:#22a85a;"><span>Diskon</span><span>-${idrFmt(discount)}</span></div>`:''}
-  <div class="st"><span>Total</span><span>${idrFmt(total)}</span></div>
-</div></div>
-<div class="foot">Dokumen ini digenerate otomatis oleh ${serverName||'Fancy Network'} Store · Simpan sebagai bukti pembayaran resmi.</div>
-</body></html>`;
+  </table>
+
+  <!-- Info grid -->
+  <table class="info-table">
+    <tr>
+      <td>
+        <div class="section-label">Ditagih Kepada</div>
+        <div class="info-row"><span class="info-val">${order.player_username||'-'}</span></div>
+        ${order.discord_username?`<div class="info-row">Discord: <span class="info-val">${order.discord_username}</span></div>`:''}
+      </td>
+      <td>
+        <div class="section-label">Detail Transaksi</div>
+        <div class="info-row">Tanggal: <span class="info-val">${formatDate(order.created_at)}</span></div>
+        <div class="info-row">Metode Bayar: <span class="info-val">${order.payment_method||'QRIS'}</span></div>
+        <div class="info-row">ID Order: <span class="info-val">${order.order_id}</span></div>
+        ${order.redeem_code?`<div class="info-row">Kode Redeem: <span class="info-val" style="color:#1a8a45;">${order.redeem_code}</span></div>`:''}
+      </td>
+    </tr>
+  </table>
+
+  <!-- Products table -->
+  <table class="prod-table">
+    <thead>
+      <tr>
+        <th style="width:55%;">Deskripsi Produk</th>
+        <th style="width:20%;">Kategori</th>
+        <th class="tr" style="width:25%;">Harga</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>
+          <div class="prod-name">${order.product_name||'-'}</div>
+          <div class="prod-sub">Durasi: Permanen &middot; Lifetime</div>
+        </td>
+        <td><span class="cat-tag">${order.category_name||'Produk'}</span></td>
+        <td class="tr" style="font-weight:700;">${idrFmt(subtotal)}</td>
+      </tr>
+      ${discount>0?`
+      <tr>
+        <td>
+          <div class="prod-name" style="color:#1a8a45;">Diskon Kode Redeem</div>
+          <div class="prod-sub">Kode: ${order.redeem_code}</div>
+        </td>
+        <td><span class="disc-tag">Diskon</span></td>
+        <td class="tr" style="font-weight:700;color:#1a8a45;">-${idrFmt(discount)}</td>
+      </tr>`:''}
+    </tbody>
+  </table>
+
+  <!-- Summary -->
+  <table class="sum-table">
+    <tr>
+      <td>
+        <table style="width:280px;margin-left:auto;border-collapse:collapse;">
+          <tr>
+            <td style="padding:5px 0;font-size:13px;color:#555;">Subtotal</td>
+            <td style="padding:5px 0;font-size:13px;text-align:right;color:#333;">${idrFmt(order.amount||0)}</td>
+          </tr>
+          <tr>
+            <td style="padding:5px 0;font-size:13px;color:#555;">Biaya Layanan (2.5%)</td>
+            <td style="padding:5px 0;font-size:13px;text-align:right;color:#333;">${idrFmt(serviceFee)}</td>
+          </tr>
+          ${discount>0?`
+          <tr>
+            <td style="padding:5px 0;font-size:13px;color:#1a8a45;">Diskon Redeem</td>
+            <td style="padding:5px 0;font-size:13px;text-align:right;color:#1a8a45;">-${idrFmt(discount)}</td>
+          </tr>`:''}
+          <tr style="border-top:2px solid #111;">
+            <td style="padding-top:10px;font-size:16px;font-weight:800;color:#111;">Total Pembayaran</td>
+            <td style="padding-top:10px;font-size:16px;font-weight:800;color:#ff6b00;text-align:right;">${idrFmt(total)}</td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Footer -->
+  <div class="foot">
+    Dokumen ini digenerate otomatis oleh ${serverName||'Fancy Network'} Store &bull; Simpan sebagai bukti pembayaran resmi.
+  </div>
+
+</div>
+</body>
+</html>`;
 }
