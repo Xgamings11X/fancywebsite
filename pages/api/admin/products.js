@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       const { id, action, ids } = req.body;
       if (action === 'reorder') {
         if (!Array.isArray(ids)) return res.status(400).json({ success:false });
-        await Promise.all(ids.map((pid, idx) => ProductsAsync.update(pid, { sort_order: idx })));
+        await Promise.all(ids.map((pid, idx) => ProductsAsync.update(pid, { sort_order: idx + 1 })));
         return res.json({ success:true });
       }
       if (action === 'duplicate') {
