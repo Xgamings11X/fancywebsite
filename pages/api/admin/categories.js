@@ -25,15 +25,6 @@ export default function handler(req, res) {
         description:description||'', sort_order:parseInt(sort_order)||0 });
       return res.status(201).json({ success:true, id: newC.id });
     }
-    if (req.method === 'PATCH') {
-      const { action, items } = req.body;
-      if (action === 'reorder' && Array.isArray(items)) {
-        items.forEach(({ id: cid, sort_order }) => Categories.update(cid, { sort_order }));
-        return res.json({ success: true });
-      }
-      return res.status(400).json({ success: false });
-    }
-
     if (req.method === 'PUT') {
       const { id, ...patch } = req.body;
       if (!id) return res.status(400).json({ success:false });
@@ -46,6 +37,15 @@ export default function handler(req, res) {
       if (count > 0) return res.status(400).json({ success:false, message:`Ada ${count} produk aktif, pindahkan dulu.` });
       Categories.remove(id);
       return res.json({ success:true });
+    }
+    if (req.method === 'PATCH') {
+      const { action, ids } = req.body;
+      if (action === 'reorder') {
+        if (!Array.isArray(ids)) return res.status(400).json({ success:false });
+        ids.forEach((cid, idx) => Categories.update(cid, { sort_order: idx }));
+        return res.json({ success:true });
+      }
+      return res.status(400).json({ success:false, message:'Unknown action' });
     }
     return res.status(405).end();
   } catch(e) {

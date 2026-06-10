@@ -76,16 +76,12 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'PATCH') {
-      const { id, action, items } = req.body;
-
-      // Batch reorder: update sort_order semua produk sekaligus
-      if (action === 'reorder' && Array.isArray(items)) {
-        await Promise.all(items.map(({ id: pid, sort_order }) =>
-          ProductsAsync.update(pid, { sort_order })
-        ));
-        return res.json({ success: true });
+      const { id, action, ids } = req.body;
+      if (action === 'reorder') {
+        if (!Array.isArray(ids)) return res.status(400).json({ success:false });
+        await Promise.all(ids.map((pid, idx) => ProductsAsync.update(pid, { sort_order: idx })));
+        return res.json({ success:true });
       }
-
       if (action === 'duplicate') {
         const p = await ProductsAsync.byId(id);
         if (!p) return res.status(404).json({ success:false });
