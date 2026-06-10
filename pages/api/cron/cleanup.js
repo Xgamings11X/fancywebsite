@@ -9,7 +9,7 @@
  *   • resolved / rejected  → arsip + hapus setelah 2 menit (admin bisa batalkan)
  *   • tidak aktif > 5 hari → arsip + hapus otomatis
  */
-import { TicketsAsync }        from '../../../lib/redis.js';
+import { TicketsAsync, OrdersAsync } from '../../../lib/redis.js';
 import { webhookTicketArchive } from '../../../lib/discord.js';
 import { verifyToken }          from '../../../lib/auth.js';
 import { parse }                from 'cookie';
@@ -87,10 +87,48 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.json({ success: true, archived, skipped, total: tickets.length,
+    // Expire order pending > 1 hari
+  let expiredOrders = 0;
+  try {
+    const { expireStaleOrders } = await import('./cleanup.js');
+    expiredOrders = await expireStaleOrders();
+  } catch (e) { console.error('[cleanup] expireStaleOrders:', e.message); }
+
+  return res.json({ success: true, expiredOrders, archived, skipped, total: tickets.length,
       message: `Dibersihkan: ${archived.length} tiket, Ditunda: ${skipped.length} tiket` });
   } catch (e) {
     console.error('[cleanup] error:', e.message);
     return res.status(500).json({ success: false, message: e.message });
   }
+}
+
+
+// ── Auto-expire order pending > 1 hari ──────────────────────────
+// Dipanggil dari handler cleanup yang sama (sudah ada di vercel.json)
+export async function expireStaleOrders() {
+  const { OrdersAsync }        = await import('../../../lib/redis.js');
+  const { webhookTransaction } = await import('../../../lib/discord.js');
+
+  const all     = await OrdersAsync.all();
+  const now     = Date.now();
+  const expired = all.filter(o => {
+    if (o.payment_status !== 'pending') return false;
+    // Gunakan expired_at jika ada, fallback ke created_at + 24 jam
+    const expiry = o.expired_at
+      ? new Date(o.expired_at).getTime()
+      : new Date(o.created_at).getTime() + 24*60*60*1000;
+    return now > expiry;
+  });
+
+  let count = 0;
+  for (const order of expired) {
+    await OrdersAsync.update(order.order_id, {
+      payment_status: 'expired',
+      expired_at:     new Date().toISOString(),
+    });
+    const updated = await OrdersAsync.byId(order.order_id);
+    try { await webhookTransaction(updated); } catch {}
+    count++;
+  }
+  return count;
 }
