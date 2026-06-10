@@ -294,10 +294,13 @@ export default function StorePage({ settings, categories: initCategories, produc
                     {/* Image or icon */}
                     {product.image_url
                       ? <>
-                          <img src={product.image_url} alt={product.name} className="product-img" onError={e=>e.target.style.display='none'}/>
+                          <img src={product.image_url} alt={product.name} className="product-img"
+                            referrerPolicy="no-referrer"
+                            onError={e=>{ e.target.onerror=null; e.target.style.opacity='0'; }}
+                          />
                           <div className="product-img-glint"/>
                         </>
-                      : <span style={{fontSize:54,opacity:0.85,position:'relative',zIndex:3,filter:`drop-shadow(0 0 12px ${col.glow})`}}>{product.category_icon||'📦'}</span>
+                      : null
                     }
                     {/* Badges */}
                     {discount>0 && (
