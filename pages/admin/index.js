@@ -313,6 +313,7 @@ export default function AdminPanel() {
                           <tr key={p.id}>
                             <td style={{width:60}}>
                               <input
+                                key={`prod-sort-${p.id}-${idx}`}
                                 type="number"
                                 min={1}
                                 max={products.length}
@@ -326,6 +327,7 @@ export default function AdminPanel() {
                                   reordered.splice(newPos,0,moved);
                                   setProducts(reordered);
                                   await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                                  await load();
                                 }}
                                 onKeyDown={e=>{ if(e.key==='Enter') e.currentTarget.blur(); }}
                               />
@@ -393,6 +395,7 @@ export default function AdminPanel() {
                           <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
                             <span style={{fontSize:10,color:'rgba(255,255,255,0.35)',fontWeight:600}}>No.</span>
                             <input
+                              key={`cat-sort-${c.id}-${idx}`}
                               type="number"
                               min={1}
                               max={categories.length}
@@ -407,6 +410,7 @@ export default function AdminPanel() {
                                 reordered.splice(newPos,0,moved);
                                 setCategories(reordered);
                                 await af('/api/admin/categories',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                                await load();
                               }}
                               onKeyDown={e=>{ if(e.key==='Enter') e.currentTarget.blur(); }}
                             />
