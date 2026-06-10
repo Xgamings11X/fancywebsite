@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
+import ImageUpload from '../../components/ImageUpload';
 
 const TABS = [
   { id:'dashboard', label:'Dashboard',    icon:'fa-chart-line'    },
@@ -9,6 +10,7 @@ const TABS = [
   { id:'redeem',    label:'Redeem Code',   icon:'fa-ticket'        },
   { id:'orders',    label:'Log Transaksi', icon:'fa-receipt'       },
   { id:'reports',   label:'Report',        icon:'fa-flag'          },
+  { id:'settings',  label:'Pengaturan',    icon:'fa-gear'          },
 ];
 
 const idr = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
@@ -77,11 +79,9 @@ export default function AdminPanel() {
   const [showTestPlugin,    setShowTestPlugin]    = useState(false);
   const [testPluginResult,  setTestPluginResult]  = useState(null);
   const [testPluginLoading, setTestPluginLoading] = useState(false);
+  const [settings,          setSettings]          = useState({});
+  const [settingsSaving,    setSettingsSaving]    = useState(false);
   const [testPluginForm,    setTestPluginForm]    = useState({player_name:'',product_id:''});
-
-  // Drag & drop sort
-  const dragItem     = useRef(null);
-  const dragOverItem = useRef(null);
 
   const af = useAF();
 
@@ -110,27 +110,9 @@ export default function AdminPanel() {
       if (['dashboard','orders'].includes(tab))     { const r=await af(`/api/admin/orders?status=${orderFilter}`); if(r.success){setOrders(r.orders||[]);if(r.stats)setStats(r.stats);} }
       if (tab==='reports')                          { const r=await af(`/api/admin/support?status=${reportFilter}`); if(r.success) setTickets(r.tickets||[]); }
       if (tab==='redeem')                           { const r=await af('/api/admin/redeem'); if(r.success) setCodes(r.codes||[]); }
+      if (tab==='settings')                         { const r=await af('/api/admin/settings'); if(r.success) setSettings(r.settings||{}); }
     } catch {}
     setLoading(false);
-  };
-
-  // ── DRAG & DROP ──────────────────────────────────────────────
-  const handleDragStart = (idx) => { dragItem.current = idx; };
-  const handleDragEnter = (idx) => { dragOverItem.current = idx; };
-  const handleDragEnd   = async (list, setList, apiUrl) => {
-    const arr  = [...list];
-    const from = dragItem.current;
-    const to   = dragOverItem.current;
-    dragItem.current = null; dragOverItem.current = null;
-    if (from === null || to === null || from === to) return;
-    const [moved] = arr.splice(from, 1);
-    arr.splice(to, 0, moved);
-    const updated = arr.map((item, i) => ({ ...item, sort_order: i }));
-    setList(updated);
-    try {
-      const r = await af(apiUrl, { method:'PATCH', body: JSON.stringify({ action:'reorder', items: updated.map((item,i)=>({id:item.id,sort_order:i})) }) });
-      if (!r.success) toast.error('Gagal menyimpan urutan');
-    } catch { toast.error('Gagal menyimpan urutan'); }
   };
 
   const login = async e => {
@@ -316,7 +298,7 @@ export default function AdminPanel() {
             {tab==='products' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <p style={{color:'var(--text-muted)',fontSize:13}}>{products.length} produk terdaftar</p>
+                  <p style={{color:'var(--text-muted)',fontSize:13}}>{products.length} produk terdaftar · <span style={{color:'rgba(255,255,255,0.3)'}}>drag <i className="fa-solid fa-grip-vertical" style={{fontSize:10}}/> untuk ubah urutan</span></p>
                   <button className="btn-primary-fn" onClick={()=>{setEditProduct({});setShowProductModal(true);}}>
                     <i className="fa-solid fa-plus"/> Tambah Produk
                   </button>
@@ -325,19 +307,29 @@ export default function AdminPanel() {
                   <div style={{overflowX:'auto'}}>
                     <table className="admin-table" style={{minWidth:700}}>
                       <thead><tr>
-                        <th style={{width:32}}></th>
-                        {['Gambar','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
+                        {['','Gambar','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
                       </tr></thead>
                       <tbody>
-                        {products.map((p,pidx)=>(
+                        {products.map((p,idx)=>(
                           <tr key={p.id}
                             draggable
-                            onDragStart={()=>handleDragStart(pidx)}
-                            onDragEnter={()=>handleDragEnter(pidx)}
-                            onDragEnd={()=>handleDragEnd(products,setProducts,'/api/admin/products')}
-                            onDragOver={e=>e.preventDefault()}
-                            style={{cursor:'grab',opacity:dragItem.current===pidx?0.4:1,transition:'opacity 0.15s'}}>
-                            <td style={{textAlign:'center',color:'var(--text-muted)',fontSize:14,cursor:'grab'}}>
+                            onDragStart={e=>{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); e.currentTarget.style.opacity='0.4'; }}
+                            onDragEnd={e=>{ e.currentTarget.style.opacity='1'; }}
+                            onDragOver={e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.style.background='rgba(255,107,0,0.07)'; }}
+                            onDragLeave={e=>{ e.currentTarget.style.background=''; }}
+                            onDrop={async e=>{
+                              e.preventDefault(); e.currentTarget.style.background='';
+                              const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+                              if(isNaN(fromIdx)||fromIdx===idx) return;
+                              const reordered=[...products];
+                              const [moved]=reordered.splice(fromIdx,1);
+                              reordered.splice(idx,0,moved);
+                              setProducts(reordered);
+                              await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                            }}
+                            style={{cursor:'grab'}}
+                          >
+                            <td style={{width:24,color:'rgba(255,255,255,0.2)',fontSize:13,cursor:'grab'}}>
                               <i className="fa-solid fa-grip-vertical"/>
                             </td>
                             <td>
@@ -390,24 +382,34 @@ export default function AdminPanel() {
             {tab==='categories' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <p style={{color:'var(--text-muted)',fontSize:13}}>{categories.length} kategori</p>
+                  <p style={{color:'var(--text-muted)',fontSize:13}}>{categories.length} kategori · <span style={{color:'rgba(255,255,255,0.3)'}}>drag kartu untuk ubah urutan</span></p>
                   <button className="btn-primary-fn" onClick={()=>{setEditCategory({});setShowCategoryModal(true);}}>
                     <i className="fa-solid fa-plus"/> Tambah Kategori
                   </button>
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
-                  {categories.map((c,cidx)=>(
-                    <div key={c.id} className="admin-card"
+                  {categories.map((c,idx)=>(
+                    <div key={c.id} className="admin-card" style={{padding:'16px 18px',cursor:'grab',transition:'opacity 0.15s, box-shadow 0.15s'}}
                       draggable
-                      onDragStart={()=>handleDragStart(cidx)}
-                      onDragEnter={()=>handleDragEnter(cidx)}
-                      onDragEnd={()=>handleDragEnd(categories,setCategories,'/api/admin/categories')}
-                      onDragOver={e=>e.preventDefault()}
-                      style={{padding:'16px 18px',cursor:'grab',opacity:dragItem.current===cidx?0.4:1,transition:'opacity 0.15s'}}>
+                      onDragStart={e=>{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(idx)); e.currentTarget.style.opacity='0.4'; }}
+                      onDragEnd={e=>{ e.currentTarget.style.opacity='1'; e.currentTarget.style.boxShadow=''; }}
+                      onDragOver={e=>{ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.style.boxShadow='0 0 0 2px var(--primary)'; }}
+                      onDragLeave={e=>{ e.currentTarget.style.boxShadow=''; }}
+                      onDrop={async e=>{
+                        e.preventDefault(); e.currentTarget.style.boxShadow='';
+                        const fromIdx=parseInt(e.dataTransfer.getData('text/plain'));
+                        if(isNaN(fromIdx)||fromIdx===idx) return;
+                        const reordered=[...categories];
+                        const [moved]=reordered.splice(fromIdx,1);
+                        reordered.splice(idx,0,moved);
+                        setCategories(reordered);
+                        await af('/api/admin/categories',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                      }}
+                    >
                       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:10}}>
                         <div style={{display:'flex',alignItems:'center',gap:12}}>
-                          <span style={{fontSize:28}}>{c.icon}</span>
-                          <div>
+                          <span style={{fontSize:28,pointerEvents:'none'}}>{c.icon}</span>
+                          <div style={{pointerEvents:'none'}}>
                             <p style={{fontWeight:700,color:'#fff',fontSize:14}}>{c.name}</p>
                             <p style={{fontSize:11,color:'var(--text-muted)'}}>{c.product_count||0} produk</p>
                           </div>
@@ -423,7 +425,7 @@ export default function AdminPanel() {
                           </button>
                         </div>
                       </div>
-                      {c.description&&<p style={{fontSize:12,color:'var(--text-muted)',lineHeight:1.5}}>{c.description}</p>}
+                      {c.description&&<p style={{fontSize:12,color:'var(--text-muted)',lineHeight:1.5,pointerEvents:'none'}}>{c.description}</p>}
                     </div>
                   ))}
                   {categories.length===0&&<p style={{color:'var(--text-muted)',fontSize:13}}>Belum ada kategori</p>}
@@ -598,6 +600,80 @@ export default function AdminPanel() {
                     ))}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* ── SETTINGS TAB ── */}
+            {tab==='settings' && (
+              <div>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+                  <h2 className="font-space" style={{fontSize:17,fontWeight:700}}><i className="fa-solid fa-gear" style={{marginRight:8,color:'var(--primary)'}}/>Pengaturan Website</h2>
+                </div>
+                <div style={{display:'grid',gap:18}}>
+                  {/* Logo Upload */}
+                  <div style={{background:'rgba(255,107,0,0.04)',border:'1px solid rgba(255,107,0,0.15)',borderRadius:12,padding:'18px 20px'}}>
+                    <h3 className="font-space" style={{fontSize:13,fontWeight:700,color:'var(--primary)',marginBottom:14,letterSpacing:'0.05em'}}>
+                      <i className="fa-solid fa-image" style={{marginRight:7}}/>LOGO &amp; FAVICON
+                    </h3>
+                    <p style={{fontSize:12,color:'var(--text-muted)',marginBottom:14}}>
+                      Logo ini digunakan di Navbar dan secara otomatis juga menjadi Favicon browser. Ukuran disarankan: <strong style={{color:'#fff'}}>256×256px</strong> atau <strong style={{color:'#fff'}}>512×512px</strong>, format PNG transparan.
+                    </p>
+                    <ImageUpload
+                      value={settings.logo_url||''}
+                      onChange={url => setSettings(s=>({...s, logo_url: url}))}
+                      label="Upload Logo (Navbar + Favicon)"
+                      hint="PNG transparan disarankan · Maks 2MB · 256×256 atau 512×512px"
+                      previewSize={96}
+                      adminToken={typeof window!=='undefined' ? localStorage.getItem('admin_token')||'' : ''}
+                    />
+                  </div>
+
+                  {/* General settings */}
+                  <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:12,padding:'18px 20px'}}>
+                    <h3 className="font-space" style={{fontSize:13,fontWeight:700,color:'var(--text-muted)',marginBottom:14,letterSpacing:'0.05em'}}>
+                      <i className="fa-solid fa-server" style={{marginRight:7}}/>INFORMASI SERVER
+                    </h3>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
+                      {[
+                        ['server_name','Nama Server','Fancy Network'],
+                        ['server_ip','IP Server','play.example.com'],
+                        ['logo_text','Teks Logo','Fancy Network'],
+                        ['hero_title','Judul Hero',''],
+                      ].map(([key,lbl,ph])=>(
+                        <div key={key}>
+                          <label style={{fontSize:12,fontWeight:600,color:'var(--text-muted)',display:'block',marginBottom:5}}>{lbl}</label>
+                          <input className="admin-input" value={settings[key]||''} placeholder={ph}
+                            onChange={e=>setSettings(s=>({...s,[key]:e.target.value}))}/>
+                        </div>
+                      ))}
+                      <div style={{gridColumn:'1/-1'}}>
+                        <label style={{fontSize:12,fontWeight:600,color:'var(--text-muted)',display:'block',marginBottom:5}}>Subtitle Hero</label>
+                        <input className="admin-input" value={settings.hero_subtitle||''} placeholder="Deskripsi singkat server..."
+                          onChange={e=>setSettings(s=>({...s,hero_subtitle:e.target.value}))}/>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Save button */}
+                  <button
+                    className="btn-primary-fn"
+                    style={{justifyContent:'center',width:'100%'}}
+                    disabled={settingsSaving}
+                    onClick={async()=>{
+                      setSettingsSaving(true);
+                      try {
+                        const r = await af('/api/admin/settings', {method:'PUT', body:JSON.stringify(settings)});
+                        if(r.success) toast.success('Pengaturan disimpan!');
+                        else toast.error(r.message||'Gagal menyimpan');
+                      } catch { toast.error('Error menyimpan pengaturan'); }
+                      setSettingsSaving(false);
+                    }}
+                  >
+                    {settingsSaving
+                      ? <><i className="fa-solid fa-spinner fa-spin"/> Menyimpan...</>
+                      : <><i className="fa-solid fa-floppy-disk"/> Simpan Pengaturan</>}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -930,8 +1006,15 @@ function ProductModal({ product, categories, af, onClose, onDone }) {
             <input value={f.reward_trigger} onChange={e=>setF(p=>({...p,reward_trigger:e.target.value}))} className="admin-input" placeholder="contoh: rank_vip" style={{fontFamily:'monospace'}}/>
             <p style={{fontSize:11,color:'var(--text-muted)',marginTop:5}}>ID reward di config.yml plugin ShadowynAPI</p>
           </Field>
-          <div style={{gridColumn:'1/-1'}}><Field label="URL Gambar Produk"><input value={f.image_url} onChange={e=>setF(p=>({...p,image_url:e.target.value}))} className="admin-input" placeholder="https://..."/>
-            {f.image_url&&<img src={f.image_url} alt="" style={{marginTop:8,height:56,width:56,objectFit:'contain',borderRadius:8,border:'1px solid rgba(255,107,0,0.2)'}} onError={e=>e.target.style.display='none'}/>}
+          <div style={{gridColumn:'1/-1'}}><Field label="Gambar Produk">
+            <ImageUpload
+              value={f.image_url}
+              onChange={url => setF(p=>({...p, image_url: url}))}
+              label=""
+              hint="JPG, PNG, WEBP, GIF · Maks 2MB"
+              previewSize={72}
+              adminToken={typeof window!=='undefined' ? localStorage.getItem('admin_token')||'' : ''}
+            />
           </Field></div>
           <div style={{gridColumn:'1/-1'}}><Field label="Deskripsi"><textarea value={f.description} onChange={e=>setF(p=>({...p,description:e.target.value}))} className="admin-input" rows={2} style={{resize:'none'}}/></Field></div>
           <div style={{gridColumn:'1/-1'}}><Field label="Fitur/Benefit (satu per baris)"><textarea value={f.features} onChange={e=>setF(p=>({...p,features:e.target.value}))} className="admin-input" rows={4} style={{resize:'none'}} placeholder={"Prefix [VIP]\nKit setiap hari\nFly di spawn"}/></Field></div>
