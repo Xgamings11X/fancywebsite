@@ -216,11 +216,15 @@ export default function InvoicePage({ order: initialOrder, settings }) {
   // ── Download PDF ────────────────────────────────────────────────
   const handleDownloadPdf = () => {
     const html = generateInvoiceHtml(liveOrder, serverName, logoSrc);
-    const win  = window.open('','_blank');
-    if (!win) { alert('Izinkan popup untuk download PDF'); return; }
-    win.document.write(html);
-    win.document.close();
-    win.onload = () => { win.focus(); win.print(); win.onafterprint = () => win.close(); };
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `invoice-${liveOrder.order_id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // ── Copy order ID ───────────────────────────────────────────────
@@ -239,7 +243,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
       <Head>
         <title>Invoice #{initialOrder.order_id} | {serverName}</title>
         <meta name="robots" content="noindex,nofollow"/>
-        {logoSrc && <link rel="icon" type="image/png" href={logoSrc}/>}
+        <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={settings}/>
@@ -521,10 +525,25 @@ function generateInvoiceHtml(order, serverName, logoSrc) {
       </td>
       <td>
         <div class="section-label">Detail Transaksi</div>
-        <div class="info-row">Tanggal: <span class="info-val">${formatDate(order.created_at)}</span></div>
-        <div class="info-row">Metode Bayar: <span class="info-val">${order.payment_method||'QRIS'}</span></div>
-        <div class="info-row">ID Order: <span class="info-val">${order.order_id}</span></div>
-        ${order.redeem_code?`<div class="info-row">Kode Redeem: <span class="info-val" style="color:#1a8a45;">${order.redeem_code}</span></div>`:''}
+        <table style="border-collapse:collapse;width:100%;">
+          <tr>
+            <td style="font-size:12px;color:#888;padding:3px 0;white-space:nowrap;width:110px;vertical-align:top;">Tanggal</td>
+            <td style="font-size:12px;font-weight:600;color:#111;padding:3px 0 3px 8px;vertical-align:top;">${formatDate(order.created_at)}</td>
+          </tr>
+          <tr>
+            <td style="font-size:12px;color:#888;padding:3px 0;white-space:nowrap;vertical-align:top;">Metode Bayar</td>
+            <td style="font-size:12px;font-weight:600;color:#111;padding:3px 0 3px 8px;vertical-align:top;">${order.payment_method||'QRIS'}</td>
+          </tr>
+          <tr>
+            <td style="font-size:12px;color:#888;padding:3px 0;white-space:nowrap;vertical-align:top;">ID Order</td>
+            <td style="font-size:12px;font-weight:600;color:#111;padding:3px 0 3px 8px;word-break:break-all;vertical-align:top;">${order.order_id}</td>
+          </tr>
+          ${order.redeem_code?`
+          <tr>
+            <td style="font-size:12px;color:#888;padding:3px 0;white-space:nowrap;vertical-align:top;">Kode Redeem</td>
+            <td style="font-size:12px;font-weight:600;color:#1a8a45;padding:3px 0 3px 8px;vertical-align:top;">${order.redeem_code}</td>
+          </tr>`:''}
+        </table>
       </td>
     </tr>
   </table>
