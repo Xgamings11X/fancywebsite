@@ -120,6 +120,7 @@ export function useTransparentLogo(rawSrc = RAW_SRC) {
     // Coba canvas processing dengan CORS
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
+    img.referrerPolicy = 'no-referrer';
 
     img.onload = () => {
       if (cancelled) return;
@@ -142,6 +143,7 @@ export function useTransparentLogo(rawSrc = RAW_SRC) {
     img.onerror = () => {
       if (cancelled) return;
       const img2 = new window.Image();
+      img2.referrerPolicy = 'no-referrer';
       img2.onload  = showDirect;
       img2.onerror = showDirect; // URL tetap tidak bisa load → tetap set ready
       img2.src = rawSrc;
@@ -164,6 +166,8 @@ export default function LogoImage({ style = {}, className = '', alt = 'Logo', sr
       src={src}
       alt={alt}
       className={className}
+      referrerPolicy="no-referrer"
+      onError={e=>{ e.target.onerror=null; }}
       style={{
         background: 'transparent',
         ...style,
