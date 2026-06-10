@@ -111,7 +111,7 @@ export default function LeaderboardPage({ settings }) {
       <div style={{padding:'130px 6% 80px', maxWidth:900, margin:'0 auto'}}>
 
         {/* ── Header ── */}
-        <div style={{textAlign:'center', marginBottom:40}}>
+        <div style={{textAlign:'center', marginBottom:40}} data-anim="fade-up">
           <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>HALL OF FAME</span>
           <h1 className="font-space" style={{fontSize:'clamp(24px,5vw,36px)',fontWeight:700,marginBottom:14}}>
             Papan <span style={{color:'var(--primary)'}}>Peringkat</span>
@@ -234,7 +234,7 @@ export default function LeaderboardPage({ settings }) {
                   desc:'Plugin akan sync otomatis sesuai sync-interval di config. Atau restart plugin untuk memaksa sync sekarang.',
                 },
               ].map(item => (
-                <div key={item.step} className="fn-card" style={{padding:'18px 22px'}}>
+                <div key={item.step} className="fn-card" style={{padding:'18px 22px'}} data-anim="fade-left">
                   <div style={{display:'flex',alignItems:'flex-start',gap:14}}>
                     <div style={{width:36,height:36,background:'rgba(255,107,0,0.1)',border:'1px solid rgba(255,107,0,0.25)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                       <i className={`fa-solid ${item.icon}`} style={{color:'var(--primary)',fontSize:14}}/>
@@ -335,11 +335,13 @@ export default function LeaderboardPage({ settings }) {
             })()}
 
             {/* ── Full ranked list ── */}
-            {entries.map(e => {
+            {entries.map((e, rowIdx) => {
               const isTop3  = e.rank <= 3;
               const rankCol = RANK_COLORS[e.rank];
               return (
-                <div key={e.rank} className={`lb-row${e.rank===1?' rank-1':e.rank===2?' rank-2':e.rank===3?' rank-3':''}`}>
+                <div key={e.rank}
+                  className={`lb-row${e.rank===1?' rank-1':e.rank===2?' rank-2':e.rank===3?' rank-3':''}  leaderboard-row`}
+                  style={{animationDelay: `${rowIdx * 0.04}s`}}>
                   {/* Rank */}
                   <div style={{width:36,flexShrink:0,textAlign:'center'}}>
                     {isTop3
@@ -374,7 +376,7 @@ export default function LeaderboardPage({ settings }) {
         )}
       </div>
 
-      <footer className="fn-footer">
+      <footer className="fn-footer" data-anim="fade-up">
         <p style={{fontSize:11,color:'#44444a'}}>© 2026 {serverName}. Leaderboard</p>
       </footer>
 
