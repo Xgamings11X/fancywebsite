@@ -46,14 +46,27 @@ export default async function handler(req, res) {
     }
 
     const orderId = `FN-${Date.now()}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
+    // expired_at = 1 hari dari sekarang (sama dengan expiry di Midtrans)
+    const expiredAt = new Date(Date.now() + 24*60*60*1000).toISOString();
+
+    // Ambil category_name untuk invoice
+    let categoryName = '';
+    try {
+      const { CategoriesAsync } = await import('../../../lib/redis.js');
+      const cat = await CategoriesAsync.byId(product.category_id);
+      categoryName = cat?.name || '';
+    } catch {}
+
     await OrdersAsync.add({
       order_id: orderId, player_username: user.username, player_uuid: user.uuid||null,
       player_rank: user.rank||null, product_id: product.id, category_id: product.category_id,
-      product_name: product.name, reward_trigger: product.reward_trigger||null,
+      product_name: product.name, category_name: categoryName,
+      reward_trigger: product.reward_trigger||null,
       amount: finalPrice, discount_amount: discountAmount, redeem_code: usedCode,
       discord_username: discord_username.trim(),
       payment_status: 'pending', payment_method: 'qris',
       plugin_notified: false, plugin_queued: false,
+      expired_at: expiredAt,
     });
 
     const snap = await createSnapTransaction({ orderId, amount: finalPrice, playerUsername: user.username, productName: product.name });
