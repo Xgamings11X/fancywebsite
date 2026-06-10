@@ -6,13 +6,12 @@ const idr = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
 
 export default function CartModal({ product, player, onClose }) {
   const router = useRouter();
-  const [step,          setStep]          = useState('confirm');
-  const [loading,       setLoading]       = useState(false);
-  const [redeemInput,   setRedeemInput]   = useState('');
-  const [redeemInfo,    setRedeemInfo]    = useState(null);
-  const [redeemLoading, setRedeemLoading] = useState(false);
-  const [discordUser,   setDiscordUser]   = useState('');
-  const [pendingOrderId, setPendingOrderId] = useState(null);
+  const [step,           setStep]           = useState('confirm');
+  const [loading,        setLoading]        = useState(false);
+  const [redeemInput,    setRedeemInput]    = useState('');
+  const [redeemInfo,     setRedeemInfo]     = useState(null);
+  const [redeemLoading,  setRedeemLoading]  = useState(false);
+  const [discordUser,    setDiscordUser]    = useState('');
 
   const basePrice  = product.price;
   const finalPrice = redeemInfo ? redeemInfo.finalPrice : basePrice;
@@ -23,15 +22,19 @@ export default function CartModal({ product, player, onClose }) {
     if (!code) return;
     setRedeemLoading(true);
     try {
-      const res  = await fetch('/api/orders/apply-code',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({code,productId:product.id,price:basePrice})});
+      const res  = await fetch('/api/orders/apply-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, productId: product.id, price: basePrice }),
+      });
       const data = await res.json();
       if (data.success) { setRedeemInfo(data); toast.success(`✅ Kode berhasil! Hemat ${idr(data.discountAmount)}`); }
-      else toast.error(data.message||'Kode tidak valid');
+      else toast.error(data.message || 'Kode tidak valid');
     } catch { toast.error('Gagal memeriksa kode.'); }
     setRedeemLoading(false);
   };
 
+  // ── Bayar Sekarang: buat order → redirect ke invoice → buka snap di sana ──
   const handleCheckout = async () => {
     if (!discordUser.trim()) {
       toast.error('Username Discord wajib diisi untuk klaim role!');
@@ -40,120 +43,48 @@ export default function CartModal({ product, player, onClose }) {
     setLoading(true);
     try {
       let token = null;
-      try { const d = localStorage.getItem('mc_token'); if(d) token = d; } catch{}
-      const headers = {'Content-Type':'application/json'};
+      try { const d = localStorage.getItem('mc_token'); if (d) token = d; } catch {}
+      const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
-      const res  = await fetch('/api/orders/create',{method:'POST',headers,credentials:'include',
-        body:JSON.stringify({productId:product.id,redeemCode:redeemInfo?.code||null,discord_username:discordUser.trim()})});
+
+      const res  = await fetch('/api/orders/create', {
+        method: 'POST', headers, credentials: 'include',
+        body: JSON.stringify({
+          productId:        product.id,
+          redeemCode:       redeemInfo?.code || null,
+          discord_username: discordUser.trim(),
+        }),
+      });
       const data = await res.json();
+
       if (res.status === 401) {
-        // Session expired / cookie hilang — bersihkan localStorage dan minta login ulang
         try { localStorage.removeItem('mc_player'); localStorage.removeItem('mc_token'); } catch {}
         toast.error('Sesi kamu sudah berakhir. Silakan login ulang.', { duration: 4000 });
         setLoading(false);
         onClose();
         return;
       }
-      if (!res.ok||!data.success) { toast.error(data.message||'Gagal membuat order'); setLoading(false); return; }
-
-      if (data.snapToken) {
-        const orderId = data.orderId;
-        const snapToken = data.snapToken;
-        const clientKey = data.clientKey || '';
-        setStep('paying');
-        setPendingOrderId(orderId);
-
-        const goToInvoice = () => router.push('/invoice/' + orderId);
-
-        // Selalu hapus snap lama dan inject ulang — hindari stale clientKey
-        delete window.snap;
-        const oldScript = document.querySelector('script[src*="midtrans.com/snap"]');
-        if (oldScript) oldScript.remove();
-
-        const env = process.env.NEXT_PUBLIC_MIDTRANS_ENV === 'production' ? 'app' : 'app.sandbox';
-        await new Promise((resolve, reject) => {
-          const sc = document.createElement('script');
-          sc.src = `https://${env}.midtrans.com/snap/snap.js`;
-          sc.setAttribute('data-client-key', clientKey);
-          sc.onload = resolve;
-          sc.onerror = reject;
-          document.head.appendChild(sc);
-        });
-
-        window.snap.pay(snapToken, {
-          onSuccess: () => goToInvoice(),
-          onPending: () => goToInvoice(),
-          onError:   () => goToInvoice(),
-          onClose:   async () => {
-            // Sandbox sering fire onClose bukan onSuccess — cek status dulu
-            try {
-              const r = await fetch('/api/orders/verify/' + orderId, { credentials: 'include' });
-              const d = await r.json();
-              const paid = ['settlement', 'capture', 'success', 'paid'].includes(
-                d?.order?.payment_status || d?.status || ''
-              );
-              if (paid) {
-                goToInvoice();
-              } else {
-                setStep('confirm');
-                setLoading(false);
-              }
-            } catch {
-              setStep('confirm');
-              setLoading(false);
-            }
-          },
-        });
+      if (!res.ok || !data.success) {
+        toast.error(data.message || 'Gagal membuat order');
+        setLoading(false);
+        return;
       }
-    } catch(e) { toast.error('Kesalahan: '+e.message); setLoading(false); }
+
+      // Langsung redirect ke invoice — snap dibuka di sana
+      router.push('/invoice/' + data.orderId);
+      onClose();
+
+    } catch (e) {
+      toast.error('Kesalahan: ' + e.message);
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="fn-modal-overlay" onClick={e=>{ if(e.target===e.currentTarget&&step!=='paying') onClose(); }}>
+    <div className="fn-modal-overlay" onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
       <div className="fn-modal animate-in">
         <div style={{height:3,background:'linear-gradient(90deg,var(--primary),var(--primary-light),var(--primary))'}}/>
         <div style={{padding:'24px 26px 28px'}}>
-
-          {/* SUCCESS */}
-          {step==='success' && (
-            <div style={{textAlign:'center',padding:'16px 0'}}>
-              <div style={{width:64,height:64,background:'rgba(46,204,113,0.1)',border:'1px solid rgba(46,204,113,0.3)',borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px'}}>
-                <i className="fa-solid fa-check" style={{fontSize:28,color:'#2ecc71'}}/>
-              </div>
-              <h2 className="font-space" style={{fontSize:22,fontWeight:700,marginBottom:8}}>Pembayaran Berhasil!</h2>
-              <p style={{color:'var(--text-muted)',fontSize:13,marginBottom:6}}>
-                Item <strong style={{color:'var(--primary-light)'}}>{product.name}</strong> sedang dikirim ke Minecraft kamu.
-              </p>
-              <p style={{color:'var(--text-muted)',fontSize:12,marginBottom:24}}>Butuh bantuan? Buka halaman Support.</p>
-              <button className="btn-primary-fn" onClick={onClose} style={{width:'100%',justifyContent:'center',padding:13,borderRadius:10}}>
-                <i className="fa-solid fa-check-circle"/> Selesai
-              </button>
-            </div>
-          )}
-
-          {/* PAYING */}
-          {step==='paying' && (
-            <div style={{textAlign:'center',padding:'24px 0'}}>
-              <div className="fn-spinner" style={{width:44,height:44,borderWidth:3,margin:'0 auto 20px'}}/>
-              <h2 className="font-space" style={{fontSize:20,fontWeight:700,marginBottom:8}}>Memproses Pembayaran...</h2>
-              <p style={{color:'var(--text-muted)',fontSize:13,marginBottom:20}}>Selesaikan di popup Midtrans. Jangan tutup halaman ini.</p>
-              {pendingOrderId && (
-                <button
-                  className="btn-ghost-fn"
-                  style={{fontSize:12,padding:'8px 16px',margin:'0 auto',display:'inline-flex',alignItems:'center',gap:6}}
-                  onClick={async () => {
-                    try {
-                      const r = await fetch('/api/orders/verify/' + pendingOrderId, {credentials:'include'});
-                      const d = await r.json();
-                      router.push('/invoice/' + pendingOrderId);
-                    } catch { router.push('/invoice/' + pendingOrderId); }
-                  }}
-                >
-                  <i className="fa-solid fa-receipt"/> Sudah bayar? Lihat Invoice
-                </button>
-              )}
-            </div>
-          )}
 
           {/* CONFIRM */}
           {step==='confirm' && (
@@ -189,7 +120,7 @@ export default function CartModal({ product, player, onClose }) {
                 </div>
               </div>
 
-              {/* Discord Username — WAJIB */}
+              {/* Discord */}
               <div style={{marginBottom:14}}>
                 <div style={{background:'rgba(88,101,242,0.06)',border:'1px solid rgba(88,101,242,0.25)',borderRadius:10,padding:'10px 14px',marginBottom:8,display:'flex',alignItems:'center',gap:8}}>
                   <i className="fa-brands fa-discord" style={{color:'#5865F2',fontSize:15,flexShrink:0}}/>
@@ -263,7 +194,7 @@ export default function CartModal({ product, player, onClose }) {
                 style={{width:'100%',justifyContent:'center',padding:'13px',fontSize:14,borderRadius:10,opacity:(!discordUser.trim()&&!loading)?0.6:1}}>
                 {loading
                   ? <><span className="fn-spinner" style={{width:16,height:16,borderWidth:2}}/> Memproses...</>
-                  : <><i className="fa-solid fa-credit-card"/> Bayar Sekarang</>
+                  : <><i className="fa-solid fa-arrow-right"/> Lanjut ke Pembayaran</>
                 }
               </button>
               {!discordUser.trim() && (
