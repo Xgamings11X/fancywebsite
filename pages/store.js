@@ -56,7 +56,13 @@ export default function StorePage({ settings, categories: initCategories, produc
   // supaya data SSR tidak tertimpa array kosong dari instance berbeda.
   useEffect(() => {
     // Trigger page-load animation
-    const t = setTimeout(() => document.body.classList.add('page-loaded'), 80);
+    const t = setTimeout(() => document.body.classList.add('page-loaded'), 60);
+
+    // Scroll reveal observer
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(el => { if (el.isIntersecting) el.target.classList.add('revealed'); });
+    }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
+    document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
 
     fetch('/api/store/products')
       .then(r => r.json())
@@ -74,7 +80,7 @@ export default function StorePage({ settings, categories: initCategories, produc
         }
       })
       .catch(() => {});
-    return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); };
+    return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); observer.disconnect(); };
   }, []);
 
   useEffect(() => {
@@ -176,32 +182,7 @@ export default function StorePage({ settings, categories: initCategories, produc
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
-      {/* ── Page-load animation styles ── */}
-      <style>{`
-        .anim-pop {
-          opacity: 0;
-          transform: scale(0.88) translateY(12px);
-          transition: opacity 0.9s cubic-bezier(0.1,1,0.1,1), transform 0.9s cubic-bezier(0.1,1,0.1,1);
-        }
-        .anim-up {
-          opacity: 0;
-          transform: translateY(28px);
-          transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.1,1,0.1,1);
-        }
-        .anim-left {
-          opacity: 0;
-          transform: translateX(-40px);
-          transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.1,1,0.1,1);
-        }
-        body.page-loaded .anim-pop  { opacity: 1; transform: scale(1) translateY(0); }
-        body.page-loaded .anim-up   { opacity: 1; transform: translateY(0); }
-        body.page-loaded .anim-left { opacity: 1; transform: translateX(0); }
-        .anim-d1 { transition-delay: 0.10s !important; }
-        .anim-d2 { transition-delay: 0.20s !important; }
-        .anim-d3 { transition-delay: 0.30s !important; }
-        .anim-d4 { transition-delay: 0.40s !important; }
-        .anim-d5 { transition-delay: 0.50s !important; }
-      `}</style>
+      {/* ── Page-load animation styles in globals.css ── */}
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 

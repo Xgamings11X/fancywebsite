@@ -29,8 +29,13 @@ export default function HomePage({ settings }) {
     try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
     fetch('/api/server/status').then(r=>r.json()).then(setStatus).catch(()=>{});
     // Trigger page-load animation
-    const t = setTimeout(() => document.body.classList.add('page-loaded'), 80);
-    return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); };
+    const t = setTimeout(() => document.body.classList.add('page-loaded'), 60);
+    // Scroll reveal observer
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(el => { if (el.isIntersecting) { el.target.classList.add('revealed'); } });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+    return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); observer.disconnect(); };
   }, []);
 
   const copyIP = (text, label) => {
@@ -77,33 +82,7 @@ export default function HomePage({ settings }) {
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
-      {/* ── Page-load animation styles ── */}
-      <style>{`
-        .anim-pop {
-          opacity: 0;
-          transform: scale(0.88) translateY(12px);
-          transition: opacity 0.9s cubic-bezier(0.1,1,0.1,1), transform 0.9s cubic-bezier(0.1,1,0.1,1);
-        }
-        .anim-up {
-          opacity: 0;
-          transform: translateY(28px);
-          transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.1,1,0.1,1);
-        }
-        .anim-left {
-          opacity: 0;
-          transform: translateX(-40px);
-          transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.1,1,0.1,1);
-        }
-        body.page-loaded .anim-pop  { opacity: 1; transform: scale(1) translateY(0); }
-        body.page-loaded .anim-up   { opacity: 1; transform: translateY(0); }
-        body.page-loaded .anim-left { opacity: 1; transform: translateX(0); }
-        .anim-d1 { transition-delay: 0.1s !important; }
-        .anim-d2 { transition-delay: 0.22s !important; }
-        .anim-d3 { transition-delay: 0.34s !important; }
-        .anim-d4 { transition-delay: 0.46s !important; }
-        .anim-d5 { transition-delay: 0.58s !important; }
-        .anim-d6 { transition-delay: 0.70s !important; }
-      `}</style>
+      {/* ── Page-load animation styles moved to globals.css ── */}
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
@@ -196,7 +175,7 @@ export default function HomePage({ settings }) {
 
       {/* FEATURES */}
       <section style={{padding:'100px 6% 60px',maxWidth:1200,margin:'0 auto'}}>
-        <div style={{textAlign:'center',marginBottom:50}}>
+        <div className="scroll-reveal anim-up" style={{textAlign:'center',marginBottom:50}}>
           <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>KENAPA FANCY NETWORK</span>
           <h2 className="font-space" style={{fontSize:32,fontWeight:700}}>Server yang <span style={{color:'var(--primary)'}}>Beda</span> dari yang Lain</h2>
         </div>
@@ -207,7 +186,7 @@ export default function HomePage({ settings }) {
             {icon:'fa-bolt',        title:'Low Latency',       desc:'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.'},
             {icon:'fa-gift',        title:'Event & Reward',    desc:'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.'},
           ].map((f,i) => (
-            <div key={i} className="fn-card" style={{padding:'30px 24px'}}>
+            <div key={i} className={`fn-card scroll-reveal anim-up anim-d${i+1}`} style={{padding:'30px 24px'}}>
               <div style={{fontSize:22,color:'var(--primary)',marginBottom:20}}><i className={`fa-solid ${f.icon}`}/></div>
               <h4 style={{fontSize:16,fontWeight:700,marginBottom:10}}>{f.title}</h4>
               <p style={{fontSize:13,color:'var(--text-muted)',lineHeight:1.6}}>{f.desc}</p>
@@ -218,7 +197,7 @@ export default function HomePage({ settings }) {
 
       {/* RECRUITMENT */}
       <section style={{padding:'20px 6% 100px',maxWidth:1200,margin:'0 auto'}}>
-        <div style={{textAlign:'center',marginBottom:50}}>
+        <div className="scroll-reveal anim-up" style={{textAlign:'center',marginBottom:50}}>
           <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>KONTRIBUSI &amp; REWARD</span>
           <h2 className="font-space" style={{fontSize:32,fontWeight:700}}>Buka Potensimu di <span style={{color:'var(--primary)'}}>{serverName}</span></h2>
         </div>
