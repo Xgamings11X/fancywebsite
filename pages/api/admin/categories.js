@@ -25,6 +25,15 @@ export default function handler(req, res) {
         description:description||'', sort_order:parseInt(sort_order)||0 });
       return res.status(201).json({ success:true, id: newC.id });
     }
+    if (req.method === 'PATCH') {
+      const { action, items } = req.body;
+      if (action === 'reorder' && Array.isArray(items)) {
+        items.forEach(({ id: cid, sort_order }) => Categories.update(cid, { sort_order }));
+        return res.json({ success: true });
+      }
+      return res.status(400).json({ success: false });
+    }
+
     if (req.method === 'PUT') {
       const { id, ...patch } = req.body;
       if (!id) return res.status(400).json({ success:false });
