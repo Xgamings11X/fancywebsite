@@ -36,11 +36,9 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
       <Link href="/" className="flex items-center gap-2 flex-shrink-0" style={{textDecoration:'none'}}>
         {logoUrl
           ? <img src={logoUrl} alt={logoTxt}
-              referrerPolicy="no-referrer"
-              onError={e=>{ e.target.onerror=null; e.target.style.opacity='0'; }}
               style={{height:40,width:'auto',background:'transparent',objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.5))',animation:'logoFloat 3s ease-in-out infinite'}}/>
           : <span className="font-space font-bold text-white text-base" style={{display:'flex',alignItems:'center',gap:6}}>
-              <LogoImage alt={logoTxt} style={{height:38,width:38,objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.5))',animation:'logoFloat 3s ease-in-out infinite'}}/>
+              <LogoImage src={logoUrl||undefined} alt={logoTxt} style={{height:38,width:38,objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.5))',animation:'logoFloat 3s ease-in-out infinite'}}/>
               <span><span style={{color:'var(--primary)'}}>FANCY</span> NETWORK</span>
             </span>
         }

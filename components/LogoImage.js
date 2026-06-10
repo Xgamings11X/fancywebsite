@@ -1,39 +1,30 @@
 /**
  * LogoImage.js
- * Memuat gambar logo dari URL (postimg, Discord CDN, dsb).
- * Jika logo sudah transparent (removebg), langsung tampilkan.
- * Jika berlatar hitam, coba hapus via canvas — dengan fallback berlapis
- * agar tidak blank di device lain (mobile Safari, CORS strict, dsb).
+ * Memuat gambar logo, lalu lewat canvas hapus background hitam
+ * (threshold-based, semua pixel sangat gelap → transparan).
+ * Hasilnya adalah PNG transparan yang dipakai di navbar, hero, dan favicon.
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-const RAW_SRC = 'https://i.postimg.cc/T1h4d6Xw/1002511502-removebg-preview.png';
+// RAW_SRC dikosongkan — logo diambil dari settings.logo_url yang di-pass sebagai prop.
+// Tidak ada URL hardcoded supaya gambar tidak hilang di device lain.
+const RAW_SRC = '';
 
 /**
- * Hapus background hitam via canvas.
- * Return: dataURL string jika berhasil, null jika gagal (CORS / dimensi 0).
+ * Proses image → canvas → hapus px hitam → return dataURL PNG transparan
+ * threshold: 0–255, pixel dengan R+G+B < threshold*3 dianggap hitam
  */
 function removeBlackBg(imgEl, threshold = 40) {
-  // Guard: dimensi belum siap → jangan proses (bug mobile Safari)
-  if (!imgEl.naturalWidth || !imgEl.naturalHeight) return null;
-
   const canvas = document.createElement('canvas');
   canvas.width  = imgEl.naturalWidth;
   canvas.height = imgEl.naturalHeight;
   const ctx = canvas.getContext('2d');
   ctx.drawImage(imgEl, 0, 0);
 
-  let imageData;
-  try {
-    imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  } catch {
-    // Canvas tainted (CORS) — tidak bisa getImageData
-    return null;
-  }
-
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
 
-  // Deteksi sudut: kalau background tidak hitam, langsung return
+  // Cek apakah mayoritas sudut pixel adalah hitam (deteksi bg)
   const corners = [
     [0, 0], [canvas.width - 1, 0],
     [0, canvas.height - 1], [canvas.width - 1, canvas.height - 1],
@@ -43,10 +34,11 @@ function removeBlackBg(imgEl, threshold = 40) {
     const i = (cy * canvas.width + cx) * 4;
     if (data[i] < 30 && data[i+1] < 30 && data[i+2] < 30) darkCorners++;
   }
-  // Latar tidak hitam → tidak perlu diproses
+
+  // Jika background tidak hitam, kembalikan src asli tanpa proses
   if (darkCorners < 2) return canvas.toDataURL('image/png');
 
-  // Flood-fill dari 4 sudut → pixel hitam jadi transparan
+  // Flood-fill dari 4 sudut untuk temukan bg pixels → set alpha=0
   const visited = new Uint8Array(canvas.width * canvas.height);
   const stack   = [];
   const push = (x, y) => {
@@ -54,30 +46,35 @@ function removeBlackBg(imgEl, threshold = 40) {
     const idx = y * canvas.width + x;
     if (visited[idx]) return;
     const i = idx * 4;
-    if (data[i] < threshold && data[i+1] < threshold && data[i+2] < threshold) {
+    const r = data[i], g = data[i+1], b = data[i+2];
+    if (r < threshold && g < threshold && b < threshold) {
       visited[idx] = 1;
       stack.push([x, y]);
     }
   };
   for (const [cx, cy] of corners) push(cx, cy);
+
   while (stack.length > 0) {
     const [x, y] = stack.pop();
     const i = (y * canvas.width + x) * 4;
-    data[i+3] = 0;
+    data[i+3] = 0; // transparent
     push(x-1, y); push(x+1, y); push(x, y-1); push(x, y+1);
   }
 
-  // Pixel gelap terisolasi
+  // Juga hapus pixel sangat gelap yang bukan bg (isolated dark pixels)
   for (let j = 0; j < data.length; j += 4) {
-    if (data[j] < 20 && data[j+1] < 20 && data[j+2] < 20) data[j+3] = 0;
+    if (data[j] < 20 && data[j+1] < 20 && data[j+2] < 20) {
+      data[j+3] = 0;
+    }
   }
 
-  // Smooth edge
+  // Smooth edge: pixel semi-gelap di tepi logo → semi-transparan
   for (let j = 0; j < data.length; j += 4) {
     if (data[j+3] === 255) {
       const brightness = (data[j] + data[j+1] + data[j+2]) / 3;
-      if (brightness < threshold * 2)
+      if (brightness < threshold * 2) {
         data[j+3] = Math.round((brightness / (threshold * 2)) * 255);
+      }
     }
   }
 
@@ -85,89 +82,63 @@ function removeBlackBg(imgEl, threshold = 40) {
   return canvas.toDataURL('image/png');
 }
 
-/** Update favicon halaman */
+/**
+ * Hook: returns { src, ready }
+ * src = dataURL of processed transparent PNG (or fallback raw src)
+ */
+export function useTransparentLogo(rawSrc = RAW_SRC) {
+  const [src,   setSrc]   = useState(null);
+  const [ready, setReady] = useState(false);
+  const imgRef = useRef(null);
+
+  useEffect(() => {
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const dataUrl = removeBlackBg(img);
+        setSrc(dataUrl);
+        setReady(true);
+        // Update favicon dinamis
+        updateFavicon(dataUrl);
+      } catch {
+        setSrc(rawSrc);
+        setReady(true);
+      }
+    };
+    img.onerror = () => { setSrc(rawSrc); setReady(true); };
+    img.src = rawSrc;
+    imgRef.current = img;
+  }, [rawSrc]);
+
+  return { src: src || rawSrc, ready };
+}
+
+/** Ganti favicon halaman dengan dataURL PNG transparan */
 export function updateFavicon(dataUrl) {
   if (typeof document === 'undefined') return;
   let link = document.querySelector('link[rel~="icon"]');
-  if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+  if (!link) {
+    link = document.createElement('link');
+    link.rel = 'icon';
+    document.head.appendChild(link);
+  }
   link.type = 'image/png';
   link.href = dataUrl;
 }
 
 /**
- * Hook: { src, ready }
- * Strategi loading berlapis:
- *   1. Coba dengan crossOrigin=anonymous → proses canvas
- *   2. Kalau CORS gagal (onerror) → retry tanpa crossOrigin (tampil langsung)
- *   3. Kalau canvas return null (dimensi 0 / tainted) → pakai rawSrc langsung
- *   4. Kalau semua gagal → tetap pakai rawSrc (browser render biasa)
+ * <LogoImage> — drop-in <img> dengan background sudah dihapus
+ * Props:
+ *   src  {string} — URL logo (dari settings.logo_url). Jika kosong, tidak dirender.
  */
-export function useTransparentLogo(rawSrc = RAW_SRC) {
-  const [src,   setSrc]   = useState(rawSrc); // langsung set supaya tidak blank sebelum ready
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    if (!rawSrc) { setReady(true); return; }
-    let cancelled = false;
-
-    // Fallback: tampilkan URL langsung tanpa canvas processing
-    const showDirect = () => {
-      if (cancelled) return;
-      setSrc(rawSrc);
-      setReady(true);
-    };
-
-    // Coba canvas processing dengan CORS
-    const img = new window.Image();
-    img.crossOrigin = 'anonymous';
-    img.referrerPolicy = 'no-referrer';
-
-    img.onload = () => {
-      if (cancelled) return;
-      try {
-        const dataUrl = removeBlackBg(img);
-        if (dataUrl) {
-          setSrc(dataUrl);
-          setReady(true);
-          try { updateFavicon(dataUrl); } catch {}
-        } else {
-          // canvas gagal (dimensi 0 atau tainted) → pakai URL langsung
-          showDirect();
-        }
-      } catch {
-        showDirect();
-      }
-    };
-
-    // CORS ditolak server → retry tanpa crossOrigin
-    img.onerror = () => {
-      if (cancelled) return;
-      const img2 = new window.Image();
-      img2.referrerPolicy = 'no-referrer';
-      img2.onload  = showDirect;
-      img2.onerror = showDirect; // URL tetap tidak bisa load → tetap set ready
-      img2.src = rawSrc;
-    };
-
-    img.src = rawSrc;
-    return () => { cancelled = true; };
-  }, [rawSrc]);
-
-  return { src, ready };
-}
-
-/**
- * <LogoImage> — drop-in <img> dengan background sudah dihapus (jika berlatar hitam)
- */
-export default function LogoImage({ style = {}, className = '', alt = 'Logo', src: srcProp, ...rest }) {
+export default function LogoImage({ src: srcProp = RAW_SRC, style = {}, className = '', alt = 'Logo', ...rest }) {
   const { src, ready } = useTransparentLogo(srcProp || RAW_SRC);
   return (
     <img
       src={src}
       alt={alt}
       className={className}
-      referrerPolicy="no-referrer"
-      onError={e=>{ e.target.onerror=null; }}
       style={{
         background: 'transparent',
         ...style,
