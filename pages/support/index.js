@@ -223,7 +223,7 @@ export default function SupportPage({ settings }) {
       <div style={{padding:'130px 6% 80px',maxWidth:800,margin:'0 auto'}}>
 
         {/* Header */}
-        <div style={{textAlign:'center',marginBottom:40}}>
+        <div style={{textAlign:'center',marginBottom:40}} data-anim="fade-up">
           <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>PUSAT BANTUAN</span>
           <h1 className="font-space" style={{fontSize:'clamp(24px,5vw,34px)',fontWeight:700,marginBottom:10}}>
             Support <span style={{color:'var(--primary)'}}>Center</span>
@@ -271,7 +271,7 @@ export default function SupportPage({ settings }) {
 
         {/* ── FORM ── */}
         {view === 'form' && typeInfo && (
-          <div className="fn-card animate-in" style={{padding:'28px 28px 32px'}}>
+          <div className="fn-card" style={{padding:'28px 28px 32px'}} data-anim="fade-up">
             <button onClick={()=>setView('home')} style={{background:'none',border:'none',color:'var(--text-muted)',fontSize:13,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:6,marginBottom:20}}>
               <i className="fa-solid fa-arrow-left"/> Kembali
             </button>
@@ -387,7 +387,7 @@ export default function SupportPage({ settings }) {
 
         {/* ── CHAT ── */}
         {view === 'chat' && (
-          <div className="fn-card animate-in" style={{padding:0,overflow:'hidden'}}>
+          <div className="fn-card" style={{padding:0,overflow:'hidden'}} data-anim="scale-pop">
             {/* Chat header */}
             <div style={{padding:'16px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',gap:12}}>
               <button onClick={()=>{ setView('tickets'); loadTickets(); }}
@@ -488,7 +488,7 @@ export default function SupportPage({ settings }) {
 
       </div>
 
-      <footer className="fn-footer">
+      <footer className="fn-footer" data-anim="fade-up">
         <p style={{fontSize:11,color:'#44444a'}}>© 2026 {serverName}. Support Center</p>
       </footer>
 
