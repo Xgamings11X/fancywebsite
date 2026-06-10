@@ -490,6 +490,50 @@ body {
 @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 .animate-in { animation: fadeIn 0.4s ease forwards; }
 
+/* ── Page-load & Scroll Reveal Animations ── */
+.anim-pop {
+  opacity: 0;
+  transform: scale(0.88) translateY(14px);
+  transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-up {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-left {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition: opacity 0.65s ease,
+              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.anim-right {
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.65s ease,
+              transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+/* Triggered when body.page-loaded OR element has .revealed */
+body.page-loaded .anim-pop,
+.revealed.anim-pop  { opacity: 1; transform: scale(1) translateY(0); }
+body.page-loaded .anim-up,
+.revealed.anim-up   { opacity: 1; transform: translateY(0); }
+body.page-loaded .anim-left,
+.revealed.anim-left { opacity: 1; transform: translateX(0); }
+body.page-loaded .anim-right,
+.revealed.anim-right { opacity: 1; transform: translateX(0); }
+
+.anim-d1 { transition-delay: 0.08s !important; }
+.anim-d2 { transition-delay: 0.18s !important; }
+.anim-d3 { transition-delay: 0.28s !important; }
+.anim-d4 { transition-delay: 0.38s !important; }
+.anim-d5 { transition-delay: 0.48s !important; }
+.anim-d6 { transition-delay: 0.58s !important; }
+.anim-d7 { transition-delay: 0.68s !important; }
+.anim-d8 { transition-delay: 0.78s !important; }
+
 /* ── Responsive ─────────────────── */
 @media (max-width: 768px) {
   .fn-nav {
