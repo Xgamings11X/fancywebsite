@@ -42,7 +42,7 @@ export default function handler(req, res) {
       const { action, ids } = req.body;
       if (action === 'reorder') {
         if (!Array.isArray(ids)) return res.status(400).json({ success:false });
-        ids.forEach((cid, idx) => Categories.update(cid, { sort_order: idx }));
+        ids.forEach((cid, idx) => Categories.update(cid, { sort_order: idx + 1 }));
         return res.json({ success:true });
       }
       return res.status(400).json({ success:false, message:'Unknown action' });
