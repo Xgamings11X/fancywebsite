@@ -56,13 +56,7 @@ export default function StorePage({ settings, categories: initCategories, produc
   // supaya data SSR tidak tertimpa array kosong dari instance berbeda.
   useEffect(() => {
     // Trigger page-load animation
-    const t = setTimeout(() => document.body.classList.add('page-loaded'), 60);
-
-    // Scroll reveal observer
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(el => { if (el.isIntersecting) el.target.classList.add('revealed'); });
-    }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
-    document.querySelectorAll('.scroll-reveal').forEach(el => observer.observe(el));
+    const t = setTimeout(() => document.body.classList.add('page-loaded'), 80);
 
     fetch('/api/store/products')
       .then(r => r.json())
@@ -80,7 +74,7 @@ export default function StorePage({ settings, categories: initCategories, produc
         }
       })
       .catch(() => {});
-    return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); observer.disconnect(); };
+    return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); };
   }, []);
 
   useEffect(() => {
@@ -182,14 +176,14 @@ export default function StorePage({ settings, categories: initCategories, produc
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
-      {/* ── Page-load animation styles in globals.css ── */}
+
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
       <div style={{padding:'130px 6% 80px',maxWidth:1200,margin:'0 auto'}}>
 
         {/* Header */}
-        <div className="anim-pop anim-d1" style={{textAlign:'center',marginBottom:40}}>
+        <div data-anim="fade-up" data-delay="1" style={{textAlign:'center',marginBottom:40}}>
           <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>ITEM STORE</span>
           <h1 className="font-space" style={{fontSize:'clamp(24px,5vw,36px)',fontWeight:700,marginBottom:10}}>
             {serverName} <span style={{color:'var(--primary)'}}>Store</span>
@@ -275,7 +269,7 @@ export default function StorePage({ settings, categories: initCategories, produc
           </div>
         ) : (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
-            {filtered.map(product => {
+            {filtered.map((product, pIdx) => {
               const isOpen = !!expanded[product.id];
               const discount = product.original_price && product.original_price>product.price
                 ? Math.round((1-product.price/product.original_price)*100) : 0;
@@ -299,7 +293,7 @@ export default function StorePage({ settings, categories: initCategories, produc
               };
 
               return (
-                <div key={product.id} className="fn-card" style={{padding:0,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+                <div key={product.id} className="fn-card product-card-enter" style={{padding:0,overflow:'hidden',display:'flex',flexDirection:'column'}} data-anim="fade-up" data-delay={String(Math.min(pIdx % 8 + 1, 8))}>
                   {/* Product image area */}
                   <div className="product-img-bg" style={cardStyle}>
                     {/* Orbs */}
@@ -383,7 +377,7 @@ export default function StorePage({ settings, categories: initCategories, produc
       </div>
 
       {/* Footer */}
-      <footer className="fn-footer">
+      <footer className="fn-footer" data-anim="fade-up">
         <p style={{fontSize:11,color:'#44444a'}}>© 2026 {serverName}. Store</p>
       </footer>
 
