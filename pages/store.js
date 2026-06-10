@@ -60,9 +60,14 @@ export default function StorePage({ settings, categories: initCategories, produc
       .then(d => {
         if (d.success) {
           // Hanya update produk jika ada isi, jangan timpa data SSR dengan array kosong
-          if (Array.isArray(d.products) && d.products.length > 0) setProducts(d.products);
-          // Update categories hanya jika ada isi
-          if (Array.isArray(d.categories) && d.categories.length > 0) setCategories(d.categories);
+          // Pastikan urutan sort_order diterapkan (no 1 dari atas ke bawah)
+          if (Array.isArray(d.products) && d.products.length > 0) {
+            setProducts([...d.products].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)));
+          }
+          // Update categories dan urutkan (no 1 dari kiri ke kanan)
+          if (Array.isArray(d.categories) && d.categories.length > 0) {
+            setCategories([...d.categories].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)));
+          }
         }
       })
       .catch(() => {});
