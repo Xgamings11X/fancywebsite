@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       const patch = req.body || {};
       // Hapus field sensitif yang tidak boleh di-overwrite dari sini
       delete patch.plugin_server_key;
-      await SettingsAsync.patch(patch);
+      await SettingsAsync.set(patch);
       return res.json({ success: true });
     }
 
