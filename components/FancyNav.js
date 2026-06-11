@@ -94,20 +94,43 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
 
         {/* Hamburger */}
         <button className="md:hidden flex items-center justify-center w-10 h-10 rounded-xl"
-          style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,107,0,0.15)',color:'var(--primary)',fontSize:16}}
+          style={{
+            background: menuOpen ? 'rgba(255,107,0,0.12)' : 'rgba(255,255,255,0.03)',
+            border: menuOpen ? '1px solid rgba(255,107,0,0.4)' : '1px solid rgba(255,107,0,0.15)',
+            color:'var(--primary)', fontSize:16,
+            transition:'all 0.3s ease',
+          }}
           onClick={() => setMenuOpen(!menuOpen)}>
-          <i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`}/>
+          <i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`}
+            style={{transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)',
+              transform: menuOpen ? 'rotate(90deg) scale(1.1)' : 'rotate(0deg) scale(1)'}}/>
         </button>
       </div>
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="md:hidden absolute left-0 right-0 rounded-xl p-4 flex flex-col gap-4"
-          style={{top:64, background:'#0f0f14', border:'1px solid rgba(255,255,255,0.08)', boxShadow:'0 10px 25px rgba(0,0,0,0.5)'}}>
-          {links.map(l => (
+        <div className="md:hidden absolute left-0 right-0 rounded-xl p-4 flex flex-col gap-3"
+          style={{
+            top:64,
+            background:'rgba(10,10,15,0.97)',
+            border:'1px solid rgba(255,107,0,0.15)',
+            boxShadow:'0 16px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04)',
+            backdropFilter:'blur(16px)',
+            animation:'mobileMenuIn 0.32s cubic-bezier(0.22,1,0.36,1) both',
+          }}>
+          {links.map((l, i) => (
             <Link key={l.href} href={l.href} onClick={() => setMenuOpen(false)}
-              style={{color: router.pathname===l.href ? 'var(--primary)' : 'var(--text-muted)',
-                fontWeight:600, fontSize:14, textDecoration:'none'}}>
+              style={{
+                color: router.pathname===l.href ? 'var(--primary)' : 'var(--text-muted)',
+                fontWeight:600, fontSize:14, textDecoration:'none',
+                padding:'10px 12px', borderRadius:10,
+                background: router.pathname===l.href ? 'rgba(255,107,0,0.08)' : 'transparent',
+                borderLeft: router.pathname===l.href ? '2px solid var(--primary)' : '2px solid transparent',
+                display:'flex', alignItems:'center', gap:10,
+                animation:`menuItemIn 0.3s cubic-bezier(0.22,1,0.36,1) both`,
+                animationDelay: `${i * 0.05 + 0.05}s`,
+                transition:'background 0.2s, color 0.2s',
+              }}>
               {l.label}
             </Link>
           ))}
