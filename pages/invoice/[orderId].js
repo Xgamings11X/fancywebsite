@@ -293,7 +293,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
                   <span style={{color:'var(--primary)'}}>FANCY</span>{' '}
                   <span>{serverName.replace(/fancy/gi,'').trim()||'NETWORK'}</span>
                 </div>
-                <div style={{fontSize:12,color:'var(--text-muted)',marginTop:1}}>Premium Minecraft Server Shop</div>
+                <div style={{fontSize:12,color:'var(--text-muted)',marginTop:1}}>Fancy Network</div>
               </div>
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:8}}>
@@ -561,7 +561,6 @@ function generateInvoiceHtml(order, serverName, logoSrc) {
       <tr>
         <td>
           <div class="prod-name">${order.product_name||'-'}</div>
-          <div class="prod-sub">Durasi: Permanen &middot; Lifetime</div>
         </td>
         <td><span class="cat-tag">${order.category_name||'Produk'}</span></td>
         <td class="tr" style="font-weight:700;">${idrFmt(subtotal)}</td>
