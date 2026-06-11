@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 // Redis modules loaded via dynamic import in getServerSideProps
@@ -76,29 +76,6 @@ export default function StorePage({ settings, categories: initCategories, produc
       .catch(() => {});
     return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); };
   }, []);
-
-  // ── Scroll-triggered product card animations ──
-  useEffect(() => {
-    const cards = document.querySelectorAll('.product-scroll-card');
-    if (!cards.length) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.remove('product-card-hidden');
-            entry.target.classList.add('product-card-visible');
-            io.unobserve(entry.target);
-          }
-        });
-      },
-      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
-    );
-    cards.forEach((card, i) => {
-      card.style.transitionDelay = `${(i % 4) * 0.07}s`;
-      io.observe(card);
-    });
-    return () => io.disconnect();
-  }, [filtered.length, activeTab]);
 
   useEffect(() => {
     // Restore player dari localStorage, tapi validasi session masih aktif
@@ -291,7 +268,7 @@ export default function StorePage({ settings, categories: initCategories, produc
             {search && <button onClick={()=>setSearch('')} style={{marginTop:12,background:'none',border:'none',color:'var(--primary)',cursor:'pointer',fontSize:13}}>Hapus pencarian</button>}
           </div>
         ) : (
-          <div key={activeTab} style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
             {filtered.map((product, pIdx) => {
               const isOpen = !!expanded[product.id];
               const discount = product.original_price && product.original_price>product.price
@@ -316,7 +293,7 @@ export default function StorePage({ settings, categories: initCategories, produc
               };
 
               return (
-                <div key={product.id} className="fn-card product-scroll-card product-card-hidden" style={{padding:0,overflow:'hidden',display:'flex',flexDirection:'column'}}>
+                <div key={product.id} className="fn-card product-card-enter" style={{padding:0,overflow:'hidden',display:'flex',flexDirection:'column'}} data-anim="fade-up" data-delay={String(Math.min(pIdx % 8 + 1, 8))}>
                   {/* Product image area */}
                   <div className="product-img-bg" style={cardStyle}>
                     {/* Orbs */}
