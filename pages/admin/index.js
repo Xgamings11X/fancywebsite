@@ -64,6 +64,10 @@ export default function AdminPanel() {
 
   const [products,     setProducts]     = useState([]);
   const [categories,   setCategories]   = useState([]);
+  const [prodSortDirty,   setProdSortDirty]   = useState(false);
+  const [catSortDirty,    setCatSortDirty]    = useState(false);
+  const [prodSortSaving,  setProdSortSaving]  = useState(false);
+  const [catSortSaving,   setCatSortSaving]   = useState(false);
   const [orders,       setOrders]       = useState([]);
   const [tickets,      setTickets]      = useState([]);
   const [codes,        setCodes]        = useState([]);
@@ -104,8 +108,8 @@ export default function AdminPanel() {
   const load = async () => {
     setLoading(true);
     try {
-      if (['dashboard','products'].includes(tab))   { const r=await af('/api/admin/products');  if(r.success) setProducts(r.products||[]); }
-      if (['dashboard','categories'].includes(tab)) { const r=await af('/api/admin/categories');if(r.success) setCategories(r.categories||[]); }
+      if (['dashboard','products'].includes(tab))   { const r=await af('/api/admin/products');  if(r.success){ setProducts(r.products||[]); setProdSortDirty(false); } }
+      if (['dashboard','categories'].includes(tab)) { const r=await af('/api/admin/categories');if(r.success){ setCategories(r.categories||[]); setCatSortDirty(false); } }
       if (['dashboard','orders'].includes(tab))     { const r=await af(`/api/admin/orders?status=${orderFilter}`); if(r.success){setOrders(r.orders||[]);if(r.stats)setStats(r.stats);} }
       if (tab==='reports')                          { const r=await af(`/api/admin/support?status=${reportFilter}`); if(r.success) setTickets(r.tickets||[]); }
       if (tab==='redeem')                           { const r=await af('/api/admin/redeem'); if(r.success) setCodes(r.codes||[]); }
@@ -133,7 +137,6 @@ export default function AdminPanel() {
   if (!loggedIn) return (
     <>
       <Head><title>Admin Login — Fancy Network</title>
-
       </Head>
       <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:16,background:'#060608',backgroundImage:'radial-gradient(circle at 50% 0%,rgba(255,107,0,0.08) 0%,transparent 50%)'}}>
         <div style={{width:'100%',maxWidth:380}}>
@@ -187,7 +190,6 @@ export default function AdminPanel() {
   return (
     <>
       <Head><title>Admin Panel — Fancy Network</title>
-
       </Head>
 
       <div className="admin-wrap">
@@ -296,11 +298,30 @@ export default function AdminPanel() {
             {/* ═══ PRODUCTS ════════════════════════════════ */}
             {tab==='products' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
                   <p style={{color:'var(--text-muted)',fontSize:13}}>{products.length} produk terdaftar · <span style={{color:'rgba(255,255,255,0.3)'}}>klik ↑↓ untuk mengatur posisi</span></p>
-                  <button className="btn-primary-fn" onClick={()=>{setEditProduct({});setShowProductModal(true);}}>
-                    <i className="fa-solid fa-plus"/> Tambah Produk
-                  </button>
+                  <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                    {prodSortDirty && (
+                      <button
+                        className="btn-primary-fn"
+                        disabled={prodSortSaving}
+                        onClick={async()=>{
+                          setProdSortSaving(true);
+                          try {
+                            const r = await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:products.map(x=>x.id)})});
+                            if(r.success){ setProdSortDirty(false); toast.success('Urutan produk disimpan!'); }
+                            else toast.error('Gagal menyimpan urutan');
+                          } catch { toast.error('Gagal menyimpan urutan'); }
+                          finally { setProdSortSaving(false); }
+                        }}
+                        style={{background:'#27ae60',borderColor:'#27ae60',fontSize:12,padding:'7px 14px'}}>
+                        <i className={`fa-solid ${prodSortSaving?'fa-spinner fa-spin':'fa-floppy-disk'}`}/> {prodSortSaving?'Menyimpan...':'Simpan Urutan'}
+                      </button>
+                    )}
+                    <button className="btn-primary-fn" onClick={()=>{setEditProduct({});setShowProductModal(true);}}>
+                      <i className="fa-solid fa-plus"/> Tambah Produk
+                    </button>
+                  </div>
                 </div>
                 <div className="admin-card" style={{overflow:'hidden'}}>
                   <div style={{overflowX:'auto'}}>
@@ -315,12 +336,12 @@ export default function AdminPanel() {
                               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
                                 <button
                                   disabled={idx===0}
-                                  onClick={async()=>{
-                                    if(idx===0) return;
-                                    const reordered=[...products];
-                                    [reordered[idx-1],reordered[idx]]=[reordered[idx],reordered[idx-1]];
-                                    setProducts(reordered);
-                                    await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                                  onClick={()=>{\
+                                    if(idx===0) return;\
+                                    const reordered=[...products];\
+                                    [reordered[idx-1],reordered[idx]]=[reordered[idx],reordered[idx-1]];\
+                                    setProducts(reordered);\
+                                    setProdSortDirty(true);\
                                   }}
                                   style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===0?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===0?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
                                   ↑
@@ -328,12 +349,12 @@ export default function AdminPanel() {
                                 <span style={{fontSize:11,color:'var(--text-muted)',fontWeight:700,minWidth:20,textAlign:'center'}}>{idx+1}</span>
                                 <button
                                   disabled={idx===products.length-1}
-                                  onClick={async()=>{
-                                    if(idx===products.length-1) return;
-                                    const reordered=[...products];
-                                    [reordered[idx],reordered[idx+1]]=[reordered[idx+1],reordered[idx]];
-                                    setProducts(reordered);
-                                    await af('/api/admin/products',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                                  onClick={()=>{\
+                                    if(idx===products.length-1) return;\
+                                    const reordered=[...products];\
+                                    [reordered[idx],reordered[idx+1]]=[reordered[idx+1],reordered[idx]];\
+                                    setProducts(reordered);\
+                                    setProdSortDirty(true);\
                                   }}
                                   style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===products.length-1?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===products.length-1?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
                                   ↓
@@ -389,11 +410,30 @@ export default function AdminPanel() {
             {/* ═══ CATEGORIES ══════════════════════════════ */}
             {tab==='categories' && (
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:8}}>
                   <p style={{color:'var(--text-muted)',fontSize:13}}>{categories.length} kategori · <span style={{color:'rgba(255,255,255,0.3)'}}>klik ↑↓ untuk mengatur urutan</span></p>
-                  <button className="btn-primary-fn" onClick={()=>{setEditCategory({});setShowCategoryModal(true);}}>
-                    <i className="fa-solid fa-plus"/> Tambah Kategori
-                  </button>
+                  <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                    {catSortDirty && (
+                      <button
+                        className="btn-primary-fn"
+                        disabled={catSortSaving}
+                        onClick={async()=>{
+                          setCatSortSaving(true);
+                          try {
+                            const r = await af('/api/admin/categories',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:categories.map(x=>x.id)})});
+                            if(r.success){ setCatSortDirty(false); toast.success('Urutan kategori disimpan!'); }
+                            else toast.error('Gagal menyimpan urutan');
+                          } catch { toast.error('Gagal menyimpan urutan'); }
+                          finally { setCatSortSaving(false); }
+                        }}
+                        style={{background:'#27ae60',borderColor:'#27ae60',fontSize:12,padding:'7px 14px'}}>
+                        <i className={`fa-solid ${catSortSaving?'fa-spinner fa-spin':'fa-floppy-disk'}`}/> {catSortSaving?'Menyimpan...':'Simpan Urutan'}
+                      </button>
+                    )}
+                    <button className="btn-primary-fn" onClick={()=>{setEditCategory({});setShowCategoryModal(true);}}>
+                      <i className="fa-solid fa-plus"/> Tambah Kategori
+                    </button>
+                  </div>
                 </div>
                 <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
                   {categories.map((c,idx)=>(
@@ -403,12 +443,12 @@ export default function AdminPanel() {
                           <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
                             <button
                               disabled={idx===0}
-                              onClick={async()=>{
+                              onClick={()=>{
                                 if(idx===0) return;
                                 const reordered=[...categories];
                                 [reordered[idx-1],reordered[idx]]=[reordered[idx],reordered[idx-1]];
                                 setCategories(reordered);
-                                await af('/api/admin/categories',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                                setCatSortDirty(true);
                               }}
                               style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===0?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===0?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
                               ↑
@@ -416,12 +456,12 @@ export default function AdminPanel() {
                             <span style={{fontSize:10,color:'rgba(255,255,255,0.4)',fontWeight:700}}>{idx+1}</span>
                             <button
                               disabled={idx===categories.length-1}
-                              onClick={async()=>{
+                              onClick={()=>{
                                 if(idx===categories.length-1) return;
                                 const reordered=[...categories];
                                 [reordered[idx],reordered[idx+1]]=[reordered[idx+1],reordered[idx]];
                                 setCategories(reordered);
-                                await af('/api/admin/categories',{method:'PATCH',body:JSON.stringify({action:'reorder',ids:reordered.map(x=>x.id)})});
+                                setCatSortDirty(true);
                               }}
                               style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===categories.length-1?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===categories.length-1?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
                               ↓
