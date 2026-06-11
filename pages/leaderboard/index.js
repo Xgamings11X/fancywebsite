@@ -103,6 +103,7 @@ export default function LeaderboardPage({ settings }) {
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
         <meta name="description" content={`Leaderboard ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
+
       </Head>
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
