@@ -49,8 +49,14 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
         {links.map(l => (
           <li key={l.href}>
             <Link href={l.href}
-              style={{color: router.pathname===l.href ? 'var(--primary)' : 'var(--text-muted)',
-                fontWeight:600, fontSize:14, textDecoration:'none', transition:'color 0.2s'}}>
+              style={{
+                color: router.pathname===l.href ? 'var(--primary)' : 'var(--text-muted)',
+                fontWeight:600, fontSize:14, textDecoration:'none',
+                transition:'color 0.3s ease, transform 0.3s ease, text-shadow 0.3s ease',
+                display:'inline-block',
+                transform: router.pathname===l.href ? 'translateY(-1px)' : 'translateY(0)',
+                textShadow: router.pathname===l.href ? '0 0 12px rgba(255,107,0,0.4)' : 'none',
+              }}>
               {l.label}
             </Link>
           </li>
