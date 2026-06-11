@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 // Redis modules loaded via dynamic import in getServerSideProps
@@ -76,6 +76,29 @@ export default function StorePage({ settings, categories: initCategories, produc
       .catch(() => {});
     return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); };
   }, []);
+
+  // ── Scroll-triggered product card animations ──
+  useEffect(() => {
+    const cards = document.querySelectorAll('.product-scroll-card');
+    if (!cards.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.remove('product-card-hidden');
+            entry.target.classList.add('product-card-visible');
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
+    );
+    cards.forEach((card, i) => {
+      card.style.transitionDelay = `${(i % 4) * 0.07}s`;
+      io.observe(card);
+    });
+    return () => io.disconnect();
+  }, [filtered.length, activeTab]);
 
   useEffect(() => {
     // Restore player dari localStorage, tapi validasi session masih aktif
@@ -215,7 +238,7 @@ export default function StorePage({ settings, categories: initCategories, produc
           </div>
           {/* Category tabs */}
           <div className="tabs-container" style={{overflowX:'auto',flexWrap:'wrap',gap:6}}>
-            {allTabs.map((tab, tabIdx)=>{
+            {allTabs.map(tab=>{
               const isActive = activeTab === tab.id;
               const col = tab.color;
               return (
@@ -228,7 +251,7 @@ export default function StorePage({ settings, categories: initCategories, produc
                     ...(isActive
                     ? {background:col, color:'#fff', boxShadow:`0 4px 15px ${col}55`, border:'none', flex:'0 0 auto'}
                     : {flex:'0 0 auto', border:'1px solid rgba(255,255,255,0.06)'}
-                  )}}
+                  }
                   onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor=col+'88'; }}}
                   onMouseLeave={e=>{ if(!isActive){ e.currentTarget.style.color=''; e.currentTarget.style.borderColor='rgba(255,255,255,0.06)'; }}}>
                   {tab.emoji && (
@@ -296,7 +319,7 @@ export default function StorePage({ settings, categories: initCategories, produc
               };
 
               return (
-                <div key={product.id} className="fn-card product-card-enter" style={{padding:0,overflow:'hidden',display:'flex',flexDirection:'column'}} data-anim="fade-up" data-delay={String(Math.min(pIdx % 8 + 1, 8))}>
+                <div key={product.id} className="fn-card product-scroll-card product-card-hidden" style={{padding:0,overflow:'hidden',display:'flex',flexDirection:'column'}}>
                   {/* Product image area */}
                   <div className="product-img-bg" style={cardStyle}>
                     {/* Orbs */}
