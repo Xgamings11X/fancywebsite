@@ -133,7 +133,6 @@ export default function AdminPanel() {
   if (!loggedIn) return (
     <>
       <Head><title>Admin Login — Fancy Network</title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
       <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:16,background:'#060608',backgroundImage:'radial-gradient(circle at 50% 0%,rgba(255,107,0,0.08) 0%,transparent 50%)'}}>
         <div style={{width:'100%',maxWidth:380}}>
@@ -187,7 +186,6 @@ export default function AdminPanel() {
   return (
     <>
       <Head><title>Admin Panel — Fancy Network</title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
       <div className="admin-wrap">
