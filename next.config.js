@@ -4,17 +4,11 @@ module.exports = {
   compress: true,
   poweredByHeader: false,
   productionBrowserSourceMaps: false,
-  swcMinify: true,
-
-  // Target modern browsers — hilangkan legacy JS polyfills (hemat ~13 KiB)
-  experimental: {
-    legacyBrowsers: false,
-  },
 
   images: {
     domains: ['crafatar.com','minotar.net','i.imgur.com','cdn.discordapp.com'],
-    unoptimized: true,
-    minimumCacheTTL: 86400,
+    unoptimized: true,          // izinkan gambar lokal dari /uploads/
+    minimumCacheTTL: 86400,     // cache gambar 24 jam
     formats: ['image/webp'],
   },
 
