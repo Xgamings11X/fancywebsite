@@ -776,7 +776,7 @@ export default function AdminPanel() {
                     const r=await af('/api/admin/test-plugin',{method:'POST',body:JSON.stringify({action:'manual',...testPluginForm})});
                     setTestPluginResult(r); setTestPluginLoading(false);
                   }}>
-                  {testPluginLoading?<><span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> Mengirim...</><><i className="fa-solid fa-paper-plane"/> Kirim Test Reward</>}
+                  {testPluginLoading?<><span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> Mengirim...</>:<><i className="fa-solid fa-paper-plane"/> Kirim Test Reward</>}
                 </button>
               </div>
               {/* Result */}
