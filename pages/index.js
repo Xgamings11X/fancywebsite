@@ -70,11 +70,11 @@ export default function HomePage({ settings }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content={s.server_description || `Server Minecraft Indonesia — ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
+      <main id="main-content">
       {/* HERO */}
       <header style={{minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'160px 24px 60px'}}>
 
@@ -88,7 +88,7 @@ export default function HomePage({ settings }) {
         {/* Logo */}
         <div className="anim-hero anim-d1" style={{margin:'0 auto 32px',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',zIndex:1}}>
           {s.logo_url
-            ? <img src={s.logo_url} alt={serverName} style={{maxWidth:180,maxHeight:180,display:'block',background:'transparent',objectFit:'contain',filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.45))',animation:'logoFloat 3.5s ease-in-out infinite'}}/>
+            ? <img src={s.logo_url} alt={serverName} width={180} height={180} style={{maxWidth:180,maxHeight:180,display:'block',background:'transparent',objectFit:'contain',filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.45))',animation:'logoFloat 3.5s ease-in-out infinite'}}/>
             : <LogoImage alt={serverName} style={{width:160,height:160,objectFit:'contain',display:'block',filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.55)) drop-shadow(0 0 60px rgba(255,107,0,0.2))',animation:'logoFloat 3.5s ease-in-out infinite'}}/>
           }
         </div>
@@ -154,7 +154,7 @@ export default function HomePage({ settings }) {
             {val:'ID',   sub:'Community'},
           ].map((st,i) => (
             <div key={i} data-anim="scale-pop" data-delay={String(i+1)}>
-              <h3 className="font-space" style={{fontSize:24,color:'var(--primary-light)',fontWeight:700}}>{st.val}</h3>
+              <p className="font-space" style={{fontSize:24,color:'var(--primary-light)',fontWeight:700}}>{st.val}</p>
               <p style={{fontSize:12,color:'var(--text-muted)',marginTop:4,textTransform:'uppercase',fontWeight:600,letterSpacing:0.5}}>{st.sub}</p>
             </div>
           ))}
@@ -225,6 +225,8 @@ export default function HomePage({ settings }) {
         </ul>
         <p style={{fontSize:11,color:'#44444a'}}>© 2026 {serverName}. Tidak terafiliasi dengan Mojang Studios.</p>
       </footer>
+
+      </main>
 
       {showLogin && <LoginModal onClose={()=>setShowLogin(false)} onSuccess={handleLoginSuccess}/>}
 
