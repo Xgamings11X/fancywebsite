@@ -898,7 +898,7 @@ function TicketCard({ tk, af, onRefresh }) {
               <code style={{fontSize:11,color:'var(--text-muted)',fontFamily:'monospace'}}>{tk.ticket_id}</code>
               <span style={{fontSize:11,color:'var(--text-muted)'}}>·</span>
               <span style={{fontSize:12,color:'var(--primary-light)',fontWeight:600}}>{tk.player_username}</span>
-              <span style={{fontSize:11,color(--text-muted)'}}>·</span>
+              <span style={{fontSize:11,color:'var(--text-muted)'}}>·</span>
               <span style={{fontSize:11,color:'var(--text-muted)'}}>{fmt(tk.created_at)}</span>
               {msgs.length > 0 && <span style={{fontSize:11,background:'rgba(255,107,0,0.1)',color:'var(--primary)',padding:'1px 6px',borderRadius:4}}>{msgs.length} pesan</span>}
             </div>
