@@ -1,28 +1,18 @@
-/* Fonts & Font Awesome dimuat via _document.js — jangan re-import di sini */
-
-/* ── Font fallback stack agar teks langsung tampil sebelum font load ── */
-@font-face {
-  font-family: 'Plus Jakarta Sans';
-  font-style: normal;
-  font-weight: 400 700;
-  font-display: swap;
-  src: local('Arial');
-  size-adjust: 100%;
-  ascent-override: 95%;
-}
-@font-face {
-  font-family: 'Space Grotesk';
-  font-style: normal;
-  font-weight: 500 700;
-  font-display: swap;
-  src: local('Arial');
-  size-adjust: 100%;
-  ascent-override: 95%;
-}
+/* Google Fonts & Font Awesome dimuat async di _document.js — tidak perlu @import di sini */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── Font Awesome: paksa font-display: swap supaya teks tidak hilang saat load ── */
+@font-face {
+  font-family: 'Font Awesome 6 Free';
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Font Awesome 6 Brands';
+  font-display: swap;
+}
 
 :root {
   --bg-main: #060608;
@@ -360,11 +350,11 @@ body {
   transition: transform 0.2s, opacity 0.2s;
 }
 .social-btn:hover { transform: translateY(-2px); opacity: 0.9; }
-.btn-vote    { background: #e67e22; color: #fff; }
-.btn-discord { background: #5865F2; color: #fff; }
-.btn-wa      { background: #128C7E; color: #fff; } /* darker green for better contrast */
-.btn-tiktok  { background: #000; border: 1px solid #333; color: #fff; }
-.btn-ig      { background: #CC0000; color: #fff; } /* slightly darker red for contrast */
+.btn-vote    { background: #e67e22; }
+.btn-discord { background: #5865F2; }
+.btn-wa      { background: #25D366; }
+.btn-tiktok  { background: #000; border: 1px solid #333; }
+.btn-ig      { background: #FF0000; }
 
 /* ── Form styles ───────────────── */
 .fn-input {
@@ -845,16 +835,15 @@ body.page-loaded .anim-hero-up { opacity: 1; transform: translateY(0); }
 .tagline-pill::after {
   content: '';
   position: absolute;
-  top: 0; left: 0;
+  top: 0; left: -100%;
   width: 60%; height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
-  transform: translateX(-200%);
-  will-change: transform;
   animation: shimmerPill 3.5s ease-in-out infinite 1.5s;
+  will-change: transform;
 }
 @keyframes shimmerPill {
-  0%   { transform: translateX(-200%); }
-  100% { transform: translateX(400%); }
+  0%   { transform: translateX(0%); }
+  100% { transform: translateX(440%); }
 }
 
 /* ── Stats bar number pop ───────────────────────────────────────── */
