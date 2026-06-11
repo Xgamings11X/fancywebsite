@@ -285,7 +285,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           <div style={{position:'absolute',top:0,left:0,width:'100%',height:4,background:'linear-gradient(90deg,var(--primary),var(--primary-light))',boxShadow:'0 2px 20px var(--primary-glow)'}}/>
 
           {/* Header */}
-          <header style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',borderBottom:'1px solid rgba(255,255,255,0.06)',paddingBottom:28,marginBottom:28,flexWrap:'wrap',gap:16}}>
+          <header data-anim="fade-up" data-delay="1" style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',borderBottom:'1px solid rgba(255,255,255,0.06)',paddingBottom:28,marginBottom:28,flexWrap:'wrap',gap:16}}>
             <div style={{display:'flex',alignItems:'center',gap:10}}>
               <LogoImage src={logoUrl||undefined} alt={serverName} style={{height:38,width:38,objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.55))'}}/>
               <div>
@@ -307,7 +307,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           </header>
 
           {/* Details grid */}
-          <section style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:28,marginBottom:32}}>
+          <section data-anim="fade-up" data-delay="2" style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:28,marginBottom:32}}>
             <div>
               <h4 style={{fontSize:11,textTransform:'uppercase',letterSpacing:'1.2px',color:'var(--primary-light)',marginBottom:12,fontWeight:700}}>Ditagih Kepada</h4>
               <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -332,7 +332,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           </section>
 
           {/* Table */}
-          <section style={{width:'100%',overflowX:'auto',marginBottom:24}}>
+          <section data-anim="fade-up" data-delay="3" style={{width:'100%',overflowX:'auto',marginBottom:24}}>
             <table style={{width:'100%',borderCollapse:'collapse',textAlign:'left'}}>
               <thead>
                 <tr>
