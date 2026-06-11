@@ -173,6 +173,7 @@ export default function StorePage({ settings, categories: initCategories, produc
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
         <meta name="description" content={`Item Store ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
+
       </Head>
 
 

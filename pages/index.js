@@ -70,11 +70,11 @@ export default function HomePage({ settings }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content={s.server_description || `Server Minecraft Indonesia — ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
+
       </Head>
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
-      <main id="main-content">
       {/* HERO */}
       <header style={{minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'160px 24px 60px'}}>
 
@@ -154,7 +154,7 @@ export default function HomePage({ settings }) {
             {val:'ID',   sub:'Community'},
           ].map((st,i) => (
             <div key={i} data-anim="scale-pop" data-delay={String(i+1)}>
-              <p className="font-space" style={{fontSize:24,color:'var(--primary-light)',fontWeight:700}}>{st.val}</p>
+              <h3 className="font-space" style={{fontSize:24,color:'var(--primary-light)',fontWeight:700}}>{st.val}</h3>
               <p style={{fontSize:12,color:'var(--text-muted)',marginTop:4,textTransform:'uppercase',fontWeight:600,letterSpacing:0.5}}>{st.sub}</p>
             </div>
           ))}
@@ -225,8 +225,6 @@ export default function HomePage({ settings }) {
         </ul>
         <p style={{fontSize:11,color:'#44444a'}}>© 2026 {serverName}. Tidak terafiliasi dengan Mojang Studios.</p>
       </footer>
-
-      </main>
 
       {showLogin && <LoginModal onClose={()=>setShowLogin(false)} onSuccess={handleLoginSuccess}/>}
 
