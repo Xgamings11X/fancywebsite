@@ -1,18 +1,9 @@
-/* Google Fonts & Font Awesome dimuat async di _document.js — tidak perlu @import di sini */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* ── Font Awesome: paksa font-display: swap supaya teks tidak hilang saat load ── */
-@font-face {
-  font-family: 'Font Awesome 6 Free';
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Font Awesome 6 Brands';
-  font-display: swap;
-}
 
 :root {
   --bg-main: #060608;
@@ -839,11 +830,10 @@ body.page-loaded .anim-hero-up { opacity: 1; transform: translateY(0); }
   width: 60%; height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
   animation: shimmerPill 3.5s ease-in-out infinite 1.5s;
-  will-change: transform;
 }
 @keyframes shimmerPill {
-  0%   { transform: translateX(0%); }
-  100% { transform: translateX(440%); }
+  0%   { left: -80%; }
+  100% { left: 160%; }
 }
 
 /* ── Stats bar number pop ───────────────────────────────────────── */
