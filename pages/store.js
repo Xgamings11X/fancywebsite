@@ -245,10 +245,7 @@ export default function StorePage({ settings, categories: initCategories, produc
                 <button key={tab.id}
                   className={`tab-btn${isActive?' active':''}`}
                   onClick={()=>setActiveTab(tab.id)}
-                  style={{
-                    animation:`tabItemIn 0.4s cubic-bezier(0.22,1,0.36,1) both`,
-                    animationDelay:`${tabIdx * 0.06}s`,
-                    ...(isActive
+                  style={isActive
                     ? {background:col, color:'#fff', boxShadow:`0 4px 15px ${col}55`, border:'none', flex:'0 0 auto'}
                     : {flex:'0 0 auto', border:'1px solid rgba(255,255,255,0.06)'}
                   }
