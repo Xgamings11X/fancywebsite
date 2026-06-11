@@ -855,6 +855,7 @@ body.page-loaded .anim-hero-up { opacity: 1; transform: translateY(0); }
    pakai opacity + top shift. */
 .fn-nav {
   animation: navSlideIn 0.6s cubic-bezier(0.22,1,0.36,1) both 0.1s;
+}
 
 /* ── Social button bounce on hover ──────────────────────────────── */
 .social-btn {
