@@ -215,17 +215,20 @@ export default function StorePage({ settings, categories: initCategories, produc
           </div>
           {/* Category tabs */}
           <div className="tabs-container" style={{overflowX:'auto',flexWrap:'wrap',gap:6}}>
-            {allTabs.map(tab=>{
+            {allTabs.map((tab, tabIdx)=>{
               const isActive = activeTab === tab.id;
               const col = tab.color;
               return (
                 <button key={tab.id}
                   className={`tab-btn${isActive?' active':''}`}
                   onClick={()=>setActiveTab(tab.id)}
-                  style={isActive
+                  style={{
+                    animation:`tabItemIn 0.4s cubic-bezier(0.22,1,0.36,1) both`,
+                    animationDelay:`${tabIdx * 0.06}s`,
+                    ...(isActive
                     ? {background:col, color:'#fff', boxShadow:`0 4px 15px ${col}55`, border:'none', flex:'0 0 auto'}
                     : {flex:'0 0 auto', border:'1px solid rgba(255,255,255,0.06)'}
-                  }
+                  )}}
                   onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor=col+'88'; }}}
                   onMouseLeave={e=>{ if(!isActive){ e.currentTarget.style.color=''; e.currentTarget.style.borderColor='rgba(255,255,255,0.06)'; }}}>
                   {tab.emoji && (
@@ -268,7 +271,7 @@ export default function StorePage({ settings, categories: initCategories, produc
             {search && <button onClick={()=>setSearch('')} style={{marginTop:12,background:'none',border:'none',color:'var(--primary)',cursor:'pointer',fontSize:13}}>Hapus pencarian</button>}
           </div>
         ) : (
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
+          <div key={activeTab} style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
             {filtered.map((product, pIdx) => {
               const isOpen = !!expanded[product.id];
               const discount = product.original_price && product.original_price>product.price
