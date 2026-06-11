@@ -70,7 +70,7 @@ export default function HomePage({ settings }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content={s.server_description || `Server Minecraft Indonesia — ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
-
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
@@ -88,7 +88,7 @@ export default function HomePage({ settings }) {
         {/* Logo */}
         <div className="anim-hero anim-d1" style={{margin:'0 auto 32px',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',zIndex:1}}>
           {s.logo_url
-            ? <img src={s.logo_url} alt={serverName} width={180} height={180} style={{maxWidth:180,maxHeight:180,display:'block',background:'transparent',objectFit:'contain',filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.45))',animation:'logoFloat 3.5s ease-in-out infinite'}}/>
+            ? <img src={s.logo_url} alt={serverName} style={{maxWidth:180,maxHeight:180,display:'block',background:'transparent',objectFit:'contain',filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.45))',animation:'logoFloat 3.5s ease-in-out infinite'}}/>
             : <LogoImage alt={serverName} style={{width:160,height:160,objectFit:'contain',display:'block',filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.55)) drop-shadow(0 0 60px rgba(255,107,0,0.2))',animation:'logoFloat 3.5s ease-in-out infinite'}}/>
           }
         </div>

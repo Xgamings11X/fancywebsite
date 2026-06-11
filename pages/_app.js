@@ -83,8 +83,7 @@ export default function App({ Component, pageProps }) {
     };
   }, [router]);
 
-  // Re-run observer after route changes (only when needed, not every render)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Re-run observer on every render (catches dynamic content)
   useEffect(() => {
     const cleanup = initScrollObserver();
     return cleanup;
