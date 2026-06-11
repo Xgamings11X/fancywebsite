@@ -336,12 +336,12 @@ export default function AdminPanel() {
                               <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:2}}>
                                 <button
                                   disabled={idx===0}
-                                  onClick={()=>{\
-                                    if(idx===0) return;\
-                                    const reordered=[...products];\
-                                    [reordered[idx-1],reordered[idx]]=[reordered[idx],reordered[idx-1]];\
-                                    setProducts(reordered);\
-                                    setProdSortDirty(true);\
+                                  onClick={()=>{
+                                    if(idx===0) return;
+                                    const reordered=[...products];
+                                    [reordered[idx-1],reordered[idx]]=[reordered[idx],reordered[idx-1]];
+                                    setProducts(reordered);
+                                    setProdSortDirty(true);
                                   }}
                                   style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===0?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===0?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
                                   ↑
@@ -349,12 +349,12 @@ export default function AdminPanel() {
                                 <span style={{fontSize:11,color:'var(--text-muted)',fontWeight:700,minWidth:20,textAlign:'center'}}>{idx+1}</span>
                                 <button
                                   disabled={idx===products.length-1}
-                                  onClick={()=>{\
-                                    if(idx===products.length-1) return;\
-                                    const reordered=[...products];\
-                                    [reordered[idx],reordered[idx+1]]=[reordered[idx+1],reordered[idx]];\
-                                    setProducts(reordered);\
-                                    setProdSortDirty(true);\
+                                  onClick={()=>{
+                                    if(idx===products.length-1) return;
+                                    const reordered=[...products];
+                                    [reordered[idx],reordered[idx+1]]=[reordered[idx+1],reordered[idx]];
+                                    setProducts(reordered);
+                                    setProdSortDirty(true);
                                   }}
                                   style={{background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:5,color:idx===products.length-1?'rgba(255,255,255,0.2)':'#fff',width:26,height:22,cursor:idx===products.length-1?'default':'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>
                                   ↓
@@ -776,7 +776,7 @@ export default function AdminPanel() {
                     const r=await af('/api/admin/test-plugin',{method:'POST',body:JSON.stringify({action:'manual',...testPluginForm})});
                     setTestPluginResult(r); setTestPluginLoading(false);
                   }}>
-                  {testPluginLoading?<><span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> Mengirim...</>:<><i className="fa-solid fa-paper-plane"/> Kirim Test Reward</>}
+                  {testPluginLoading?<><span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> Mengirim...</><><i className="fa-solid fa-paper-plane"/> Kirim Test Reward</>}
                 </button>
               </div>
               {/* Result */}
@@ -898,7 +898,7 @@ function TicketCard({ tk, af, onRefresh }) {
               <code style={{fontSize:11,color:'var(--text-muted)',fontFamily:'monospace'}}>{tk.ticket_id}</code>
               <span style={{fontSize:11,color:'var(--text-muted)'}}>·</span>
               <span style={{fontSize:12,color:'var(--primary-light)',fontWeight:600}}>{tk.player_username}</span>
-              <span style={{fontSize:11,color:'var(--text-muted)'}}>·</span>
+              <span style={{fontSize:11,color(--text-muted)'}}>·</span>
               <span style={{fontSize:11,color:'var(--text-muted)'}}>{fmt(tk.created_at)}</span>
               {msgs.length > 0 && <span style={{fontSize:11,background:'rgba(255,107,0,0.1)',color:'var(--primary)',padding:'1px 6px',borderRadius:4}}>{msgs.length} pesan</span>}
             </div>
