@@ -7,7 +7,7 @@ module.exports = {
 
   images: {
     domains: ['crafatar.com','minotar.net','i.imgur.com','cdn.discordapp.com'],
-    unoptimized: true,          // izinkan gambar lokal dari /uploads/
+    unoptimized: false,          // izinkan gambar lokal dari /uploads/
     minimumCacheTTL: 86400,     // cache gambar 24 jam
     formats: ['image/webp'],
   },
