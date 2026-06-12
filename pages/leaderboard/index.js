@@ -112,7 +112,7 @@ export default function LeaderboardPage({ settings }) {
 
         {/* ── Header ── */}
         <div style={{textAlign:'center', marginBottom:40}} data-anim="fade-up">
-          <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>HALL OF FAME</span>
+          <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>FANCY NETWORK</span>
           <h1 className="font-space" style={{fontSize:'clamp(24px,5vw,36px)',fontWeight:700,marginBottom:14}}>
             Papan <span style={{color:'var(--primary)'}}>Peringkat</span>
           </h1>
@@ -122,12 +122,12 @@ export default function LeaderboardPage({ settings }) {
             {connMeta[active]?.endpointConfigured ? (
               <span style={{display:'inline-flex',alignItems:'center',gap:6,background:'rgba(46,204,113,0.1)',border:'1px solid rgba(46,204,113,0.25)',borderRadius:20,padding:'4px 14px',fontSize:12,color:'#2ecc71',fontWeight:600}}>
                 <span style={{width:6,height:6,borderRadius:'50%',background:'#2ecc71',display:'inline-block',boxShadow:'0 0 6px #2ecc71'}}/>
-                Terhubung ke Plugin Endpoint
+                Leaderboard Connect
               </span>
             ) : (
               <span style={{display:'inline-flex',alignItems:'center',gap:6,background:'rgba(255,200,0,0.08)',border:'1px solid rgba(255,200,0,0.2)',borderRadius:20,padding:'4px 14px',fontSize:12,color:'#f1c40f',fontWeight:600}}>
                 <span style={{width:6,height:6,borderRadius:'50%',background:'#f1c40f',display:'inline-block'}}/>
-                Mode Push (plugin kirim data)
+                Leaderboard Connecting
               </span>
             )}
             {lastFetch && (
