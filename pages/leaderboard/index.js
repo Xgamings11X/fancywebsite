@@ -217,7 +217,7 @@ export default function LeaderboardPage({ settings }) {
               {[
                 {
                   step:1, icon:'fa-plug', title:'Pastikan Plugin Sudah Aktif',
-                  desc:'Plugin harus sudah diinstall dan berjalan di server Minecraft. Cek dengan command /shadowyn ping di dalam game.',
+                  desc:'Plugin harus sudah diinstall dan berjalan di server Minecraft. Cek ping di dalam game.',
                 },
                 {
                   step:2, icon:'fa-gear', title:'Konfigurasi config.yml Plugin',
