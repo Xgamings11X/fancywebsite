@@ -178,23 +178,39 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           const r = await fetch('/api/orders/verify/'+liveOrder.order_id, { credentials:'include' });
           const d = await r.json();
           if (d.order) setLiveOrder(d.order);
-        } catch {}
+          return d.order;
+        } catch { return null; }
+      };
+
+      // Setelah pembayaran sukses/pending, status di server kadang butuh
+      // beberapa saat untuk update (webhook delay). Poll beberapa kali
+      // supaya halaman otomatis pindah ke status "Pembayaran Berhasil"
+      // tanpa user harus menekan tombol back.
+      const refreshUntilDone = async (maxAttempts = 8, intervalMs = 1500) => {
+        for (let i = 0; i < maxAttempts; i++) {
+          const order = await refreshOrder();
+          if (order && DONE_STATUSES.includes(order.payment_status)) return order;
+          await new Promise(r => setTimeout(r, intervalMs));
+        }
+        return null;
       };
 
       window.snap.pay(snapToken, {
-        onSuccess: async () => { await refreshOrder(); },
-        onPending: async () => { await refreshOrder(); },
+        onSuccess: async () => { await refreshUntilDone(); },
+        onPending: async () => { await refreshUntilDone(); },
         onError:   async () => { snapActive.current = false; setSnapClosed(true); await refreshOrder(); },
         onClose:   async () => {
           snapActive.current = false;
-          try {
-            const r = await fetch('/api/orders/verify/'+liveOrder.order_id, { credentials:'include' });
-            const d = await r.json();
-            if (d.order) {
-              setLiveOrder(d.order);
-              if (!PAID_STATUSES.includes(d.order.payment_status)) setSnapClosed(true);
-            }
-          } catch { setSnapClosed(true); }
+          const order = await refreshOrder();
+          if (order && !PAID_STATUSES.includes(order.payment_status)) {
+            setSnapClosed(true);
+            // Cek lagi setelah delay singkat — kadang status baru update
+            // beberapa saat setelah popup ditutup (pembayaran via app lain).
+            setTimeout(async () => {
+              const updated = await refreshOrder();
+              if (updated && PAID_STATUSES.includes(updated.payment_status)) setSnapClosed(false);
+            }, 3000);
+          }
         },
       });
     } catch (e) {
@@ -214,17 +230,22 @@ export default function InvoicePage({ order: initialOrder, settings }) {
   }, [isPending, liveOrder?.midtrans_snap_token]);
 
   // ── Download PDF ────────────────────────────────────────────────
-  const handleDownloadPdf = () => {
-    const html = generateInvoiceHtml(liveOrder, serverName, logoSrc);
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `invoice-${liveOrder.order_id}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleDownloadPdf = async () => {
+    try {
+      const res = await fetch(`/api/orders/invoice-pdf/${liveOrder.order_id}`);
+      if (!res.ok) throw new Error('Gagal generate PDF');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = `invoice-${liveOrder.order_id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('Gagal download invoice PDF: ' + e.message);
+    }
   };
 
   // ── Copy order ID ───────────────────────────────────────────────
@@ -293,7 +314,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
                   <span style={{color:'var(--primary)'}}>FANCY</span>{' '}
                   <span>{serverName.replace(/fancy/gi,'').trim()||'NETWORK'}</span>
                 </div>
-                <div style={{fontSize:12,color:'var(--text-muted)',marginTop:1}}>Premium Minecraft Server Shop</div>
+                <div style={{fontSize:12,color:'var(--text-muted)',marginTop:1}}>Fancy Network</div>
               </div>
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:8}}>
@@ -345,7 +366,6 @@ export default function InvoicePage({ order: initialOrder, settings }) {
                 <tr>
                   <td style={{padding:'16px 14px',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:14,color:'#fff'}}>
                     <div style={{fontWeight:600}}>{liveOrder.product_name}</div>
-                    <div style={{fontSize:12,color:'var(--text-muted)',marginTop:3,display:'flex',alignItems:'center',gap:4}}><i className="fa-solid fa-infinity" style={{fontSize:10}}/> Durasi: Permanen</div>
                   </td>
                   <td style={{padding:'16px 14px',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:14,color:'#fff'}}>
                     <span style={{background:'rgba(255,107,0,0.1)',border:'1px solid rgba(255,107,0,0.18)',color:'var(--primary-light)',padding:'3px 10px',borderRadius:100,fontSize:11,fontWeight:600}}>{liveOrder.category_name||'Produk'}</span>
@@ -418,199 +438,4 @@ export default function InvoicePage({ order: initialOrder, settings }) {
       </main>
     </>
   );
-}
-
-function generateInvoiceHtml(order, serverName, logoSrc) {
-  const idrFmt     = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
-  const subtotal   = (order.amount||0)+(order.discount_amount||0);
-  const discount   = order.discount_amount||0;
-  const serviceFee = Math.round((order.amount||0)*0.025);
-  const total      = (order.amount||0)+serviceFee;
-  const formatDate = iso => iso ? new Date(iso).toLocaleString('id-ID',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})+' WIB' : '-';
-  const statusMap  = { success:'LUNAS', settlement:'LUNAS', capture:'LUNAS', pending:'MENUNGGU', failed:'GAGAL', cancelled:'DIBATALKAN', cancel:'DIBATALKAN', expired:'KADALUARSA', expire:'KADALUARSA' };
-  const colorMap   = { success:'#22c55e', settlement:'#22c55e', capture:'#22c55e', pending:'#f59e0b', failed:'#ef4444', cancelled:'#6b7280', cancel:'#6b7280', expired:'#6b7280', expire:'#6b7280' };
-  const sl = statusMap[order.payment_status] || (order.payment_status||'').toUpperCase();
-  const sc = colorMap[order.payment_status] || '#6b7280';
-  const sName = (serverName||'NETWORK').replace(/fancy/gi,'').trim()||'NETWORK';
-
-  return `<!DOCTYPE html>
-<html lang="id">
-<head>
-<meta charset="UTF-8"/>
-<title>Invoice #${order.order_id}</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: Arial, Helvetica, sans-serif; background: #ffffff; color: #111111; font-size: 13px; line-height: 1.5; }
-  .page { width: 680px; margin: 0 auto; padding: 40px 40px 50px; }
-
-  /* ── Header ── */
-  .hdr-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #eeeeee; }
-  .brand-name { font-size: 22px; font-weight: 900; color: #ff6b00; }
-  .brand-name span { color: #111111; }
-  .brand-sub { font-size: 11px; color: #888888; margin-top: 2px; }
-  .inv-title { font-size: 22px; font-weight: 800; color: #111111; text-align: right; }
-  .inv-id { font-size: 12px; color: #888888; text-align: right; margin-top: 2px; }
-  .badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; letter-spacing: 1px; border: 1px solid; }
-
-  /* ── Info grid ── */
-  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
-  .info-table td { width: 50%; vertical-align: top; padding: 0; }
-  .info-table td:last-child { padding-left: 30px; }
-  .section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: #888888; font-weight: 700; margin-bottom: 8px; border-bottom: 1px solid #eeeeee; padding-bottom: 4px; }
-  .info-row { font-size: 12px; color: #444444; margin-bottom: 4px; }
-  .info-val { font-weight: 600; color: #111111; }
-
-  /* ── Products table ── */
-  .prod-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-  .prod-table th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #888888; padding: 9px 12px; background: #f7f7f7; border-top: 1px solid #e8e8e8; border-bottom: 2px solid #e8e8e8; font-weight: 700; }
-  .prod-table th.tr { text-align: right; }
-  .prod-table td { padding: 14px 12px; border-bottom: 1px solid #f0f0f0; vertical-align: top; }
-  .prod-table td.tr { text-align: right; }
-  .prod-name { font-weight: 700; font-size: 13px; color: #111111; margin-bottom: 2px; }
-  .prod-sub { font-size: 11px; color: #888888; }
-  .cat-tag { display: inline-block; background: #fff3e8; border: 1px solid #ffcc99; color: #cc5500; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
-  .disc-tag { display: inline-block; background: #eafaf1; border: 1px solid #a9dfbf; color: #1a8a45; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 600; }
-
-  /* ── Summary ── */
-  .sum-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; }
-  .sum-table td { padding: 5px 0; font-size: 13px; }
-  .sum-table .sum-inner { width: 280px; margin-left: auto; }
-  .sum-row-label { color: #555555; }
-  .sum-row-val { text-align: right; color: #333333; }
-  .sum-disc { color: #1a8a45; }
-  .sum-total-row td { border-top: 2px solid #111111; padding-top: 10px; margin-top: 6px; }
-  .sum-total-label { font-size: 16px; font-weight: 800; color: #111111; }
-  .sum-total-val { font-size: 16px; font-weight: 800; color: #ff6b00; text-align: right; }
-
-  /* ── Footer ── */
-  .foot { margin-top: 36px; padding-top: 14px; border-top: 1px solid #eeeeee; font-size: 11px; color: #aaaaaa; text-align: center; }
-
-  @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .page { padding: 20px; }
-  }
-</style>
-</head>
-<body>
-<div class="page">
-
-  <!-- Header -->
-  <table class="hdr-table">
-    <tr>
-      <td style="vertical-align:top;">
-        <div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:4px;">
-          ${logoSrc ? `<img src="${logoSrc}" alt="Logo" style="width:44px;height:44px;object-fit:contain;vertical-align:middle;"/>` : ''}
-          <div>
-            <div class="brand-name">FANCY<span> ${sName}</span></div>
-            <div class="brand-sub">Premium Minecraft Server Shop</div>
-          </div>
-        </div>
-        <div style="margin-top:14px;font-size:19px;font-weight:800;color:#111;">INVOICE</div>
-        <div style="font-size:12px;color:#888;margin-top:2px;">#${order.order_id}</div>
-      </td>
-      <td style="vertical-align:top;text-align:right;">
-        <div class="badge" style="color:${sc};border-color:${sc};background:${sc}18;">${sl}</div>
-        <div style="font-size:12px;color:#888;margin-top:8px;">${formatDate(order.created_at)}</div>
-      </td>
-    </tr>
-  </table>
-
-  <!-- Info grid -->
-  <table class="info-table">
-    <tr>
-      <td>
-        <div class="section-label">Ditagih Kepada</div>
-        <div class="info-row"><span class="info-val">${order.player_username||'-'}</span></div>
-        ${order.discord_username?`<div class="info-row">Discord: <span class="info-val">${order.discord_username}</span></div>`:''}
-      </td>
-      <td>
-        <div class="section-label">Detail Transaksi</div>
-        <table style="border-collapse:collapse;width:100%;">
-          <tr>
-            <td style="font-size:12px;color:#888;padding:3px 0;white-space:nowrap;width:110px;vertical-align:top;">Tanggal</td>
-            <td style="font-size:12px;font-weight:600;color:#111;padding:3px 0 3px 8px;vertical-align:top;">${formatDate(order.created_at)}</td>
-          </tr>
-          <tr>
-            <td style="font-size:12px;color:#888;padding:3px 0;white-space:nowrap;vertical-align:top;">Metode Bayar</td>
-            <td style="font-size:12px;font-weight:600;color:#111;padding:3px 0 3px 8px;vertical-align:top;">${order.payment_method||'QRIS'}</td>
-          </tr>
-          <tr>
-            <td style="font-size:12px;color:#888;padding:3px 0;white-space:nowrap;vertical-align:top;">ID Order</td>
-            <td style="font-size:12px;font-weight:600;color:#111;padding:3px 0 3px 8px;word-break:break-all;vertical-align:top;">${order.order_id}</td>
-          </tr>
-          ${order.redeem_code?`
-          <tr>
-            <td style="font-size:12px;color:#888;padding:3px 0;white-space:nowrap;vertical-align:top;">Kode Redeem</td>
-            <td style="font-size:12px;font-weight:600;color:#1a8a45;padding:3px 0 3px 8px;vertical-align:top;">${order.redeem_code}</td>
-          </tr>`:''}
-        </table>
-      </td>
-    </tr>
-  </table>
-
-  <!-- Products table -->
-  <table class="prod-table">
-    <thead>
-      <tr>
-        <th style="width:55%;">Deskripsi Produk</th>
-        <th style="width:20%;">Kategori</th>
-        <th class="tr" style="width:25%;">Harga</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>
-          <div class="prod-name">${order.product_name||'-'}</div>
-          <div class="prod-sub">Durasi: Permanen &middot; Lifetime</div>
-        </td>
-        <td><span class="cat-tag">${order.category_name||'Produk'}</span></td>
-        <td class="tr" style="font-weight:700;">${idrFmt(subtotal)}</td>
-      </tr>
-      ${discount>0?`
-      <tr>
-        <td>
-          <div class="prod-name" style="color:#1a8a45;">Diskon Kode Redeem</div>
-          <div class="prod-sub">Kode: ${order.redeem_code}</div>
-        </td>
-        <td><span class="disc-tag">Diskon</span></td>
-        <td class="tr" style="font-weight:700;color:#1a8a45;">-${idrFmt(discount)}</td>
-      </tr>`:''}
-    </tbody>
-  </table>
-
-  <!-- Summary -->
-  <table class="sum-table">
-    <tr>
-      <td>
-        <table style="width:280px;margin-left:auto;border-collapse:collapse;">
-          <tr>
-            <td style="padding:5px 0;font-size:13px;color:#555;">Subtotal</td>
-            <td style="padding:5px 0;font-size:13px;text-align:right;color:#333;">${idrFmt(order.amount||0)}</td>
-          </tr>
-          <tr>
-            <td style="padding:5px 0;font-size:13px;color:#555;">Biaya Layanan (2.5%)</td>
-            <td style="padding:5px 0;font-size:13px;text-align:right;color:#333;">${idrFmt(serviceFee)}</td>
-          </tr>
-          ${discount>0?`
-          <tr>
-            <td style="padding:5px 0;font-size:13px;color:#1a8a45;">Diskon Redeem</td>
-            <td style="padding:5px 0;font-size:13px;text-align:right;color:#1a8a45;">-${idrFmt(discount)}</td>
-          </tr>`:''}
-          <tr style="border-top:2px solid #111;">
-            <td style="padding-top:10px;font-size:16px;font-weight:800;color:#111;">Total Pembayaran</td>
-            <td style="padding-top:10px;font-size:16px;font-weight:800;color:#ff6b00;text-align:right;">${idrFmt(total)}</td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-
-  <!-- Footer -->
-  <div class="foot">
-    Dokumen ini digenerate otomatis oleh ${serverName||'Fancy Network'} Store &bull; Simpan sebagai bukti pembayaran resmi.
-  </div>
-
-</div>
-</body>
-</html>`;
 }
