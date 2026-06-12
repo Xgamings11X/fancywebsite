@@ -82,7 +82,7 @@ export default function LoginModal({ onClose, onSuccess, product }) {
               <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:22}}>
                 <div>
                   <h2 className="font-space" style={{fontSize:20,fontWeight:700,marginBottom:4}}>
-                    {product ? 'Login untuk Membeli' : 'Masuk ke Store'}
+                    {product ? 'Login untuk Membeli' : 'Masuk'}
                   </h2>
                   <p style={{color:'var(--text-muted)',fontSize:13}}>Gunakan username Minecraft kamu</p>
                 </div>
