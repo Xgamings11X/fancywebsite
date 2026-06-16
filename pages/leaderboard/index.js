@@ -41,7 +41,7 @@ export default function LeaderboardPage({ settings }) {
   const [showLogin, setShowLogin] = useState(false);
   const [active,    setActive]    = useState('balance');
   const [data,      setData]      = useState({});
-  const [connMeta,  setConnMeta]  = useState({});  // renamed: connection metadata per board
+  const [connMeta,  setConnMeta]  = useState({});  
   const [loading,   setLoading]   = useState(true);
   const [lastFetch, setLastFetch] = useState(null);
 
@@ -64,15 +64,13 @@ export default function LeaderboardPage({ settings }) {
         }
       } catch {}
     }));
-    // BUGFIX: saat refresh (quiet), pertahankan data lama jika data baru kosong
-    // Supaya saat sync tidak tiba-tiba kosong karena timing atau instance berbeda
+
     setData(prev => {
       const merged = { ...prev };
       Object.keys(results).forEach(b => {
         if (results[b].length > 0) {
           merged[b] = results[b];
         }
-        // Jika results[b] kosong tapi sebelumnya ada data, pertahankan data lama
       });
       return merged;
     });
@@ -81,7 +79,6 @@ export default function LeaderboardPage({ settings }) {
     if (!quiet) setLoading(false);
   };
 
-  // Auto-refresh setiap 60 detik
   useEffect(() => {
     const iv = setInterval(() => fetchAll(true), 60000);
     return () => clearInterval(iv);
@@ -239,7 +236,7 @@ export default function LeaderboardPage({ settings }) {
                         <span style={{fontSize:10,background:'var(--primary)',color:'#fff',fontWeight:700,padding:'1px 7px',borderRadius:20,flexShrink:0}}>STEP {item.step}</span>
                         <p style={{fontWeight:700,fontSize:14,color:'#fff'}}>{item.title}</p>
                       </div>
-                      <p style={{fontSize:12,color:'var(--text-muted)',lineHeight:1.5,marginBottom:item.code?10:0}}>{item.desc}</p>
+                      <p style={{fontSize:12,color(--text-muted)',lineHeight:1.5,marginBottom:item.code?10:0}}>{item.desc}</p>
                       {item.code && (
                         <pre style={{fontSize:11,color:'#aaa',background:'rgba(0,0,0,0.4)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,padding:'10px 12px',lineHeight:1.7,fontFamily:'monospace',overflowX:'auto',whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{item.code}</pre>
                       )}
@@ -260,7 +257,7 @@ export default function LeaderboardPage({ settings }) {
 
             {/* ── Top 3 Podium ── */}
             {entries.length >= 3 && (() => {
-              const podOrder = [entries[1], entries[0], entries[2]]; // 2nd, 1st, 3rd
+              const podOrder = [entries[1], entries[0], entries[2]]; 
               const podRanks  = [2, 1, 3];
               const podH      = ['155px', '195px', '135px'];
               return (
@@ -273,10 +270,17 @@ export default function LeaderboardPage({ settings }) {
                   width:'100%',
                 }}>
                   {podOrder.map((e, i) => {
+                    if (!e) return null;
                     const podRank = podRanks[i];
                     const col     = RANK_COLORS[podRank];
+
+                    // ── FAILSAFE PROTECTION PODIUM ──
+                    const isNameValid = e.player && e.player.trim() !== '' && e.player !== '-';
+                    const finalUsername = isNameValid ? e.player : 'Steve';
+                    const finalUuid = isNameValid && e.uuid && (e.uuid.length === 32 || e.uuid.length === 36) ? e.uuid : null;
+
                     return (
-                      <div key={e.rank} className="fn-card" style={{
+                      <div key={e.rank || i} className="fn-card" style={{
                         height: podH[i],
                         background:'rgba(0,0,0,0.3)',
                         border:`1px solid ${col}44`,
@@ -293,8 +297,7 @@ export default function LeaderboardPage({ settings }) {
                       }}>
                         <i className={`fa-solid ${RANK_ICONS[podRank]}`} style={{fontSize:18,color:col,flexShrink:0}}/>
                         
-                        {/* FIX DI SINI: uuid menggunakan e.uuid (atau null jika API tidak mengirim UUID) */}
-                        <PlayerAvatar uuid={e.uuid || null} username={e.player} size={podRank===1?40:32}/>
+                        <PlayerAvatar uuid={finalUuid} username={finalUsername} size={podRank===1?40:32}/>
                         
                         <span style={{
                           fontWeight:700,
@@ -306,7 +309,7 @@ export default function LeaderboardPage({ settings }) {
                           textOverflow:'ellipsis',
                           whiteSpace:'nowrap',
                           lineHeight:1.3,
-                        }}>{e.player}</span>
+                        }}>{finalUsername}</span>
                         
                         <span className="font-space" style={{
                           fontWeight:700,
@@ -331,8 +334,14 @@ export default function LeaderboardPage({ settings }) {
             {entries.map((e, rowIdx) => {
               const isTop3  = e.rank <= 3;
               const rankCol = RANK_COLORS[e.rank];
+
+              // ── FAILSAFE PROTECTION LIST ROW ──
+              const isNameValid = e.player && e.player.trim() !== '' && e.player !== '-';
+              const finalUsername = isNameValid ? e.player : 'Steve';
+              const finalUuid = isNameValid && e.uuid && (e.uuid.length === 32 || e.uuid.length === 36) ? e.uuid : null;
+
               return (
-                <div key={e.rank}
+                <div key={e.rank || rowIdx}
                   className={`lb-row${e.rank===1?' rank-1':e.rank===2?' rank-2':e.rank===3?' rank-3':''}  leaderboard-row`}
                   style={{animationDelay: `${rowIdx * 0.04}s`}}>
                   {/* Rank */}
@@ -343,12 +352,11 @@ export default function LeaderboardPage({ settings }) {
                     }
                   </div>
                   
-                  {/* FIX DI SINI: uuid menggunakan e.uuid (atau null jika API tidak menyediakan) */}
-                  <PlayerAvatar uuid={e.uuid || null} username={e.player} size={34}/>
+                  <PlayerAvatar uuid={finalUuid} username={finalUsername} size={34}/>
                   
                   {/* Name */}
                   <div style={{flex:1,minWidth:0,overflow:'hidden'}}>
-                    <p style={{fontWeight:700,fontSize:14,color:isTop3?rankCol:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.player}</p>
+                    <p style={{fontWeight:700,fontSize:14,color:isTop3?rankCol:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{finalUsername}</p>
                   </div>
                   {/* Score */}
                   <div style={{textAlign:'right',flexShrink:0,paddingLeft:8}}>
