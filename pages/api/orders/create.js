@@ -1,6 +1,7 @@
 import { ProductsAsync, OrdersAsync, RedeemCodesAsync } from '../../../lib/redis.js';
 import { createSnapTransaction } from '../../../lib/midtrans.js';
 import { verifyToken } from '../../../lib/auth.js';
+import { webhookTransaction } from '../../../lib/discord.js';
 import { parse } from 'cookie';
 
 export default async function handler(req, res) {
@@ -11,14 +12,12 @@ export default async function handler(req, res) {
 
   const { productId, redeemCode, discord_username } = req.body || {};
   if (!productId) return res.status(400).json({ success:false, message:'productId diperlukan' });
-  // Discord username wajib untuk claim role
   if (!discord_username?.trim()) return res.status(400).json({ success:false, message:'Username Discord wajib diisi untuk klaim role' });
 
   try {
     const product = await ProductsAsync.byId(productId);
     if (!product || !product.is_active) return res.status(404).json({ success:false, message:'Produk tidak ditemukan' });
 
-    // reward_trigger wajib ada — ini adalah product_id yang dikenali plugin (contoh: rank-vip, coins-20)
     if (!product.reward_trigger?.trim()) {
       return res.status(400).json({ success:false, message:'Produk belum dikonfigurasi (reward_trigger kosong). Hubungi admin.' });
     }
@@ -46,10 +45,8 @@ export default async function handler(req, res) {
     }
 
     const orderId = `FN-${Date.now()}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
-    // expired_at = 1 hari dari sekarang (sama dengan expiry di Midtrans)
     const expiredAt = new Date(Date.now() + 24*60*60*1000).toISOString();
 
-    // Ambil category_name untuk invoice
     let categoryName = '';
     try {
       const { CategoriesAsync } = await import('../../../lib/redis.js');
@@ -68,6 +65,14 @@ export default async function handler(req, res) {
       plugin_notified: false, plugin_queued: false,
       expired_at: expiredAt,
     });
+
+    // ── Kirim Discord log Pending ─────────────────────────────────
+    try {
+      const newOrder = await OrdersAsync.byId(orderId);
+      await webhookTransaction(newOrder);
+    } catch (e) {
+      console.error('[order/create] Discord pending error:', e.message);
+    }
 
     const snap = await createSnapTransaction({ orderId, amount: finalPrice, playerUsername: user.username, productName: product.name });
     await OrdersAsync.update(orderId, { midtrans_snap_token: snap.snapToken });
