@@ -275,9 +275,12 @@ export default function LeaderboardPage({ settings }) {
                     const col     = RANK_COLORS[podRank];
 
                     // ── FAILSAFE PROTECTION PODIUM ──
-                    const isNameValid = e.player && e.player.trim() !== '' && e.player !== '-';
-                    const finalUsername = isNameValid ? e.player : 'Steve';
-                    const finalUuid = isNameValid && e.uuid && (e.uuid.length === 32 || e.uuid.length === 36) ? e.uuid : null;
+                    const rawName = e.player || e.username || e.name || e.playerName || '';
+                    const isNameValid = rawName && rawName.trim() !== '' && rawName !== '-';
+                    const finalUsername = isNameValid ? rawName : 'Steve';
+                    
+                    const rawUuid = e.uuid || e.player_uuid || e.playerUuid || '';
+                    const finalUuid = isNameValid && rawUuid && (rawUuid.length === 32 || rawUuid.length === 36) ? rawUuid : null;
 
                     return (
                       <div key={e.rank || i} className="fn-card" style={{
@@ -336,9 +339,12 @@ export default function LeaderboardPage({ settings }) {
               const rankCol = RANK_COLORS[e.rank];
 
               // ── FAILSAFE PROTECTION LIST ROW ──
-              const isNameValid = e.player && e.player.trim() !== '' && e.player !== '-';
-              const finalUsername = isNameValid ? e.player : 'Steve';
-              const finalUuid = isNameValid && e.uuid && (e.uuid.length === 32 || e.uuid.length === 36) ? e.uuid : null;
+              const rawName = e.player || e.username || e.name || e.playerName || '';
+              const isNameValid = rawName && rawName.trim() !== '' && rawName !== '-';
+              const finalUsername = isNameValid ? rawName : 'Steve';
+              
+              const rawUuid = e.uuid || e.player_uuid || e.playerUuid || '';
+              const finalUuid = isNameValid && rawUuid && (rawUuid.length === 32 || rawUuid.length === 36) ? rawUuid : null;
 
               return (
                 <div key={e.rank || rowIdx}
