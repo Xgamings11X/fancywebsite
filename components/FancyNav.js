@@ -1,3 +1,4 @@
+// components/FancyNav.js — Capsule navbar shared semua halaman
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -17,13 +18,32 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
     { href:'/support',     label:'Support'     },
   ];
 
+  const logoImgStyle = {
+    height:34,
+    width:34,
+    borderRadius:8,
+    background:'transparent',
+    objectFit:'contain',
+    // mix-blend-mode multiply removes white/black backgrounds on PNG/JPG logos
+    mixBlendMode:'lighten',
+    filter:'drop-shadow(0 0 8px rgba(255,107,0,0.5))',
+    animation:'logoFloat 3s ease-in-out infinite',
+  };
+
   return (
     <nav className="fn-nav">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-2 flex-shrink-0" style={{textDecoration:'none'}}>
         {logoUrl
-          ? <img src={logoUrl} alt={logoTxt}
-              style={{height:40,width:'auto',background:'transparent',objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.5))',animation:'logoFloat 3s ease-in-out infinite'}}/>
+          ? <img
+              src={logoUrl}
+              alt={logoTxt}
+              width={40}
+              height={40}
+              loading="eager"
+              decoding="async"
+              style={{height:40,width:'auto',background:'transparent',objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.5))',animation:'logoFloat 3s ease-in-out infinite'}}
+            />
           : <span className="font-space font-bold text-white text-base" style={{display:'flex',alignItems:'center',gap:6}}>
               <LogoImage src={logoUrl||undefined} alt={logoTxt} style={{height:38,width:38,objectFit:'contain',filter:'drop-shadow(0 0 10px rgba(255,107,0,0.5))',animation:'logoFloat 3s ease-in-out infinite'}}/>
               <span><span style={{color:'var(--primary)'}}>FANCY</span> NETWORK</span>
@@ -141,32 +161,18 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
-// ── FIX TOTAL: PlayerAvatar Komponen yang kini Reaktif terhadap Perubahan Properti ──
 export function PlayerAvatar({ uuid, username, size = 28 }) {
-  const [hasFailed, setHasFailed] = useState(false);
-
-  // Jika uuid atau username berganti (misal pindah halaman/tab), reset status error gambar
-  useEffect(() => {
-    setHasFailed(false);
-  }, [uuid, username]);
-
   const isValidUUID = uuid && UUID_RE.test(uuid);
   const name        = username || 'steve';
   const fallbackUrl = `https://minotar.net/helm/${encodeURIComponent(name)}/${size * 2}`;
-  
-  // URL ditentukan langsung saat proses render berjalan (Bukan dikunci di useState)
-  const currentSrc = (isValidUUID && !hasFailed)
-    ? `https://crafatar.com/renders/head/${uuid}?size=${size * 2}&overlay`
-    : fallbackUrl;
-
+  const [src, setSrc] = useState(
+    isValidUUID
+      ? `https://crafatar.com/renders/head/${uuid}?size=${size * 2}&overlay`
+      : fallbackUrl
+  );
   return (
-    <img 
-      src={currentSrc} 
-      alt={name} 
-      width={size} 
-      height={size}
+    <img src={src} alt={name} width={size} height={size}
       style={{borderRadius:4, imageRendering:'pixelated', flexShrink:0}}
-      onError={() => setHasFailed(true)}
-    />
+      onError={() => setSrc(fallbackUrl)}/>
   );
 }
