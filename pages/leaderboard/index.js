@@ -141,25 +141,21 @@ export default function LeaderboardPage({ settings }) {
           </div>
         </div>
 
-        {/* ── Board Tabs ──
-            - Scrollable horizontally (overflow-x: auto)
-            - flex-shrink:0 on buttons so they never squash
-            - variable active colour per board
-        ── */}
+        {/* ── Board Tabs ── */}
         <div style={{
           overflowX:'auto',
           WebkitOverflowScrolling:'touch',
           marginBottom:32,
-          paddingBottom:4,   /* room for scrollbar */
+          paddingBottom:4,
         }}>
           <div style={{
-            display:'inline-flex',          /* shrink-wrap content */
+            display:'inline-flex',
             gap:6,
             background:'rgba(15,15,20,0.6)',
             padding:6,
             borderRadius:12,
             border:'1px solid rgba(255,255,255,0.05)',
-            minWidth:'100%',                /* at least fill container */
+            minWidth:'100%',
           }}>
             {Object.entries(BOARDS).map(([key, boardMeta]) => {
               const isActive = active === key;
@@ -197,7 +193,7 @@ export default function LeaderboardPage({ settings }) {
           </div>
         </div>
 
-        {/* ── Loading ── */}
+        {/* ── Loading / Content ── */}
         {loading ? (
           <div style={{textAlign:'center',padding:'80px 0'}}>
             <div className="fn-spinner" style={{width:40,height:40,borderWidth:3,margin:'0 auto 16px'}}/>
@@ -205,7 +201,6 @@ export default function LeaderboardPage({ settings }) {
           </div>
 
         ) : entries.length === 0 ? (
-          /* ── Empty state / setup guide ── */
           <div style={{padding:'20px 0'}}>
             <div style={{textAlign:'center',marginBottom:28}}>
               <i className={`fa-solid ${board.icon}`} style={{fontSize:42,color:'var(--text-muted)',display:'block',marginBottom:14}}/>
@@ -263,11 +258,7 @@ export default function LeaderboardPage({ settings }) {
         ) : (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
 
-            {/* ── Top 3 Podium ──
-                - minWidth:0 pada grid agar cells tidak overflow
-                - overflow:hidden + text-overflow di semua teks
-                - padding dikurangi supaya tidak sesak
-            ── */}
+            {/* ── Top 3 Podium ── */}
             {entries.length >= 3 && (() => {
               const podOrder = [entries[1], entries[0], entries[2]]; // 2nd, 1st, 3rd
               const podRanks  = [2, 1, 3];
@@ -295,14 +286,16 @@ export default function LeaderboardPage({ settings }) {
                         alignItems:'center',
                         justifyContent:'center',
                         gap:6,
-                        padding:'12px 8px',  /* reduced padding */
-                        overflow:'hidden',   /* clip anything that tries to escape */
-                        minWidth:0,          /* allow grid cell to shrink */
+                        padding:'12px 8px',
+                        overflow:'hidden',
+                        minWidth:0,
                         boxSizing:'border-box',
                       }}>
                         <i className={`fa-solid ${RANK_ICONS[podRank]}`} style={{fontSize:18,color:col,flexShrink:0}}/>
-                        <PlayerAvatar uuid={e.player} username={e.player} size={podRank===1?40:32}/>
-                        {/* Player name — hard-truncate with ellipsis */}
+                        
+                        {/* FIX DI SINI: uuid menggunakan e.uuid (atau null jika API tidak mengirim UUID) */}
+                        <PlayerAvatar uuid={e.uuid || null} username={e.player} size={podRank===1?40:32}/>
+                        
                         <span style={{
                           fontWeight:700,
                           fontSize: podRank===1 ? 12 : 11,
@@ -314,7 +307,7 @@ export default function LeaderboardPage({ settings }) {
                           whiteSpace:'nowrap',
                           lineHeight:1.3,
                         }}>{e.player}</span>
-                        {/* Score */}
+                        
                         <span className="font-space" style={{
                           fontWeight:700,
                           color:col,
@@ -349,8 +342,10 @@ export default function LeaderboardPage({ settings }) {
                       : <span style={{fontWeight:700,color:'var(--text-muted)',fontSize:14}}>#{e.rank}</span>
                     }
                   </div>
-                  {/* Avatar */}
-                  <PlayerAvatar uuid={e.player} username={e.player} size={34}/>
+                  
+                  {/* FIX DI SINI: uuid menggunakan e.uuid (atau null jika API tidak menyediakan) */}
+                  <PlayerAvatar uuid={e.uuid || null} username={e.player} size={34}/>
+                  
                   {/* Name */}
                   <div style={{flex:1,minWidth:0,overflow:'hidden'}}>
                     <p style={{fontWeight:700,fontSize:14,color:isTop3?rankCol:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.player}</p>
