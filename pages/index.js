@@ -161,23 +161,43 @@ export default function HomePage({ settings }) {
         </div>
       </section>
 
-      {/* FEATURES */}
+      {/* FEATURES — 2×2 Desktop Grid */}
       <section style={{padding:'100px 6% 60px',maxWidth:1200,margin:'0 auto'}}>
         <div style={{textAlign:'center',marginBottom:50}} data-anim="fade-up">
           <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>KENAPA FANCY NETWORK</span>
           <h2 className="font-space" style={{fontSize:32,fontWeight:700}}>Server yang <span style={{color:'var(--primary)'}}>Beda</span> dari yang Lain</h2>
         </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(250px,1fr))',gap:20}}>
+        {/* 2×2 symmetric desktop grid */}
+        <div style={{
+          display:'grid',
+          gridTemplateColumns:'repeat(2,1fr)',
+          gridTemplateRows:'repeat(2,1fr)',
+          gap:20,
+          maxWidth:860,
+          margin:'0 auto'
+        }}>
           {[
-            {icon:'fa-shield-cat', title:'Anti-Cheat Ketat',  desc:'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.'},
-            {icon:'fa-users',      title:'Komunitas Solid',   desc:'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.'},
-            {icon:'fa-bolt',       title:'Low Latency',       desc:'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.'},
-            {icon:'fa-gift',       title:'Event & Reward',    desc:'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.'},
+            {icon:'fa-shield-halved', color:'#e67e22', title:'Anti-Cheat Ketat',  desc:'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.'},
+            {icon:'fa-users-rectangle', color:'#3498db', title:'Komunitas Solid',   desc:'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.'},
+            {icon:'fa-bolt',           color:'#2ecc71', title:'Low Latency',       desc:'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.'},
+            {icon:'fa-trophy',         color:'#9b59b6', title:'Event & Reward',    desc:'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.'},
           ].map((f,i) => (
-            <div key={i} className="fn-card" style={{padding:'30px 24px'}} data-anim="flip-in" data-delay={String(i+1)}>
-              <div style={{fontSize:22,color:'var(--primary)',marginBottom:20}}><i className={`fa-solid ${f.icon}`}/></div>
-              <h4 style={{fontSize:16,fontWeight:700,marginBottom:10}}>{f.title}</h4>
-              <p style={{fontSize:13,color:'var(--text-muted)',lineHeight:1.6}}>{f.desc}</p>
+            <div key={i} className="fn-card" style={{padding:'28px 24px',display:'flex',alignItems:'flex-start',gap:16}} data-anim="flip-in" data-delay={String(i+1)}>
+              {/* Icon style synced with support page cat-icon */}
+              <div style={{
+                width:44, height:44,
+                background:`rgba(${f.color==='#e67e22'?'230,126,34':f.color==='#3498db'?'52,152,219':f.color==='#2ecc71'?'46,204,113':'155,89,182'},0.12)`,
+                border:`1px solid ${f.color}30`,
+                borderRadius:10,
+                display:'flex', alignItems:'center', justifyContent:'center',
+                color:f.color, fontSize:18, flexShrink:0
+              }}>
+                <i className={`fa-solid ${f.icon}`}/>
+              </div>
+              <div>
+                <h4 style={{fontSize:15,fontWeight:700,marginBottom:8}}>{f.title}</h4>
+                <p style={{fontSize:13,color:'var(--text-muted)',lineHeight:1.6}}>{f.desc}</p>
+              </div>
             </div>
           ))}
         </div>
@@ -223,14 +243,22 @@ export default function HomePage({ settings }) {
             <li key={i}><Link href={l.href} style={{color:'var(--text-muted)',textDecoration:'none',fontSize:13}}>{l.label}</Link></li>
           ))}
         </ul>
-        <p style={{fontSize:11,color:'#44444a'}}>© 2026 {serverName}. Tidak terafiliasi dengan Mojang Studios.</p>
+        <div className="fn-footer-bottom">
+          © 2026 {serverName}. Tidak terafiliasi dengan Mojang Studios.
+        </div>
       </footer>
 
       {showLogin && <LoginModal onClose={()=>setShowLogin(false)} onSuccess={handleLoginSuccess}/>}
 
       <style jsx>{`
+        /* Desktop: 2×2 grid stays locked */
+        @media(min-width:641px){
+          .feature-grid { grid-template-columns: repeat(2,1fr) !important; }
+        }
+        /* Mobile: everything collapses to 1 col */
         @media(max-width:640px){
           .ip-grid { grid-template-columns: 1fr !important; }
+          .feature-grid { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </>
