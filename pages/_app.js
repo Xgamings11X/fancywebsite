@@ -1,5 +1,5 @@
 import '../styles/globals.css';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Toaster } from 'react-hot-toast';
 
@@ -23,6 +23,21 @@ function initScrollObserver() {
 
 export default function App({ Component, pageProps }) {
   const router = useRouter();
+  const [bgDesktop, setBgDesktop] = useState('');
+  const [bgMobile,  setBgMobile]  = useState('');
+
+  // ── Load background settings once on mount ──
+  useEffect(() => {
+    fetch('/api/admin/settings', { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.settings) {
+          setBgDesktop(d.settings.bg_desktop || '');
+          setBgMobile(d.settings.bg_mobile  || '');
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     // ── Page transition overlay ──
@@ -91,6 +106,21 @@ export default function App({ Component, pageProps }) {
 
   return (
     <>
+      {/* Dynamic background from admin settings */}
+      {(bgDesktop || bgMobile) && (
+        <style>{`
+          body::before {
+            background-image: url('${bgDesktop || bgMobile}') !important;
+          }
+          ${bgMobile ? `
+          @media (max-width: 768px) {
+            body::before {
+              background-image: url('${bgMobile}') !important;
+              background-position: center center !important;
+            }
+          }` : ''}
+        `}</style>
+      )}
       <Component {...pageProps} />
       <Toaster
         position="bottom-center"
