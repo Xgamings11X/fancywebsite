@@ -19,7 +19,7 @@ import { verifyToken } from '../../../lib/auth.js';
 import { parse }       from 'cookie';
 
 export const config = {
-  api: { bodyParser: { sizeLimit: '3mb' } },
+  api: { bodyParser: { sizeLimit: '10mb' } },
 };
 
 // Auth
@@ -53,11 +53,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ success: false, message: 'Data gambar tidak valid.' });
     }
 
-    // Cek ukuran file (max 2MB setelah decode)
+    // Cek ukuran file (max 8MB setelah decode — untuk background image)
     const dataOnly = data.replace(/^data:image\/\w+;base64,/, '');
     const sizeBytes = Buffer.byteLength(dataOnly, 'base64');
-    if (sizeBytes > 2 * 1024 * 1024) {
-      return res.status(400).json({ success: false, message: 'Ukuran file maksimal 2MB.' });
+    if (sizeBytes > 8 * 1024 * 1024) {
+      return res.status(400).json({ success: false, message: 'Ukuran file maksimal 8MB.' });
     }
 
     // Pastikan format dataURL benar
