@@ -115,10 +115,8 @@ function PaymentInfoPanel({ order }) {
 
       {/* ── Deeplink button (GoPay / ShopeePay) ── */}
       {(isGopay || isShopeePay) && info.deeplinkUrl && (
-        <a
-          href={info.deeplinkUrl}
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => window.open(info.deeplinkUrl, '_blank', 'noopener,noreferrer')}
           style={{
             display:        'flex',
             alignItems:     'center',
@@ -130,13 +128,15 @@ function PaymentInfoPanel({ order }) {
             borderRadius:   10,
             fontWeight:     700,
             fontSize:       13,
-            textDecoration: 'none',
+            border:         'none',
+            cursor:         'pointer',
             marginBottom:   10,
+            width:          '100%',
           }}
         >
           <i className={`fa-solid ${isGopay ? 'fa-mobile-screen-button' : 'fa-bag-shopping'}`}/>
-          Bayar dengan {isGopay ? 'GoPay' : 'ShopeePay'}
-        </a>
+          Buka Aplikasi {isGopay ? 'GoPay' : 'ShopeePay'}
+        </button>
       )}
 
       {/* ── Virtual Account (BCA/BNI/BRI/Permata/Other) ── */}
@@ -297,10 +297,9 @@ export default function InvoicePage({ order: initialOrder, settings }) {
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
-  const subtotal   = (liveOrder.amount || 0) + (liveOrder.discount_amount || 0);
-  const discount   = liveOrder.discount_amount || 0;
-  const serviceFee = Math.round((liveOrder.amount || 0) * 0.025);
-  const total      = (liveOrder.amount || 0) + serviceFee;
+  const subtotal = (liveOrder.amount || 0) + (liveOrder.discount_amount || 0);
+  const discount = liveOrder.discount_amount || 0;
+  const total    = liveOrder.amount || 0;
 
   return (
     <>
@@ -449,9 +448,9 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           {/* Summary */}
           <section style={{ display:'flex', justifyContent:'flex-end', marginBottom:24 }}>
             <div style={{ width:'100%', maxWidth:340, display:'flex', flexDirection:'column', gap:10 }}>
-              {[['Subtotal',idr(liveOrder.amount||0)],['Biaya Layanan (Gateway)',idr(serviceFee)]].map(([l,v]) => (
-                <div key={l} style={{ display:'flex', justifyContent:'space-between', fontSize:14, color:'var(--text-muted)' }}><span>{l}</span><span>{v}</span></div>
-              ))}
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:14, color:'var(--text-muted)' }}>
+                <span>Subtotal</span><span>{idr(liveOrder.amount||0)}</span>
+              </div>
               {discount > 0 && (
                 <div style={{ display:'flex', justifyContent:'space-between', fontSize:14, color:'#2ecc71' }}><span>Diskon Redeem</span><span>-{idr(discount)}</span></div>
               )}
