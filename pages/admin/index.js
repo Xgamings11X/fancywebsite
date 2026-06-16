@@ -679,6 +679,46 @@ export default function AdminPanel() {
                     />
                   </div>
 
+                  {/* Background Image Upload */}
+                  <div style={{background:'rgba(0,180,255,0.03)',border:'1px solid rgba(0,180,255,0.12)',borderRadius:12,padding:'18px 20px'}}>
+                    <h3 className="font-space" style={{fontSize:13,fontWeight:700,color:'#00b4ff',marginBottom:6,letterSpacing:'0.05em'}}>
+                      <i className="fa-solid fa-panorama" style={{marginRight:7}}/>BACKGROUND WEBSITE
+                    </h3>
+                    <p style={{fontSize:12,color:'var(--text-muted)',marginBottom:16}}>
+                      Gambar ini tampil sebagai background di <strong style={{color:'#fff'}}>semua halaman</strong> website (blur otomatis). Resolusi disarankan: <strong style={{color:'#fff'}}>1920×1080px</strong> ke atas, format JPG/PNG/WEBP.
+                    </p>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16}}>
+                      <div>
+                        <ImageUpload
+                          value={settings.bg_desktop||''}
+                          onChange={url => setSettings(s=>({...s, bg_desktop: url}))}
+                          label="🖥️ Background Desktop"
+                          hint="JPG/PNG · Maks 5MB · 1920×1080px disarankan"
+                          previewSize={80}
+                          maxMB={5}
+                          adminToken={typeof window!=='undefined' ? localStorage.getItem('admin_token')||'' : ''}
+                        />
+                      </div>
+                      <div>
+                        <ImageUpload
+                          value={settings.bg_mobile||''}
+                          onChange={url => setSettings(s=>({...s, bg_mobile: url}))}
+                          label="📱 Background Mobile (opsional)"
+                          hint="JPG/PNG · Maks 5MB · 9:16 ratio disarankan"
+                          previewSize={80}
+                          maxMB={5}
+                          adminToken={typeof window!=='undefined' ? localStorage.getItem('admin_token')||'' : ''}
+                        />
+                      </div>
+                    </div>
+                    {(settings.bg_desktop||settings.bg_mobile) && (
+                      <div style={{marginTop:12,padding:'8px 12px',background:'rgba(0,180,255,0.06)',borderRadius:8,fontSize:11,color:'#00b4ff',display:'flex',alignItems:'center',gap:6}}>
+                        <i className="fa-solid fa-circle-check"/>
+                        {' '}Background aktif — klik <strong style={{margin:'0 3px'}}>Simpan Pengaturan</strong> untuk menerapkan.
+                      </div>
+                    )}
+                  </div>
+
                   {/* General settings */}
                   <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:12,padding:'18px 20px'}}>
                     <h3 className="font-space" style={{fontSize:13,fontWeight:700,color:'var(--text-muted)',marginBottom:14,letterSpacing:'0.05em'}}>
