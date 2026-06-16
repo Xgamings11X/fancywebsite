@@ -6,18 +6,26 @@
 @tailwind utilities;
 
 :root {
-  --bg-main: #060608;
-  --bg-surface: #0f0f14;
-  --bg-card: rgba(18, 18, 24, 0.65);
+  --bg-main: #07070c;
+  --bg-surface: #0d0d14;
+  --bg-card: rgba(16, 16, 22, 0.72);
   --primary: #ff6b00;
   --primary-glow: rgba(255, 107, 0, 0.3);
   --primary-light: #ff9442;
-  --text-main: #f4f4f6;
-  --text-muted: #8e8e9a;
+  --accent-cyan: #00d4ff;
+  --accent-cyan-glow: rgba(0, 212, 255, 0.12);
+  --text-main: #f0f0f5;
+  --text-muted: #8a8a99;
   --border: rgba(255, 107, 0, 0.15);
   --gold: #ffd700;
   --silver: #b0b3b8;
   --bronze: #cd7f32;
+  /* Dark Gaming Palette */
+  --game-deep: #04040a;
+  --game-surface: #0c0c16;
+  --game-mid: #111120;
+  --game-accent1: rgba(255, 107, 0, 0.07);
+  --game-accent2: rgba(0, 180, 255, 0.04);
 }
 
 /* ── Reset Global & Hapus Warna Biru Default Browser ── */
@@ -37,14 +45,68 @@
 }
 
 body {
-  background-color: var(--bg-main);
+  background-color: var(--game-deep);
   color: var(--text-main);
   font-family: 'Plus Jakarta Sans', sans-serif;
   overflow-x: hidden;
+  /* Dark Modern Gaming: layered noise + subtle grid + neon glow accents */
   background-image:
-    radial-gradient(circle at 50% -20%, rgba(255,107,0,0.12) 0%, transparent 50%),
-    radial-gradient(circle at 50% 120%, rgba(255,107,0,0.05) 0%, transparent 50%);
+    /* Neon orange ambient glow – top */
+    radial-gradient(ellipse 80% 40% at 50% -10%, rgba(255,107,0,0.10) 0%, transparent 60%),
+    /* Subtle cyan glow – bottom-left accent */
+    radial-gradient(ellipse 50% 30% at -10% 100%, rgba(0,180,255,0.06) 0%, transparent 55%),
+    /* Faint right edge glow */
+    radial-gradient(ellipse 40% 50% at 110% 50%, rgba(255,80,0,0.05) 0%, transparent 60%),
+    /* Micro grid lines – the "digital panel" texture */
+    linear-gradient(rgba(255,107,0,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,107,0,0.025) 1px, transparent 1px),
+    /* Noise texture via layered tiny gradients */
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(255,255,255,0.008) 2px,
+      rgba(255,255,255,0.008) 4px
+    );
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    40px 40px,
+    40px 40px,
+    6px 6px;
   background-attachment: fixed;
+  position: relative;
+}
+
+/* Deep scanline overlay for extra depth */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.06) 3px,
+    rgba(0, 0, 0, 0.06) 4px
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Neon border accent on left edge */
+body::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  top: 15%;
+  width: 2px;
+  height: 70%;
+  background: linear-gradient(180deg, transparent, rgba(255,107,0,0.4) 30%, rgba(0,180,255,0.3) 70%, transparent);
+  box-shadow: 0 0 12px rgba(255,107,0,0.3), 0 0 24px rgba(255,107,0,0.1);
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* ── Scrollbar ─────────────────── */
@@ -459,10 +521,72 @@ body {
 
 /* ── Footer ────────────────────── */
 .fn-footer {
-  background: #040406;
-  padding: 40px 6%;
-  border-top: 1px solid rgba(255,255,255,0.02);
+  background: linear-gradient(180deg, transparent 0%, rgba(4,4,8,0.95) 100%);
+  border-top: 1px solid rgba(255,107,0,0.08);
   text-align: center;
+  padding: 40px 6% 0;
+  position: relative;
+  margin-top: auto;
+}
+
+/* Bottom copyright bar — pinned to absolute bottom */
+.fn-footer-bottom {
+  position: relative;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  padding: 10px 6%;
+  margin-top: 24px;
+  background: rgba(4,4,6,0.98);
+  border-top: 1px solid rgba(255,255,255,0.03);
+  font-size: 11px;
+  color: #38383e;
+  text-align: center;
+  letter-spacing: 0.3px;
+}
+
+/* Make page layout use full-height column so footer sticks to bottom */
+html, body, #__next {
+  min-height: 100%;
+}
+#__next {
+  display: flex;
+  flex-direction: column;
+}
+#__next > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Category icon cards (synced with support page style) ── */
+.cat-icon-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: all 0.2s;
+}
+.cat-icon-card:hover {
+  border-color: var(--primary);
+  background: rgba(255,107,0,0.05);
+}
+.cat-icon-card .cat-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  background: rgba(255,107,0,0.10);
+  color: var(--primary);
 }
 
 /* ── Stats bar ─────────────────── */
