@@ -236,7 +236,7 @@ export default function LeaderboardPage({ settings }) {
                         <span style={{fontSize:10,background:'var(--primary)',color:'#fff',fontWeight:700,padding:'1px 7px',borderRadius:20,flexShrink:0}}>STEP {item.step}</span>
                         <p style={{fontWeight:700,fontSize:14,color:'#fff'}}>{item.title}</p>
                       </div>
-                      <p style={{fontSize:12,color(--text-muted)',lineHeight:1.5,marginBottom:item.code?10:0}}>{item.desc}</p>
+                      <p style={{fontSize:12,color:'var(--text-muted)',lineHeight:1.5,marginBottom:item.code?10:0}}>{item.desc}</p>
                       {item.code && (
                         <pre style={{fontSize:11,color:'#aaa',background:'rgba(0,0,0,0.4)',border:'1px solid rgba(255,255,255,0.06)',borderRadius:8,padding:'10px 12px',lineHeight:1.7,fontFamily:'monospace',overflowX:'auto',whiteSpace:'pre-wrap',wordBreak:'break-all'}}>{item.code}</pre>
                       )}
