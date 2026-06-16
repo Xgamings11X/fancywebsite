@@ -1,60 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
-/* Font Awesome dimuat async di pages/_document.js — tidak di sini agar tidak blokir render */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 @tailwind base;
-
-/* ══════════════════════════════════════════════════════
-   ✅ OPTIMASI PERFORMA — Core Web Vitals
-   Ditambahkan untuk meningkatkan skor PageSpeed/Lighthouse
-══════════════════════════════════════════════════════ */
-
-/* Hint browser untuk elemen yang akan beranimasi
-   Mencegah layout recalculation berulang */
-.fn-nav,
-.fn-card,
-.product-img,
-#cursor-glow {
-  will-change: transform;
-}
-
-/* Setelah animasi selesai, lepas will-change agar tidak
-   terus menghabiskan memori GPU */
-.fn-card:not(:hover) {
-  will-change: auto;
-}
-
-/* Gambar: selalu ada dimensi agar tidak terjadi CLS (layout shift)
-   Berlaku untuk semua img yang belum punya width/height eksplisit */
-img {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Optimasi rendering teks — cegah FOIT (Flash of Invisible Text) */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeSpeed;
-}
-
-/* Kurangi blur di mobile — GPU entry-level tidak kuat */
-@media (max-width: 768px) {
-  .fn-nav {
-    backdrop-filter: blur(8px) !important;
-    -webkit-backdrop-filter: blur(8px) !important;
-  }
-  .fn-modal-overlay {
-    backdrop-filter: blur(6px) !important;
-    -webkit-backdrop-filter: blur(6px) !important;
-  }
-  /* Matikan cursor glow di mobile — tidak berguna & makan CPU */
-  #cursor-glow {
-    display: none !important;
-  }
-}
-
-/* ══════════════════════════════════════════════════════ */
-
 @tailwind components;
 @tailwind utilities;
 
