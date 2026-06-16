@@ -1,16 +1,21 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
+const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+
 function PlayerHeadPreview({ uuid, username, size=80 }) {
+  const isValidUUID = uuid && UUID_RE.test(uuid);
+  const name        = username || 'steve';
+  const fallbackUrl = `https://minotar.net/helm/${encodeURIComponent(name)}/${size*2}`;
   const [src, setSrc] = useState(
-    uuid
+    isValidUUID
       ? `https://crafatar.com/renders/head/${uuid}?size=${size*2}&overlay`
-      : `https://minotar.net/helm/${encodeURIComponent(username||'steve')}/${size*2}`
+      : fallbackUrl
   );
   return (
-    <img src={src} alt={username} width={size} height={size}
+    <img src={src} alt={name} width={size} height={size}
       style={{borderRadius:12,imageRendering:'pixelated',border:'2px solid rgba(255,107,0,0.3)',boxShadow:'0 8px 24px rgba(255,107,0,0.15)',display:'block',margin:'0 auto'}}
-      onError={()=>setSrc(`https://minotar.net/helm/steve/${size*2}`)}/>
+      onError={()=>setSrc(fallbackUrl)}/>
   );
 }
 
