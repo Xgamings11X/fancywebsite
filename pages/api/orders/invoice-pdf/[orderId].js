@@ -47,8 +47,7 @@ export default async function handler(req, res) {
   const idrFmt     = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
   const subtotal   = (order.amount||0) + (order.discount_amount||0);
   const discount   = order.discount_amount||0;
-  const serviceFee = Math.round((order.amount||0)*0.025);
-  const total      = (order.amount||0) + serviceFee;
+  const total      = order.amount||0;
   const statusLbl  = STATUS_LABEL[order.payment_status] || (order.payment_status||'').toUpperCase();
   const formatDate = iso => iso ? new Date(iso).toLocaleString('id-ID',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}) + ' WIB' : '-';
   const [sr,sg,sb] = STATUS_COLORS[order.payment_status] || [107,114,128];
@@ -197,7 +196,6 @@ export default async function handler(req, res) {
   const sumX = LEFT + W*0.55, sumW = W*0.45;
   const rows = [
     ['Subtotal',              idrFmt(order.amount||0), BLACK],
-    ['Biaya Layanan (2.5%)',  idrFmt(serviceFee),      BLACK],
     ...(discount>0 ? [['Diskon Redeem', `-${idrFmt(discount)}`, '#22A85A']] : []),
   ];
   for (const [lbl,val,color] of rows) {
