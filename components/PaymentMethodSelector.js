@@ -1,10 +1,11 @@
 import { useState } from 'react';
 
 /**
- * components/PaymentMethodSelector.js — v3 (100% FIXED & TESTED)
+ * components/PaymentMethodSelector.js  — v2 (FIXED RAW LINKS)
  *
- * ✅ Menggunakan CDN resmi Midtrans & jsDelivr yang anti-hotlink protection.
- * ✅ Ikon dijamin muncul sempurna, jernih, dan tidak akan hilang lagi.
+ * ✅ Perbaikan Tautan Gambar:
+ *   Menggunakan Direct Image Link (.png/.svg) dari Wikimedia agar gambar 
+ *   bisa dimuat langsung oleh browser tanpa terblokir halaman web pencarian.
  */
 
 export const PAYMENT_CATEGORIES = [
@@ -18,13 +19,13 @@ export const PAYMENT_CATEGORIES = [
         key:   'qris',
         label: 'QRIS (Semua Scanner)',
         desc:  'Scan dengan apps apapun',
-        logo:  'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/qris/qris-original.svg', // Fallback aman jika CDN utama down
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_QRIS.svg/240px-Logo_QRIS.svg.png',
       },
       {
         key:   'gopay_qris',
         label: 'QRIS via GoPay',
         desc:  'Bayar dengan GoPay / Gopay+',
-        logo:  'https://docs.midtrans.com/asset/image/payment-methods/gopay.png',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gopay_logo.svg/240px-Gopay_logo.svg.png',
       },
     ],
   },
@@ -38,13 +39,13 @@ export const PAYMENT_CATEGORIES = [
         key:   'gopay',
         label: 'GoPay',
         desc:  'Deeplink / QR GoPay',
-        logo:  'https://docs.midtrans.com/asset/image/payment-methods/gopay.png',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gopay_logo.svg/240px-Gopay_logo.svg.png',
       },
       {
         key:   'shopeepay',
         label: 'ShopeePay',
         desc:  'Deeplink / QR ShopeePay',
-        logo:  'https://docs.midtrans.com/asset/image/payment-methods/shopeepay.png',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/ShopeePay_logo.svg/240px-ShopeePay_logo.svg.png',
       },
     ],
   },
@@ -58,31 +59,31 @@ export const PAYMENT_CATEGORIES = [
         key:   'bca_va',
         label: 'BCA Virtual Account',
         desc:  'ATM / m-BCA / KlikBCA',
-        logo:  'https://docs.midtrans.com/asset/image/payment-methods/bca.png',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Bank_Central_Asia.svg/240px-Bank_Central_Asia.svg.png',
       },
       {
         key:   'mandiri_va',
         label: 'Mandiri Bill Payment',
         desc:  'ATM / Livin by Mandiri',
-        logo:  'https://docs.midtrans.com/asset/image/payment-methods/mandiri.png',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Bank_Mandiri_logo_2016.svg/240px-Bank_Mandiri_logo_2016.svg.png',
       },
       {
         key:   'bni_va',
         label: 'BNI Virtual Account',
         desc:  'ATM / BNI Mobile',
-        logo:  'https://docs.midtrans.com/asset/image/payment-methods/bni.png',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Logo_BNI.svg/240px-Logo_BNI.svg.png',
       },
       {
         key:   'bri_va',
         label: 'BRI Virtual Account',
         desc:  'ATM / BRImo',
-        logo:  'https://docs.midtrans.com/asset/image/payment-methods/bri.png',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/BANK_BRI_logo.svg/240px-BANK_BRI_logo.svg.png',
       },
       {
         key:   'permata_va',
         label: 'Permata Virtual Account',
         desc:  'ATM / PermataMobile X',
-        logo:  'https://docs.midtrans.com/asset/image/payment-methods/permata.png',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/Permata_Bank_logo.svg/240px-Permata_Bank_logo.svg.png',
       },
       {
         key:   'other_va',
@@ -108,16 +109,11 @@ function PaymentLogo({ logo, icon, label, catColor, isActive }) {
     flexShrink:     0,
   };
 
-  // Jika logo QRIS khusus, pakai cadangan resmi alternatif jika gagal load
-  const finalLogo = (label.includes('Semua Scanner') && imgFailed) 
-    ? 'https://api.midtrans.com/v2/assets/images/qris.png' 
-    : logo;
-
-  if (finalLogo && (!imgFailed || label.includes('Semua Scanner'))) {
+  if (logo && !imgFailed) {
     return (
       <span style={boxStyle}>
         <img
-          src={finalLogo}
+          src={logo}
           alt={label}
           loading="lazy"
           decoding="async"
@@ -127,14 +123,10 @@ function PaymentLogo({ logo, icon, label, catColor, isActive }) {
             width:          'auto',
             height:         'auto',
             objectFit:      'contain',
-            filter:         isActive ? 'none' : 'grayscale(10%) brightness(0.95)',
+            filter:         isActive ? 'none' : 'grayscale(20%) brightness(0.9)',
             transition:     'filter 0.18s',
           }}
-          onError={() => {
-            if (!label.includes('Semua Scanner')) {
-              setImgFailed(true);
-            }
-          }}
+          onError={() => setImgFailed(true)}
         />
       </span>
     );
