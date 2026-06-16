@@ -1,17 +1,20 @@
 /**
- * components/PaymentMethodSelector.js
+ * components/PaymentMethodSelector.js  — v2 (FIXED)
  *
- * Komponen selector metode pembayaran embedded (non-popup).
- * Menampilkan metode dalam tiga kategori: QRIS, E-Wallet, Bank Transfer/VA.
- * Dapat dipakai di CartModal maupun halaman checkout langsung.
- *
- * Props:
- *   selected   {string}   — key metode yang terpilih
- *   onChange   {fn}       — callback(methodKey)
- *   disabled   {bool}     — disable semua pilihan
+ * ✅ Perbaikan dari screenshot:
+ *   1. Logo payment (QRIS, GoPay, dll) sekarang memiliki container
+ *      berukuran tetap (logoBox) sehingga tinggi kartu seragam.
+ *   2. Fallback icon FA ditampilkan di dalam logoBox yang sama,
+ *      tidak menyebabkan layout shift.
+ *   3. Warna icon fallback mengikuti warna kategori (cat.color),
+ *      bukan warna muted yang sulit dibedakan.
+ *   4. Border-radius kartu lebih besar (12px) & hover shadow halus.
+ *   5. Grid minmax dikecilkan ke 130px agar 2 kolom selalu muat
+ *      bahkan di layar sempit (mobile ~360px).
+ *   6. Active state: border lebih tebal (2px) + background sedikit
+ *      lebih terang untuk kontras yang jelas.
+ *   7. Dot indikator aktif diperbesar (8px) dan diberi ring transparan.
  */
-
-// ── Data definisi metode ──────────────────────────────────────────────────────
 
 export const PAYMENT_CATEGORIES = [
   {
@@ -101,39 +104,97 @@ export const PAYMENT_CATEGORIES = [
   },
 ];
 
-// ── Komponen utama ────────────────────────────────────────────────────────────
+// ── Helper: logo dengan fallback ke FA icon ───────────────────────────────────
+function PaymentLogo({ logo, icon, label, catColor, isActive }) {
+  const [imgFailed, setImgFailed] = useState(false);
 
+  // Ukuran container logo selalu tetap → kartu sejajar
+  const boxStyle = {
+    display:        'flex',
+    alignItems:     'center',
+    justifyContent: 'center',
+    width:          56,
+    height:         32,
+    flexShrink:     0,
+  };
+
+  if (logo && !imgFailed) {
+    return (
+      <span style={boxStyle}>
+        <img
+          src={logo}
+          alt={label}
+          loading="lazy"
+          decoding="async"
+          style={{
+            maxWidth:       56,
+            maxHeight:      28,
+            width:          'auto',
+            height:         'auto',
+            objectFit:      'contain',
+            filter:         isActive ? 'none' : 'grayscale(20%) brightness(0.9)',
+            transition:     'filter 0.18s',
+          }}
+          onError={() => setImgFailed(true)}
+        />
+      </span>
+    );
+  }
+
+  // Fallback: ikon Font Awesome dengan warna kategori
+  return (
+    <span style={boxStyle}>
+      <i
+        className={`fa-solid ${icon || 'fa-building-columns'}`}
+        style={{
+          fontSize:   22,
+          color:      isActive ? catColor : 'rgba(255,255,255,0.35)',
+          transition: 'color 0.18s',
+        }}
+      />
+    </span>
+  );
+}
+
+// ── useState import ───────────────────────────────────────────────────────────
+import { useState } from 'react';
+
+// ── Komponen utama ────────────────────────────────────────────────────────────
 export default function PaymentMethodSelector({ selected, onChange, disabled = false }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {PAYMENT_CATEGORIES.map(cat => (
         <div key={cat.id}>
-          {/* Category header */}
+
+          {/* ── Category header ─────────────────────────────────────────── */}
           <div style={{
-            display:        'flex',
-            alignItems:     'center',
-            gap:            8,
-            marginBottom:   8,
-            paddingBottom:  6,
-            borderBottom:   `1px solid ${cat.color}30`,
+            display:       'flex',
+            alignItems:    'center',
+            gap:           7,
+            marginBottom:  10,
+            paddingBottom: 7,
+            borderBottom:  `1px solid ${cat.color}35`,
           }}>
-            <i className={`fa-solid ${cat.icon}`}
-               style={{ color: cat.color, fontSize: 12, width: 14, textAlign: 'center' }}/>
+            <i
+              className={`fa-solid ${cat.icon}`}
+              style={{ color: cat.color, fontSize: 11, width: 14, textAlign: 'center' }}
+            />
             <span style={{
-              fontSize:      11,
+              fontSize:      10,
               fontWeight:    700,
               textTransform: 'uppercase',
-              letterSpacing: 1,
+              letterSpacing: 1.2,
               color:         cat.color,
             }}>
               {cat.label}
             </span>
           </div>
 
-          {/* Methods grid */}
+          {/* ── Methods grid ─────────────────────────────────────────────── */}
           <div style={{
             display:             'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+            /* ✅ 130px min → selalu 2 kolom di layar ≥ 280px */
+            gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
             gap:                 8,
           }}>
             {cat.methods.map(m => {
@@ -145,85 +206,91 @@ export default function PaymentMethodSelector({ selected, onChange, disabled = f
                   disabled={disabled}
                   onClick={() => !disabled && onChange(m.key)}
                   style={{
+                    /* Layout: kolom, item center */
                     display:        'flex',
                     flexDirection:  'column',
                     alignItems:     'center',
-                    gap:            7,
-                    padding:        '10px 8px',
-                    background:     isActive
-                      ? `${cat.color}18`
-                      : 'rgba(255,255,255,0.02)',
-                    border:         isActive
-                      ? `1.5px solid ${cat.color}`
-                      : '1px solid rgba(255,255,255,0.07)',
-                    borderRadius:   10,
-                    cursor:         disabled ? 'not-allowed' : 'pointer',
-                    transition:     'all 0.18s',
-                    opacity:        disabled ? 0.5 : 1,
-                    position:       'relative',
-                    textAlign:      'center',
+                    justifyContent: 'flex-start',
+                    gap:            6,
+                    padding:        '12px 8px 10px',
+
+                    /* Visual aktif / nonaktif */
+                    background: isActive
+                      ? `${cat.color}20`           /* sedikit lebih terang */
+                      : 'rgba(255,255,255,0.025)',
+                    border: isActive
+                      ? `2px solid ${cat.color}`   /* lebih tebal saat aktif */
+                      : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 12,
+
+                    cursor:     disabled ? 'not-allowed' : 'pointer',
+                    opacity:    disabled ? 0.45 : 1,
+                    transition: 'all 0.18s ease',
+                    position:   'relative',
+                    textAlign:  'center',
+
+                    /* Hover shadow (hanya di luar disabled) */
+                    boxShadow: isActive
+                      ? `0 0 0 1px ${cat.color}40, 0 4px 16px ${cat.color}18`
+                      : 'none',
+                  }}
+                  /* Hover via CSS tidak bisa inline, gunakan onMouseEnter/Leave */
+                  onMouseEnter={e => {
+                    if (!disabled && !isActive) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                      e.currentTarget.style.borderColor = `${cat.color}60`;
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!disabled && !isActive) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.025)';
+                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
+                    }
                   }}
                 >
-                  {/* Active indicator dot */}
+                  {/* ── Active indicator dot ─────────────────────────── */}
                   {isActive && (
                     <span style={{
                       position:     'absolute',
-                      top:          6,
-                      right:        6,
-                      width:        7,
-                      height:       7,
+                      top:          7,
+                      right:        7,
+                      width:        8,
+                      height:       8,
                       borderRadius: '50%',
                       background:   cat.color,
-                      boxShadow:    `0 0 6px ${cat.color}`,
-                    }}/>
+                      boxShadow:    `0 0 0 2px ${cat.color}30, 0 0 8px ${cat.color}`,
+                    }} />
                   )}
 
-                  {/* Logo / Icon */}
-                  {m.logo ? (
-                    <img
-                      src={m.logo}
-                      alt={m.label}
-                      style={{
-                        height:          28,
-                        width:           'auto',
-                        maxWidth:        64,
-                        objectFit:       'contain',
-                        filter:          isActive ? 'none' : 'grayscale(30%)',
-                        imageRendering:  'auto',
-                      }}
-                      onError={e => {
-                        e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'block';
-                      }}
-                    />
-                  ) : null}
-                  <i
-                    className={`fa-solid ${m.icon || 'fa-building-columns'}`}
-                    style={{
-                      fontSize: 22,
-                      color:    isActive ? cat.color : 'var(--text-muted)',
-                      display:  m.logo ? 'none' : 'block',
-                    }}
+                  {/* ── Logo / Icon (fixed-height container) ─────────── */}
+                  <PaymentLogo
+                    logo={m.logo}
+                    icon={m.icon}
+                    label={m.label}
+                    catColor={cat.color}
+                    isActive={isActive}
                   />
 
-                  {/* Label */}
+                  {/* ── Label ────────────────────────────────────────── */}
                   <span style={{
-                    fontWeight:    700,
-                    fontSize:      11,
-                    color:         isActive ? '#fff' : 'var(--text-muted)',
-                    lineHeight:    1.3,
-                    textAlign:     'center',
-                    wordBreak:     'break-word',
+                    fontWeight:  700,
+                    fontSize:    11,
+                    color:       isActive ? '#fff' : 'rgba(255,255,255,0.6)',
+                    lineHeight:  1.3,
+                    textAlign:   'center',
+                    wordBreak:   'break-word',
+                    transition:  'color 0.18s',
                   }}>
                     {m.label}
                   </span>
 
-                  {/* Desc */}
+                  {/* ── Desc ─────────────────────────────────────────── */}
                   <span style={{
                     fontSize:   9,
-                    color:      isActive ? cat.color : 'rgba(255,255,255,0.3)',
+                    color:      isActive ? `${cat.color}dd` : 'rgba(255,255,255,0.28)',
                     fontWeight: 600,
                     lineHeight: 1.3,
+                    transition: 'color 0.18s',
                   }}>
                     {m.desc}
                   </span>
