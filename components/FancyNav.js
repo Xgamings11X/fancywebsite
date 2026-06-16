@@ -152,15 +152,20 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
   );
 }
 
+const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+
 export function PlayerAvatar({ uuid, username, size = 28 }) {
+  const isValidUUID = uuid && UUID_RE.test(uuid);
+  const name        = username || 'steve';
+  const fallbackUrl = `https://minotar.net/helm/${encodeURIComponent(name)}/${size * 2}`;
   const [src, setSrc] = useState(
-    uuid
-      ? `https://crafatar.com/avatars/${uuid}?size=${size*2}&overlay`
-      : `https://minotar.net/helm/${encodeURIComponent(username||'steve')}/${size*2}`
+    isValidUUID
+      ? `https://crafatar.com/renders/head/${uuid}?size=${size * 2}&overlay`
+      : fallbackUrl
   );
   return (
-    <img src={src} alt={username} width={size} height={size}
+    <img src={src} alt={name} width={size} height={size}
       style={{borderRadius:4, imageRendering:'pixelated', flexShrink:0}}
-      onError={() => setSrc(`https://minotar.net/helm/steve/${size*2}`)}/>
+      onError={() => setSrc(fallbackUrl)}/>
   );
 }
