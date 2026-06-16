@@ -1,4 +1,3 @@
-// components/FancyNav.js — Capsule navbar shared semua halaman
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -17,18 +16,6 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
     { href:'/leaderboard', label:'Leaderboard' },
     { href:'/support',     label:'Support'     },
   ];
-
-  const logoImgStyle = {
-    height:34,
-    width:34,
-    borderRadius:8,
-    background:'transparent',
-    objectFit:'contain',
-    // mix-blend-mode multiply removes white/black backgrounds on PNG/JPG logos
-    mixBlendMode:'lighten',
-    filter:'drop-shadow(0 0 8px rgba(255,107,0,0.5))',
-    animation:'logoFloat 3s ease-in-out infinite',
-  };
 
   return (
     <nav className="fn-nav">
@@ -154,18 +141,32 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
+// ── FIX TOTAL: PlayerAvatar Komponen yang kini Reaktif terhadap Perubahan Properti ──
 export function PlayerAvatar({ uuid, username, size = 28 }) {
+  const [hasFailed, setHasFailed] = useState(false);
+
+  // Jika uuid atau username berganti (misal pindah halaman/tab), reset status error gambar
+  useEffect(() => {
+    setHasFailed(false);
+  }, [uuid, username]);
+
   const isValidUUID = uuid && UUID_RE.test(uuid);
   const name        = username || 'steve';
   const fallbackUrl = `https://minotar.net/helm/${encodeURIComponent(name)}/${size * 2}`;
-  const [src, setSrc] = useState(
-    isValidUUID
-      ? `https://crafatar.com/renders/head/${uuid}?size=${size * 2}&overlay`
-      : fallbackUrl
-  );
+  
+  // URL ditentukan langsung saat proses render berjalan (Bukan dikunci di useState)
+  const currentSrc = (isValidUUID && !hasFailed)
+    ? `https://crafatar.com/renders/head/${uuid}?size=${size * 2}&overlay`
+    : fallbackUrl;
+
   return (
-    <img src={src} alt={name} width={size} height={size}
+    <img 
+      src={currentSrc} 
+      alt={name} 
+      width={size} 
+      height={size}
       style={{borderRadius:4, imageRendering:'pixelated', flexShrink:0}}
-      onError={() => setSrc(fallbackUrl)}/>
+      onError={() => setHasFailed(true)}
+    />
   );
 }
