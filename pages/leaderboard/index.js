@@ -41,7 +41,7 @@ export default function LeaderboardPage({ settings }) {
   const [showLogin, setShowLogin] = useState(false);
   const [active,    setActive]    = useState('balance');
   const [data,      setData]      = useState({});
-  const [connMeta,  setConnMeta]  = useState({});  
+  const [connMeta,  setConnMeta]  = useState({});  // renamed: connection metadata per board
   const [loading,   setLoading]   = useState(true);
   const [lastFetch, setLastFetch] = useState(null);
 
@@ -64,13 +64,15 @@ export default function LeaderboardPage({ settings }) {
         }
       } catch {}
     }));
-
+    // BUGFIX: saat refresh (quiet), pertahankan data lama jika data baru kosong
+    // Supaya saat sync tidak tiba-tiba kosong karena timing atau instance berbeda
     setData(prev => {
       const merged = { ...prev };
       Object.keys(results).forEach(b => {
         if (results[b].length > 0) {
           merged[b] = results[b];
         }
+        // Jika results[b] kosong tapi sebelumnya ada data, pertahankan data lama
       });
       return merged;
     });
@@ -79,6 +81,7 @@ export default function LeaderboardPage({ settings }) {
     if (!quiet) setLoading(false);
   };
 
+  // Auto-refresh setiap 60 detik
   useEffect(() => {
     const iv = setInterval(() => fetchAll(true), 60000);
     return () => clearInterval(iv);
@@ -138,21 +141,25 @@ export default function LeaderboardPage({ settings }) {
           </div>
         </div>
 
-        {/* ── Board Tabs ── */}
+        {/* ── Board Tabs ──
+            - Scrollable horizontally (overflow-x: auto)
+            - flex-shrink:0 on buttons so they never squash
+            - variable active colour per board
+        ── */}
         <div style={{
           overflowX:'auto',
           WebkitOverflowScrolling:'touch',
           marginBottom:32,
-          paddingBottom:4,
+          paddingBottom:4,   /* room for scrollbar */
         }}>
           <div style={{
-            display:'inline-flex',
+            display:'inline-flex',          /* shrink-wrap content */
             gap:6,
             background:'rgba(15,15,20,0.6)',
             padding:6,
             borderRadius:12,
             border:'1px solid rgba(255,255,255,0.05)',
-            minWidth:'100%',
+            minWidth:'100%',                /* at least fill container */
           }}>
             {Object.entries(BOARDS).map(([key, boardMeta]) => {
               const isActive = active === key;
@@ -190,7 +197,7 @@ export default function LeaderboardPage({ settings }) {
           </div>
         </div>
 
-        {/* ── Loading / Content ── */}
+        {/* ── Loading ── */}
         {loading ? (
           <div style={{textAlign:'center',padding:'80px 0'}}>
             <div className="fn-spinner" style={{width:40,height:40,borderWidth:3,margin:'0 auto 16px'}}/>
@@ -198,6 +205,7 @@ export default function LeaderboardPage({ settings }) {
           </div>
 
         ) : entries.length === 0 ? (
+          /* ── Empty state / setup guide ── */
           <div style={{padding:'20px 0'}}>
             <div style={{textAlign:'center',marginBottom:28}}>
               <i className={`fa-solid ${board.icon}`} style={{fontSize:42,color:'var(--text-muted)',display:'block',marginBottom:14}}/>
@@ -255,9 +263,13 @@ export default function LeaderboardPage({ settings }) {
         ) : (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
 
-            {/* ── Top 3 Podium ── */}
+            {/* ── Top 3 Podium ──
+                - minWidth:0 pada grid agar cells tidak overflow
+                - overflow:hidden + text-overflow di semua teks
+                - padding dikurangi supaya tidak sesak
+            ── */}
             {entries.length >= 3 && (() => {
-              const podOrder = [entries[1], entries[0], entries[2]]; 
+              const podOrder = [entries[1], entries[0], entries[2]]; // 2nd, 1st, 3rd
               const podRanks  = [2, 1, 3];
               const podH      = ['155px', '195px', '135px'];
               return (
@@ -270,20 +282,10 @@ export default function LeaderboardPage({ settings }) {
                   width:'100%',
                 }}>
                   {podOrder.map((e, i) => {
-                    if (!e) return null;
                     const podRank = podRanks[i];
                     const col     = RANK_COLORS[podRank];
-
-                    // ── FAILSAFE PROTECTION PODIUM ──
-                    const rawName = e.player || e.username || e.name || e.playerName || '';
-                    const isNameValid = rawName && rawName.trim() !== '' && rawName !== '-';
-                    const finalUsername = isNameValid ? rawName : 'Steve';
-                    
-                    const rawUuid = e.uuid || e.player_uuid || e.playerUuid || '';
-                    const finalUuid = isNameValid && rawUuid && (rawUuid.length === 32 || rawUuid.length === 36) ? rawUuid : null;
-
                     return (
-                      <div key={e.rank || i} className="fn-card" style={{
+                      <div key={e.rank} className="fn-card" style={{
                         height: podH[i],
                         background:'rgba(0,0,0,0.3)',
                         border:`1px solid ${col}44`,
@@ -293,15 +295,14 @@ export default function LeaderboardPage({ settings }) {
                         alignItems:'center',
                         justifyContent:'center',
                         gap:6,
-                        padding:'12px 8px',
-                        overflow:'hidden',
-                        minWidth:0,
+                        padding:'12px 8px',  /* reduced padding */
+                        overflow:'hidden',   /* clip anything that tries to escape */
+                        minWidth:0,          /* allow grid cell to shrink */
                         boxSizing:'border-box',
                       }}>
                         <i className={`fa-solid ${RANK_ICONS[podRank]}`} style={{fontSize:18,color:col,flexShrink:0}}/>
-                        
-                        <PlayerAvatar uuid={finalUuid} username={finalUsername} size={podRank===1?40:32}/>
-                        
+                        <PlayerAvatar uuid={e.player} username={e.player} size={podRank===1?40:32}/>
+                        {/* Player name — hard-truncate with ellipsis */}
                         <span style={{
                           fontWeight:700,
                           fontSize: podRank===1 ? 12 : 11,
@@ -312,8 +313,8 @@ export default function LeaderboardPage({ settings }) {
                           textOverflow:'ellipsis',
                           whiteSpace:'nowrap',
                           lineHeight:1.3,
-                        }}>{finalUsername}</span>
-                        
+                        }}>{e.player}</span>
+                        {/* Score */}
                         <span className="font-space" style={{
                           fontWeight:700,
                           color:col,
@@ -337,17 +338,8 @@ export default function LeaderboardPage({ settings }) {
             {entries.map((e, rowIdx) => {
               const isTop3  = e.rank <= 3;
               const rankCol = RANK_COLORS[e.rank];
-
-              // ── FAILSAFE PROTECTION LIST ROW ──
-              const rawName = e.player || e.username || e.name || e.playerName || '';
-              const isNameValid = rawName && rawName.trim() !== '' && rawName !== '-';
-              const finalUsername = isNameValid ? rawName : 'Steve';
-              
-              const rawUuid = e.uuid || e.player_uuid || e.playerUuid || '';
-              const finalUuid = isNameValid && rawUuid && (rawUuid.length === 32 || rawUuid.length === 36) ? rawUuid : null;
-
               return (
-                <div key={e.rank || rowIdx}
+                <div key={e.rank}
                   className={`lb-row${e.rank===1?' rank-1':e.rank===2?' rank-2':e.rank===3?' rank-3':''}  leaderboard-row`}
                   style={{animationDelay: `${rowIdx * 0.04}s`}}>
                   {/* Rank */}
@@ -357,12 +349,11 @@ export default function LeaderboardPage({ settings }) {
                       : <span style={{fontWeight:700,color:'var(--text-muted)',fontSize:14}}>#{e.rank}</span>
                     }
                   </div>
-                  
-                  <PlayerAvatar uuid={finalUuid} username={finalUsername} size={34}/>
-                  
+                  {/* Avatar */}
+                  <PlayerAvatar uuid={e.player} username={e.player} size={34}/>
                   {/* Name */}
                   <div style={{flex:1,minWidth:0,overflow:'hidden'}}>
-                    <p style={{fontWeight:700,fontSize:14,color:isTop3?rankCol:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{finalUsername}</p>
+                    <p style={{fontWeight:700,fontSize:14,color:isTop3?rankCol:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.player}</p>
                   </div>
                   {/* Score */}
                   <div style={{textAlign:'right',flexShrink:0,paddingLeft:8}}>
