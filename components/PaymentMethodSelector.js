@@ -1,10 +1,19 @@
-import { useState } from 'react';
-
 /**
- * components/PaymentMethodSelector.js — v4 (VERIFIED WIKIMEDIA LINKS)
+ * components/PaymentMethodSelector.js  — v2 (FIXED)
  *
- * ✅ FIX TOTAL: Semua logo menggunakan struktur URL langsung (Direct Thumbnail)
- * yang jalurnya ditarik dari halaman web resmi Wikimedia Commons masing-masing.
+ * ✅ Perbaikan dari screenshot:
+ *   1. Logo payment (QRIS, GoPay, dll) sekarang memiliki container
+ *      berukuran tetap (logoBox) sehingga tinggi kartu seragam.
+ *   2. Fallback icon FA ditampilkan di dalam logoBox yang sama,
+ *      tidak menyebabkan layout shift.
+ *   3. Warna icon fallback mengikuti warna kategori (cat.color),
+ *      bukan warna muted yang sulit dibedakan.
+ *   4. Border-radius kartu lebih besar (12px) & hover shadow halus.
+ *   5. Grid minmax dikecilkan ke 130px agar 2 kolom selalu muat
+ *      bahkan di layar sempit (mobile ~360px).
+ *   6. Active state: border lebih tebal (2px) + background sedikit
+ *      lebih terang untuk kontras yang jelas.
+ *   7. Dot indikator aktif diperbesar (8px) dan diberi ring transparan.
  */
 
 export const PAYMENT_CATEGORIES = [
@@ -44,8 +53,7 @@ export const PAYMENT_CATEGORIES = [
         key:   'shopeepay',
         label: 'ShopeePay',
         desc:  'Deeplink / QR ShopeePay',
-        // Tautan terverifikasi dari File:Shopee.svg
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fe/Shopee.svg/120px-Shopee.svg.png',
+        logo:  'https://logo.clearbit.com/shopee.co.id',
       },
     ],
   },
@@ -71,22 +79,19 @@ export const PAYMENT_CATEGORIES = [
         key:   'bni_va',
         label: 'BNI Virtual Account',
         desc:  'ATM / BNI Mobile',
-        // Tautan terverifikasi dari File:BNI_logo.svg
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/BNI_logo.svg/120px-BNI_logo.svg.png',
+        logo:  'https://logo.clearbit.com/bni.co.id',
       },
       {
         key:   'bri_va',
         label: 'BRI Virtual Account',
         desc:  'ATM / BRImo',
-        // Tautan terverifikasi dari File:BANK_BRI_logo.svg
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/BANK_BRI_logo.svg/120px-BANK_BRI_logo.svg.png',
+        logo:  'https://logo.clearbit.com/bri.co.id',
       },
       {
         key:   'permata_va',
         label: 'Permata Virtual Account',
         desc:  'ATM / PermataMobile X',
-        // Tautan terverifikasi dari File:Permata_Bank_logo.svg
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/6/69/Permata_Bank_logo.svg/120px-Permata_Bank_logo.svg.png',
+        logo:  'https://logo.clearbit.com/permatabank.com',
       },
       {
         key:   'other_va',
@@ -103,6 +108,7 @@ export const PAYMENT_CATEGORIES = [
 function PaymentLogo({ logo, icon, label, catColor, isActive }) {
   const [imgFailed, setImgFailed] = useState(false);
 
+  // Ukuran container logo selalu tetap → kartu sejajar
   const boxStyle = {
     display:        'flex',
     alignItems:     'center',
@@ -135,6 +141,7 @@ function PaymentLogo({ logo, icon, label, catColor, isActive }) {
     );
   }
 
+  // Fallback: ikon Font Awesome dengan warna kategori
   return (
     <span style={boxStyle}>
       <i
@@ -148,6 +155,9 @@ function PaymentLogo({ logo, icon, label, catColor, isActive }) {
     </span>
   );
 }
+
+// ── useState import ───────────────────────────────────────────────────────────
+import { useState } from 'react';
 
 // ── Komponen utama ────────────────────────────────────────────────────────────
 export default function PaymentMethodSelector({ selected, onChange, disabled = false }) {
@@ -183,6 +193,7 @@ export default function PaymentMethodSelector({ selected, onChange, disabled = f
           {/* ── Methods grid ─────────────────────────────────────────────── */}
           <div style={{
             display:             'grid',
+            /* ✅ 130px min → selalu 2 kolom di layar ≥ 280px */
             gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
             gap:                 8,
           }}>
@@ -195,6 +206,7 @@ export default function PaymentMethodSelector({ selected, onChange, disabled = f
                   disabled={disabled}
                   onClick={() => !disabled && onChange(m.key)}
                   style={{
+                    /* Layout: kolom, item center */
                     display:        'flex',
                     flexDirection:  'column',
                     alignItems:     'center',
@@ -202,11 +214,12 @@ export default function PaymentMethodSelector({ selected, onChange, disabled = f
                     gap:            6,
                     padding:        '12px 8px 10px',
 
+                    /* Visual aktif / nonaktif */
                     background: isActive
-                      ? `${cat.color}20`
+                      ? `${cat.color}20`           /* sedikit lebih terang */
                       : 'rgba(255,255,255,0.025)',
                     border: isActive
-                      ? `2px solid ${cat.color}`
+                      ? `2px solid ${cat.color}`   /* lebih tebal saat aktif */
                       : '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 12,
 
@@ -216,10 +229,12 @@ export default function PaymentMethodSelector({ selected, onChange, disabled = f
                     position:   'relative',
                     textAlign:  'center',
 
+                    /* Hover shadow (hanya di luar disabled) */
                     boxShadow: isActive
                       ? `0 0 0 1px ${cat.color}40, 0 4px 16px ${cat.color}18`
                       : 'none',
                   }}
+                  /* Hover via CSS tidak bisa inline, gunakan onMouseEnter/Leave */
                   onMouseEnter={e => {
                     if (!disabled && !isActive) {
                       e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
@@ -247,7 +262,7 @@ export default function PaymentMethodSelector({ selected, onChange, disabled = f
                     }} />
                   )}
 
-                  {/* ── Logo / Icon ──────────────────────────────────── */}
+                  {/* ── Logo / Icon (fixed-height container) ─────────── */}
                   <PaymentLogo
                     logo={m.logo}
                     icon={m.icon}
