@@ -173,7 +173,7 @@ export default function StorePage({ settings, categories: initCategories, produc
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
         <meta name="description" content={`Item Store ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+        {/* Font Awesome dimuat async di _document.js */}
       </Head>
 
 
@@ -305,7 +305,14 @@ export default function StorePage({ settings, categories: initCategories, produc
                     {/* Image or icon */}
                     {product.image_url
                       ? <>
-                          <img src={product.image_url} alt={product.name} className="product-img"
+                          <img
+                            src={product.image_url}
+                            alt={product.name}
+                            className="product-img"
+                            width={200}
+                            height={200}
+                            loading="lazy"
+                            decoding="async"
                             referrerPolicy="no-referrer"
                             onError={e=>{ e.target.onerror=null; e.target.style.opacity='0'; }}
                           />

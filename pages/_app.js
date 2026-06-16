@@ -27,16 +27,19 @@ export default function App({ Component, pageProps }) {
   const [bgMobile,  setBgMobile]  = useState('');
 
   // ── Load background settings once on mount ──
+  // FIX: Sebelumnya fetch ke /api/admin/settings yang butuh admin_token
+  // → Error 401 di konsol untuk semua user publik
+  // → Diganti ke /api/store/settings (endpoint publik read-only)
   useEffect(() => {
-    fetch('/api/admin/settings', { credentials: 'include' })
-      .then(r => r.json())
+    fetch('/api/store/settings', { credentials: 'same-origin' })
+      .then(r => { if (!r.ok) return null; return r.json(); })
       .then(d => {
-        if (d.success && d.settings) {
+        if (d && d.success && d.settings) {
           setBgDesktop(d.settings.bg_desktop || '');
           setBgMobile(d.settings.bg_mobile  || '');
         }
       })
-      .catch(() => {});
+      .catch(() => {}); // gagal diam-diam, background tidak kritis
   }, []);
 
   useEffect(() => {
