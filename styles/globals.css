@@ -6,26 +6,18 @@
 @tailwind utilities;
 
 :root {
-  --bg-main: #07070c;
-  --bg-surface: #0d0d14;
-  --bg-card: rgba(16, 16, 22, 0.72);
+  --bg-main: #060608;
+  --bg-surface: #0f0f14;
+  --bg-card: rgba(18, 18, 24, 0.65);
   --primary: #ff6b00;
   --primary-glow: rgba(255, 107, 0, 0.3);
   --primary-light: #ff9442;
-  --accent-cyan: #00d4ff;
-  --accent-cyan-glow: rgba(0, 212, 255, 0.12);
-  --text-main: #f0f0f5;
-  --text-muted: #8a8a99;
+  --text-main: #f4f4f6;
+  --text-muted: #8e8e9a;
   --border: rgba(255, 107, 0, 0.15);
   --gold: #ffd700;
   --silver: #b0b3b8;
   --bronze: #cd7f32;
-  /* Dark Gaming Palette */
-  --game-deep: #04040a;
-  --game-surface: #0c0c16;
-  --game-mid: #111120;
-  --game-accent1: rgba(255, 107, 0, 0.07);
-  --game-accent2: rgba(0, 180, 255, 0.04);
 }
 
 /* ── Reset Global & Hapus Warna Biru Default Browser ── */
@@ -45,54 +37,14 @@
 }
 
 body {
-  background-color: #050508;
+  background-color: var(--bg-main);
   color: var(--text-main);
   font-family: 'Plus Jakarta Sans', sans-serif;
   overflow-x: hidden;
-  position: relative;
-}
-
-/*
- * ── MINECRAFT BLURRED BACKGROUND (GLOBAL, SEMUA HALAMAN) ──────────────
- * Menggunakan foto Minecraft via URL publik sebagai background fixed.
- * Filter blur + overlay gelap persis seperti referensi (store.voltraz.xyz).
- * -----------------------------------------------------------------------
- */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  /* Foto Minecraft dunia survival — landscape, banyak blok & cahaya */
-  background-image: url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=90');
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-  /* Blur berat seperti di referensi */
-  filter: blur(14px) brightness(0.45) saturate(0.7);
-  /* Scale sedikit agar blur edge tidak kelihatan */
-  transform: scale(1.08);
-  pointer-events: none;
-}
-
-/* Overlay gelap di atas foto — membuat teks tetap terbaca */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  /* Gradient gelap: lebih pekat di bawah, sedikit tembus di tengah */
-  background:
-    linear-gradient(
-      180deg,
-      rgba(5,5,10,0.55) 0%,
-      rgba(5,5,10,0.40) 40%,
-      rgba(5,5,10,0.65) 75%,
-      rgba(5,5,10,0.90) 100%
-    ),
-    /* Neon orange accent tipis dari atas */
-    radial-gradient(ellipse 70% 35% at 50% 0%, rgba(255,107,0,0.08) 0%, transparent 70%);
-  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 50% -20%, rgba(255,107,0,0.12) 0%, transparent 50%),
+    radial-gradient(circle at 50% 120%, rgba(255,107,0,0.05) 0%, transparent 50%);
+  background-attachment: fixed;
 }
 
 /* ── Scrollbar ─────────────────── */
@@ -507,72 +459,10 @@ body::after {
 
 /* ── Footer ────────────────────── */
 .fn-footer {
-  background: linear-gradient(180deg, transparent 0%, rgba(4,4,8,0.95) 100%);
-  border-top: 1px solid rgba(255,107,0,0.08);
+  background: #040406;
+  padding: 40px 6%;
+  border-top: 1px solid rgba(255,255,255,0.02);
   text-align: center;
-  padding: 40px 6% 0;
-  position: relative;
-  margin-top: auto;
-}
-
-/* Bottom copyright bar — pinned to absolute bottom */
-.fn-footer-bottom {
-  position: relative;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  padding: 10px 6%;
-  margin-top: 24px;
-  background: rgba(4,4,6,0.98);
-  border-top: 1px solid rgba(255,255,255,0.03);
-  font-size: 11px;
-  color: #38383e;
-  text-align: center;
-  letter-spacing: 0.3px;
-}
-
-/* Make page layout use full-height column so footer sticks to bottom */
-html, body, #__next {
-  min-height: 100%;
-}
-#__next {
-  display: flex;
-  flex-direction: column;
-}
-#__next > div {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-/* ── Category icon cards (synced with support page style) ── */
-.cat-icon-card {
-  background: rgba(255,255,255,0.02);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px;
-  padding: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  transition: all 0.2s;
-}
-.cat-icon-card:hover {
-  border-color: var(--primary);
-  background: rgba(255,107,0,0.05);
-}
-.cat-icon-card .cat-icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-  background: rgba(255,107,0,0.10);
-  color: var(--primary);
 }
 
 /* ── Stats bar ─────────────────── */
