@@ -50,6 +50,42 @@ export default function LeaderboardPage({ settings }) {
     fetchAll();
   }, []);
 
+  // ── FIX 1: Multi-fallback untuk membaca field player name & uuid dari plugin ──
+  // Plugin bisa mengirim data dengan key yang berbeda-beda:
+  // nama: 'player' | 'username' | 'name' | 'playerName'
+  // uuid: 'uuid'   | 'player_uuid' | 'playerUuid'
+  const normalizeEntry = (e, idx) => ({
+    rank:   e.rank  ?? (idx + 1),
+    player: e.player ?? e.username ?? e.name ?? e.playerName ?? 'Unknown',
+    uuid:   e.uuid  ?? e.player_uuid ?? e.playerUuid ?? null,
+    score:  e.score ?? e.value ?? e.amount ?? 0,
+  });
+
+  // ── FIX 2: Padding dengan Steve hingga genap 10 baris ──
+  const STEVE_UUID = null; // UUID null → PlayerAvatar fallback ke Steve via minotar
+  const padToTen = (arr) => {
+    const padded = [...arr];
+    while (padded.length < 10) {
+      padded.push({
+        rank:   padded.length + 1,
+        player: 'Steve',
+        uuid:   STEVE_UUID,
+        score:  0,
+        _isPadding: true,
+      });
+    }
+    return padded;
+  };
+
+  // ── FIX 3: Deduplicate berdasarkan nama player (pertahankan peringkat terbaik) ──
+  const deduplicateEntries = (arr) => {
+    const seen = new Map();
+    arr.forEach(e => {
+      if (!seen.has(e.player)) seen.set(e.player, e);
+    });
+    return Array.from(seen.values());
+  };
+
   const fetchAll = async (quiet=false) => {
     if (!quiet) setLoading(true);
     const results = {};
@@ -59,20 +95,18 @@ export default function LeaderboardPage({ settings }) {
         const r = await fetch(`/api/leaderboard?board=${b}&limit=10`);
         const d = await r.json();
         if (d.success) {
-          results[b] = d.entries || [];
-          metaMap[b] = { source: d.source, endpointConfigured: d.endpointConfigured };
+          // Terapkan normalisasi field, deduplikasi, lalu padding Steve
+          const raw        = (d.entries || []).map((e, i) => normalizeEntry(e, i));
+          const deduped    = deduplicateEntries(raw);
+          results[b]       = padToTen(deduped);
+          metaMap[b]       = { source: d.source, endpointConfigured: d.endpointConfigured };
         }
       } catch {}
     }));
-    // BUGFIX: saat refresh (quiet), pertahankan data lama jika data baru kosong
-    // Supaya saat sync tidak tiba-tiba kosong karena timing atau instance berbeda
     setData(prev => {
       const merged = { ...prev };
       Object.keys(results).forEach(b => {
-        if (results[b].length > 0) {
-          merged[b] = results[b];
-        }
-        // Jika results[b] kosong tapi sebelumnya ada data, pertahankan data lama
+        if (results[b].length > 0) merged[b] = results[b];
       });
       return merged;
     });
@@ -301,7 +335,7 @@ export default function LeaderboardPage({ settings }) {
                         boxSizing:'border-box',
                       }}>
                         <i className={`fa-solid ${RANK_ICONS[podRank]}`} style={{fontSize:18,color:col,flexShrink:0}}/>
-                        <PlayerAvatar uuid={e.player} username={e.player} size={podRank===1?40:32}/>
+                        <PlayerAvatar uuid={e.uuid} username={e.player} size={podRank===1?40:32}/>
                         {/* Player name — hard-truncate with ellipsis */}
                         <span style={{
                           fontWeight:700,
@@ -336,12 +370,13 @@ export default function LeaderboardPage({ settings }) {
 
             {/* ── Full ranked list ── */}
             {entries.map((e, rowIdx) => {
-              const isTop3  = e.rank <= 3;
-              const rankCol = RANK_COLORS[e.rank];
+              const isTop3    = e.rank <= 3 && !e._isPadding;
+              const rankCol   = RANK_COLORS[e.rank];
+              const isPadding = e._isPadding;
               return (
-                <div key={e.rank}
-                  className={`lb-row${e.rank===1?' rank-1':e.rank===2?' rank-2':e.rank===3?' rank-3':''}  leaderboard-row`}
-                  style={{animationDelay: `${rowIdx * 0.04}s`}}>
+                <div key={`${e.rank}-${e.player}`}
+                  className={`lb-row${e.rank===1&&!isPadding?' rank-1':e.rank===2&&!isPadding?' rank-2':e.rank===3&&!isPadding?' rank-3':''}  leaderboard-row`}
+                  style={{animationDelay: `${rowIdx * 0.04}s`, opacity: isPadding ? 0.35 : 1}}>
                   {/* Rank */}
                   <div style={{width:36,flexShrink:0,textAlign:'center'}}>
                     {isTop3
@@ -350,7 +385,7 @@ export default function LeaderboardPage({ settings }) {
                     }
                   </div>
                   {/* Avatar */}
-                  <PlayerAvatar uuid={e.player} username={e.player} size={34}/>
+                  <PlayerAvatar uuid={e.uuid} username={e.player} size={34}/>
                   {/* Name */}
                   <div style={{flex:1,minWidth:0,overflow:'hidden'}}>
                     <p style={{fontWeight:700,fontSize:14,color:isTop3?rankCol:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{e.player}</p>
