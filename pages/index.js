@@ -43,7 +43,7 @@ export default function HomePage({ settings }) {
     navigator.clipboard?.writeText(text).catch(() => {});
     setCopied(label);
     toast.success(`${label} "${text}" berhasil disalin!`);
-    setTimeout(() => setCopied(''), 2500);
+    setTimeout(() => setCopied(''), 2200);
   };
 
   const handleLogout = async () => {
@@ -69,18 +69,19 @@ export default function HomePage({ settings }) {
 
   const famousApplyUrl = s.discord_url || process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || process.env.NEXT_PUBLIC_DISCORD_URL || '#';
   const playerCount = status?.online ? status.players : (s.players_online || 0);
+  const onlineState = status?.online ? 'Online' : 'Checking';
 
   const ipItems = [
-    { label: 'Java Edition IP', addr: serverIp, copy: serverIp, copyLabel: 'IP Java' },
-    { label: 'Bedrock Edition IP', addr: serverIp, copy: serverIp, copyLabel: 'IP Bedrock' },
+    { label: 'Java Edition', addr: serverIp, copy: serverIp, copyLabel: 'IP Java' },
+    { label: 'Bedrock Edition', addr: serverIp, copy: serverIp, copyLabel: 'IP Bedrock' },
     { label: 'Bedrock Port', addr: '19015', copy: '19015', copyLabel: 'Port Bedrock' },
   ];
 
   const features = [
-    { color: '#e67e22', marker: 'AC', title: 'Anti-Cheat Ketat', desc: 'Sistem perlindungan berlapis yang menjaga pengalaman bermain tetap nyaman.' },
-    { color: '#3498db', marker: 'CM', title: 'Komunitas Solid', desc: 'Discord dan game room aktif untuk pemain baru maupun lama.' },
-    { color: '#2ecc71', marker: 'LL', title: 'Low Latency', desc: 'Server dioptimalkan agar gameplay terasa responsif.' },
-    { color: '#9b59b6', marker: 'EV', title: 'Event & Reward', desc: 'Event mingguan, daily reward, dan hadiah untuk pemain aktif.' },
+    { marker: '01', title: 'Anti-Cheat Ketat', desc: 'Sistem perlindungan berlapis untuk menjaga server tetap adil dan nyaman.' },
+    { marker: '02', title: 'Komunitas Aktif', desc: 'Tempat bermain yang ramah untuk pemain baru, veteran, dan kreator konten.' },
+    { marker: '03', title: 'Low Latency', desc: 'Pengalaman bermain dibuat responsif dengan konfigurasi server yang ringan.' },
+    { marker: '04', title: 'Event & Reward', desc: 'Event komunitas, daily reward, dan benefit rank untuk pemain aktif.' },
   ];
 
   return (
@@ -94,64 +95,65 @@ export default function HomePage({ settings }) {
 
       <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={{ ...s, logo_url: logoUrl }} />
 
-      <main>
-        <header className="home-hero">
-          <div className="home-logo-wrap" aria-hidden={!logoUrl}>
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={serverName}
-                width="160"
-                height="160"
-                className="home-logo"
-                decoding="async"
-                fetchPriority="high"
-              />
-            ) : (
-              <div className="home-logo-fallback">FN</div>
+      <main className="home-shell">
+        <section className="home-hero">
+          <div className="home-hero-copy">
+            <span className="tagline-pill">JAVA & BEDROCK SERVER</span>
+            <h1 className="font-space home-title">
+              {s.hero_title || <>Selamat datang di <span>{serverName}</span></>}
+            </h1>
+            <p className="home-description">
+              {s.server_description || 'Server Minecraft Indonesia dengan ekonomi, komunitas aktif, event rutin, dan pengalaman bermain yang dibuat nyaman untuk semua player.'}
+            </p>
+
+            <div className="home-actions">
+              <Link href="/store" className="btn-primary-fn home-main-cta">Buka Store</Link>
+              <button type="button" className="btn-ghost-fn" onClick={() => copyIP(serverIp, 'IP Java')}>Copy IP</button>
+            </div>
+
+            {socials.length > 0 && (
+              <div className="home-socials" aria-label="Social links">
+                {socials.map((x) => (
+                  <a key={x.label} href={x.href} target="_blank" rel="noopener noreferrer" className={`social-btn ${x.cls}`}>
+                    {x.label}
+                  </a>
+                ))}
+              </div>
             )}
           </div>
 
-          <span className="tagline-pill">SERVER ECONOMY | JAVA &amp; BEDROCK</span>
+          <aside className="home-server-panel" aria-label="Server summary">
+            <div className="home-logo-wrap">
+              {logoUrl ? (
+                <img src={logoUrl} alt={serverName} width="144" height="144" className="home-logo" decoding="async" fetchPriority="high" />
+              ) : (
+                <div className="home-logo-fallback">FN</div>
+              )}
+            </div>
 
-          <h1 className="font-space home-title">
-            {s.hero_title || <>Selamat <span>Datang</span></>}
-          </h1>
+            <div className="home-panel-title">
+              <span>{serverName}</span>
+              <strong>{onlineState}</strong>
+            </div>
 
-          <p className="home-description">
-            {s.server_description || 'Server Minecraft Indonesia dengan komunitas solid, event seru, dan dunia tanpa batas.'}
-          </p>
+            <div className="home-status-row">
+              <div className="status-pill"><span className="home-status-dot" /> {playerCount} Players Online</div>
+              <Link href="/leaderboard" className="home-small-link">Leaderboard</Link>
+            </div>
 
-          <div className="ip-grid home-ip-grid">
-            {ipItems.map((item) => (
-              <button key={item.copyLabel} type="button" className="ip-card home-ip-card" onClick={() => copyIP(item.copy, item.copyLabel)}>
-                <span className="home-ip-action">{copied === item.copyLabel ? 'Disalin' : 'Salin'}</span>
-                <span className="home-ip-icon">IP</span>
-                <span className="home-ip-text">
-                  <span>{item.label}</span>
+            <div className="home-ip-grid">
+              {ipItems.map((item) => (
+                <button key={item.copyLabel} type="button" className="ip-card home-ip-card" onClick={() => copyIP(item.copy, item.copyLabel)}>
+                  <span className="home-ip-copy">{copied === item.copyLabel ? 'Disalin' : 'Salin'}</span>
+                  <span className="home-ip-label">{item.label}</span>
                   <strong>{item.addr}</strong>
-                </span>
-              </button>
-            ))}
-          </div>
-
-          <div className="status-pill home-status">
-            <span className="home-status-dot" />
-            <span id="player-count">{playerCount}</span> Players Online
-          </div>
-
-          {socials.length > 0 && (
-            <div className="home-socials">
-              {socials.map((x) => (
-                <a key={x.label} href={x.href} target="_blank" rel="noopener noreferrer" className={`social-btn ${x.cls}`}>
-                  {x.label}
-                </a>
+                </button>
               ))}
             </div>
-          )}
-        </header>
+          </aside>
+        </section>
 
-        <section className="stats-bar" data-anim="fade-in">
+        <section className="stats-bar home-stats-band">
           <div className="home-stats-grid">
             {[
               { val: '24/7', sub: 'Server Online' },
@@ -168,17 +170,15 @@ export default function HomePage({ settings }) {
         </section>
 
         <section className="home-section">
-          <div className="home-section-heading" data-anim="fade-up">
+          <div className="home-section-heading">
             <span>KENAPA FANCY NETWORK</span>
-            <h2 className="font-space">Server yang <strong>Beda</strong> dari yang Lain</h2>
+            <h2 className="font-space">Server yang <strong>rapi, aktif, dan siap dimainkan</strong></h2>
           </div>
 
           <div className="home-feature-grid">
             {features.map((f) => (
-              <article key={f.title} className="fn-card home-feature-card" data-anim="fade-up">
-                <div className="home-feature-icon" style={{ color: f.color, borderColor: `${f.color}55`, background: `${f.color}1f` }}>
-                  {f.marker}
-                </div>
+              <article key={f.title} className="fn-card home-feature-card">
+                <span className="home-feature-index">{f.marker}</span>
                 <div>
                   <h3>{f.title}</h3>
                   <p>{f.desc}</p>
@@ -189,27 +189,23 @@ export default function HomePage({ settings }) {
         </section>
 
         <section className="home-section home-recruitment">
-          <div className="home-section-heading" data-anim="fade-up">
-            <span>KONTRIBUSI &amp; REWARD</span>
-            <h2 className="font-space">Buka Potensimu di <strong>{serverName}</strong></h2>
-          </div>
-
-          <article className="fn-card home-rank-card" data-anim="fade-up">
-            <h3 className="font-space">Rank Famous</h3>
-            <p>Kreator konten YouTube atau TikTok bisa mendapatkan status media, kustomisasi tag name, dan exposure komunitas.</p>
+          <div className="home-recruitment-card fn-card">
+            <div>
+              <span className="home-eyebrow">KONTRIBUSI & REWARD</span>
+              <h2 className="font-space">Rank Famous untuk kreator aktif</h2>
+              <p>Kreator konten YouTube atau TikTok bisa mendapatkan status media, kustomisasi tag name, dan exposure komunitas.</p>
+            </div>
             <ul>
-              {['Tidak memiliki masalah dengan server lain', 'Membuat konten Fancy Network rutin', 'Viewers aktif dan organik', 'Konten positif & membangun'].map((r) => (
+              {['Konten Fancy Network rutin', 'Viewers aktif dan organik', 'Konten positif & membangun', 'Tidak bermasalah dengan server lain'].map((r) => (
                 <li key={r}>{r}</li>
               ))}
             </ul>
-            <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary-fn home-apply-btn">
-              Apply Requirement
-            </a>
-          </article>
+            <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="btn-primary-fn home-apply-btn">Apply Requirement</a>
+          </div>
         </section>
       </main>
 
-      <footer className="fn-footer" data-anim="fade-up">
+      <footer className="fn-footer">
         <div className="font-space home-footer-brand">{serverName}</div>
         <ul className="home-footer-links">
           {['/', '/store', '/leaderboard', '/support'].map((href, j) => ({ href, label: ['Home', 'Store', 'Leaderboard', 'Support'][j] })).map((l) => (
