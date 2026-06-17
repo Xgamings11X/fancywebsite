@@ -1,7 +1,10 @@
 import '../styles/globals.css';
-import { useEffect, useRef, useState } from 'react';
+import '../styles/performance.css';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Toaster } from 'react-hot-toast';
+import dynamic from 'next/dynamic';
+
+const Toaster = dynamic(() => import('react-hot-toast').then((m) => m.Toaster), { ssr: false });
 
 function initScrollObserver() {
   const els = document.querySelectorAll('[data-anim]');
@@ -21,48 +24,43 @@ function initScrollObserver() {
   return () => io.disconnect();
 }
 
+function runWhenIdle(callback) {
+  if (typeof window === 'undefined') return () => {};
+  if ('requestIdleCallback' in window) {
+    const id = window.requestIdleCallback(callback, { timeout: 1800 });
+    return () => window.cancelIdleCallback?.(id);
+  }
+  const id = window.setTimeout(callback, 700);
+  return () => window.clearTimeout(id);
+}
+
 export default function App({ Component, pageProps }) {
   const router = useRouter();
   const [bgDesktop, setBgDesktop] = useState('');
   const [bgMobile,  setBgMobile]  = useState('');
 
-  // ── Load background settings once on mount ──
-  // FIX: Sebelumnya fetch ke /api/admin/settings yang butuh admin_token
-  // → Error 401 di konsol untuk semua user publik
-  // → Diganti ke /api/store/settings (endpoint publik read-only)
   useEffect(() => {
-    fetch('/api/store/settings', { credentials: 'same-origin' })
-      .then(r => { if (!r.ok) return null; return r.json(); })
-      .then(d => {
-        if (d && d.success && d.settings) {
-          setBgDesktop(d.settings.bg_desktop || '');
-          setBgMobile(d.settings.bg_mobile  || '');
-        }
-      })
-      .catch(() => {}); // gagal diam-diam, background tidak kritis
+    return runWhenIdle(() => {
+      fetch('/api/store/settings', { credentials: 'same-origin' })
+        .then(r => { if (!r.ok) return null; return r.json(); })
+        .then(d => {
+          if (d && d.success && d.settings) {
+            setBgDesktop(d.settings.bg_desktop || '');
+            setBgMobile(d.settings.bg_mobile  || '');
+          }
+        })
+        .catch(() => {});
+    });
   }, []);
 
   useEffect(() => {
-    // ── Page transition overlay ──
     const overlay = document.createElement('div');
     overlay.id = 'page-transition-overlay';
     document.body.appendChild(overlay);
 
-    // ── Scroll progress bar ──
     const bar = document.createElement('div');
     bar.id = 'scroll-progress';
     document.body.appendChild(bar);
-
-    // ── Cursor glow ──
-    const glow = document.createElement('div');
-    glow.id = 'cursor-glow';
-    document.body.appendChild(glow);
-
-    const onMouseMove = (e) => {
-      glow.style.left = e.clientX + 'px';
-      glow.style.top  = e.clientY + 'px';
-    };
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
 
     const onScroll = () => {
       const scrolled = window.scrollY;
@@ -72,44 +70,36 @@ export default function App({ Component, pageProps }) {
     };
     window.addEventListener('scroll', onScroll, { passive: true });
 
-    // ── Route change transitions ──
+    let cleanupObserver = initScrollObserver();
+    const refreshObserver = () => {
+      cleanupObserver();
+      cleanupObserver = initScrollObserver();
+    };
+
     const handleStart = () => {
       overlay.classList.add('transitioning');
     };
     const handleDone = () => {
       overlay.classList.remove('transitioning');
-      // reset scroll obs after navigation
-      setTimeout(() => initScrollObserver(), 100);
+      window.setTimeout(refreshObserver, 100);
     };
     router.events.on('routeChangeStart',    handleStart);
     router.events.on('routeChangeComplete', handleDone);
     router.events.on('routeChangeError',    handleDone);
 
-    // Initial scroll observer
-    const cleanup = initScrollObserver();
-
     return () => {
       router.events.off('routeChangeStart',    handleStart);
       router.events.off('routeChangeComplete', handleDone);
       router.events.off('routeChangeError',    handleDone);
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('scroll',    onScroll);
-      cleanup();
+      window.removeEventListener('scroll', onScroll);
+      cleanupObserver();
       if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
       if (bar.parentNode)     bar.parentNode.removeChild(bar);
-      if (glow.parentNode)    glow.parentNode.removeChild(glow);
     };
   }, [router]);
 
-  // Re-run observer on every render (catches dynamic content)
-  useEffect(() => {
-    const cleanup = initScrollObserver();
-    return cleanup;
-  });
-
   return (
     <>
-      {/* Dynamic background from admin settings */}
       {(bgDesktop || bgMobile) && (
         <style>{`
           body::before {
