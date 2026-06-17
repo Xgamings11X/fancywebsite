@@ -237,8 +237,8 @@ export default function HomePage({ settings }) {
       <footer className="fn-footer" data-anim="fade-up">
         <div className="font-space" style={{fontWeight:700,fontSize:18,marginBottom:12}}>FANCY<span style={{color:'var(--primary)'}}> NETWORK</span></div>
         <ul style={{display:'flex',justifyContent:'center',gap:20,listStyle:'none',marginBottom:20,flexWrap:'wrap'}}>
-          {['/','/store','/leaderboard','/support'].map((href, j) => ({
-            href, label: ['Home','Store','Leaderboard','Support'][j]
+          {['/','/store','/support'].map((href, j) => ({
+            href, label: ['Home','Store','Support'][j]
           })).map((l,i) => (
             <li key={i}><Link href={l.href} style={{color:'var(--text-muted)',textDecoration:'none',fontSize:13}}>{l.label}</Link></li>
           ))}
