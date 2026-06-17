@@ -11,10 +11,9 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
   const logoTxt = s.logo_text || 'Fancy Network';
 
   const links = [
-    { href:'/',            label:'Home'        },
-    { href:'/store',       label:'Store'       },
-    { href:'/leaderboard', label:'Leaderboard' },
-    { href:'/support',     label:'Support'     },
+    { href:'/',        label:'Home'    },
+    { href:'/store',   label:'Store'   },
+    { href:'/support', label:'Support' },
   ];
 
   return (
