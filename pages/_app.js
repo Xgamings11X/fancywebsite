@@ -1,6 +1,6 @@
 import '../styles/globals.css';
 import '../styles/performance.css';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 
@@ -24,34 +24,8 @@ function initScrollObserver() {
   return () => io.disconnect();
 }
 
-function runWhenIdle(callback) {
-  if (typeof window === 'undefined') return () => {};
-  if ('requestIdleCallback' in window) {
-    const id = window.requestIdleCallback(callback, { timeout: 1800 });
-    return () => window.cancelIdleCallback?.(id);
-  }
-  const id = window.setTimeout(callback, 700);
-  return () => window.clearTimeout(id);
-}
-
 export default function App({ Component, pageProps }) {
   const router = useRouter();
-  const [bgDesktop, setBgDesktop] = useState('');
-  const [bgMobile,  setBgMobile]  = useState('');
-
-  useEffect(() => {
-    return runWhenIdle(() => {
-      fetch('/api/store/settings', { credentials: 'same-origin' })
-        .then(r => { if (!r.ok) return null; return r.json(); })
-        .then(d => {
-          if (d && d.success && d.settings) {
-            setBgDesktop(d.settings.bg_desktop || '');
-            setBgMobile(d.settings.bg_mobile  || '');
-          }
-        })
-        .catch(() => {});
-    });
-  }, []);
 
   useEffect(() => {
     const overlay = document.createElement('div');
@@ -100,20 +74,6 @@ export default function App({ Component, pageProps }) {
 
   return (
     <>
-      {(bgDesktop || bgMobile) && (
-        <style>{`
-          body::before {
-            background-image: url('${bgDesktop || bgMobile}') !important;
-          }
-          ${bgMobile ? `
-          @media (max-width: 768px) {
-            body::before {
-              background-image: url('${bgMobile}') !important;
-              background-position: center center !important;
-            }
-          }` : ''}
-        `}</style>
-      )}
       <Component {...pageProps} />
       <Toaster
         position="bottom-center"
