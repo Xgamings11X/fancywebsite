@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 // Redis modules loaded via dynamic import in getServerSideProps
 import FancyNav, { PlayerAvatar } from '../components/FancyNav';
 import { useTransparentLogo } from '../components/LogoImage';
+import CategoryIcon from '../components/CategoryIcon';
+import ProductCard from '../components/ProductCard';
 import LoginModal from '../components/LoginModal';
 import CartModal  from '../components/CartModal';
 import toast from 'react-hot-toast';
@@ -29,8 +32,6 @@ export async function getServerSideProps() {
     return { props:{settings,categories,products} };
   } catch(e) { return { props:{settings:{},categories:[],products:[]} }; }
 }
-
-const idr = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
 
 export default function StorePage({ settings, categories: initCategories, products: initProducts }) {
   const router = useRouter();
@@ -145,18 +146,13 @@ export default function StorePage({ settings, categories: initCategories, produc
   });
 
   const allTabs = [
-    { id:'all', label:'Semua', icon:'fa-store', color:'var(--primary)', emoji:null },
+    { id:'all', label:'Semua', color:'var(--primary)' },
     ...categories.map(c=>({
-      id:c.slug, label:c.name, icon:null, emoji:c.icon,
+      id:c.slug, label:c.name,
       color: { orange:'var(--primary)', red:'#e74c3c', purple:'#9b59b6',
                blue:'#3498db', green:'#2ecc71', yellow:'#f1c40f' }[c.color] || 'var(--primary)',
     })),
   ];
-
-  const badgeColor = {
-    orange:'var(--primary)', red:'#e74c3c', purple:'#9b59b6',
-    blue:'#3498db', green:'#2ecc71', yellow:'#f1c40f',
-  };
 
   const categoryColor = (colorName) => {
     const map = {
@@ -180,17 +176,34 @@ export default function StorePage({ settings, categories: initCategories, produc
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
-      <div style={{padding:'130px 6% 80px',maxWidth:1200,margin:'0 auto'}}>
+      <div style={{padding:'130px 6% 80px',maxWidth:1200,margin:'0 auto',position:'relative'}}>
+
+        {/* Ambient ember particles behind hero */}
+        <div className="store-embers" aria-hidden="true">
+          {[...Array(14)].map((_,i)=>(
+            <span key={i} className="ember-dot" style={{
+              left:`${(i*7.3)%100}%`,
+              animationDuration:`${6+(i%5)*1.4}s`,
+              animationDelay:`${(i%7)*0.6}s`,
+              width:2+(i%3),
+              height:2+(i%3),
+            }}/>
+          ))}
+        </div>
 
         {/* Header */}
-        <div data-anim="fade-up" data-delay="1" style={{textAlign:'center',marginBottom:40}}>
-          <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>ITEM STORE</span>
-          <h1 className="font-space" style={{fontSize:'clamp(24px,5vw,36px)',fontWeight:700,marginBottom:10}}>
-            {serverName} <span style={{color:'var(--primary)'}}>Store</span>
+        <div style={{textAlign:'center',marginBottom:40,position:'relative',zIndex:1}}>
+          <span className="tagline-pill anim-hero-up anim-d1" style={{display:'inline-flex',alignItems:'center',gap:10}}>
+            <span style={{width:18,height:1,background:'linear-gradient(90deg,transparent,var(--primary-light))'}}/>
+            DUKUNG SERVER
+            <span style={{width:18,height:1,background:'linear-gradient(270deg,transparent,var(--primary-light))'}}/>
+          </span>
+          <h1 className="font-space flame-text anim-hero anim-d2" style={{fontSize:'clamp(40px,9vw,76px)',fontWeight:700,lineHeight:0.95,margin:'16px 0 10px',letterSpacing:-1}}>
+            STORE
           </h1>
-          <p style={{color:'var(--text-muted)',fontSize:14}}>Semua pembelian dikirim otomatis ke Minecraft kamu</p>
+          <p className="anim-hero-up anim-d3" style={{color:'var(--text-muted)',fontSize:14}}>Semua pembelian dikirim otomatis ke Minecraft kamu</p>
           {player && (
-            <div style={{display:'inline-flex',alignItems:'center',gap:8,marginTop:12,background:'rgba(46,204,113,0.08)',border:'1px solid rgba(46,204,113,0.2)',borderRadius:30,padding:'6px 16px'}}>
+            <div className="anim-hero-up anim-d4" style={{display:'inline-flex',alignItems:'center',gap:8,marginTop:14,background:'rgba(46,204,113,0.08)',border:'1px solid rgba(46,204,113,0.2)',borderRadius:30,padding:'6px 16px'}}>
               <PlayerAvatar uuid={player.uuid} username={player.username} size={20}/>
               <span style={{color:'#2ecc71',fontSize:13,fontWeight:600}}>{player.displayName||player.username}</span>
               {player.rank && player.rank!=='default' && (
@@ -203,7 +216,7 @@ export default function StorePage({ settings, categories: initCategories, produc
         </div>
 
         {/* Tabs + search */}
-        <div style={{marginBottom:32}}>
+        <div data-anim="fade-up" style={{marginBottom:32,position:'relative',zIndex:1}}>
           {/* Search bar */}
           <div style={{display:'flex',justifyContent:'flex-end',marginBottom:14}}>
             <div style={{position:'relative'}}>
@@ -228,22 +241,13 @@ export default function StorePage({ settings, categories: initCategories, produc
                   }
                   onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor=col+'88'; }}}
                   onMouseLeave={e=>{ if(!isActive){ e.currentTarget.style.color=''; e.currentTarget.style.borderColor='rgba(255,255,255,0.06)'; }}}>
-                  {tab.emoji && (
-                    <span style={{
-                      display:'inline-flex',alignItems:'center',justifyContent:'center',
-                      width:22,height:22,background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)',
-                      borderRadius:6,fontSize:13,lineHeight:1,flexShrink:0,
-                    }}>{tab.emoji}</span>
-                  )}
-                  {tab.icon && (
-                    <span style={{
-                      display:'inline-flex',alignItems:'center',justifyContent:'center',
-                      width:22,height:22,background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)',
-                      borderRadius:6,flexShrink:0,
-                    }}>
-                      <i className={`fa-solid ${tab.icon}`} style={{fontSize:11}}/>
-                    </span>
-                  )}
+                  <span style={{
+                    display:'inline-flex',alignItems:'center',justifyContent:'center',
+                    width:22,height:22,background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)',
+                    borderRadius:6,flexShrink:0,color: isActive ? '#fff' : col,
+                  }}>
+                    <CategoryIcon slug={tab.id} size={12.5} strokeWidth={2}/>
+                  </span>
                   <span>{tab.label}</span>
                   {isActive && (
                     <span style={{
@@ -252,6 +256,7 @@ export default function StorePage({ settings, categories: initCategories, produc
                       fontSize:9,fontWeight:800,padding:'1px 6px',minWidth:16,
                     }}>
                       {activeTab==='all' ? products.length : products.filter(p=>p.category_slug===tab.id).length}
+
                     </span>
                   )}
                 </button>
@@ -269,116 +274,53 @@ export default function StorePage({ settings, categories: initCategories, produc
           </div>
         ) : (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
-            {filtered.map((product, pIdx) => {
-              const isOpen = !!expanded[product.id];
-              const discount = product.original_price && product.original_price>product.price
-                ? Math.round((1-product.price/product.original_price)*100) : 0;
-              const features = (() => { try { return typeof product.features==='string' ? JSON.parse(product.features) : product.features||[]; } catch{ return []; } })();
-
-  // Warna orb & glow otomatis berdasarkan kategori
-  const CATEGORY_COLORS = {
-    rank:       { a:'rgba(255,215,0,0.22)',  b:'rgba(10,8,0,0.95)',   c:'rgba(255,180,0,0.1)',  glow:'rgba(255,200,0,0.55)',  orb:'#ffd700' },
-    weapon:     { a:'rgba(231,76,60,0.22)',  b:'rgba(12,5,5,0.95)',   c:'rgba(200,50,30,0.1)',  glow:'rgba(220,60,40,0.55)',  orb:'#e74c3c' },
-    sellwand:   { a:'rgba(46,204,113,0.2)',  b:'rgba(5,12,8,0.95)',   c:'rgba(30,180,90,0.1)',  glow:'rgba(46,200,100,0.5)',  orb:'#2ecc71' },
-    auraskills: { a:'rgba(155,89,182,0.22)', b:'rgba(8,5,12,0.95)',   c:'rgba(130,60,180,0.1)', glow:'rgba(150,80,200,0.55)', orb:'#9b59b6' },
-    'crate-key':{ a:'rgba(52,152,219,0.22)', b:'rgba(5,8,15,0.95)',   c:'rgba(30,120,200,0.1)', glow:'rgba(52,150,220,0.55)', orb:'#3498db' },
-    kit:        { a:'rgba(26,188,156,0.2)',  b:'rgba(5,12,10,0.95)',  c:'rgba(20,170,140,0.1)', glow:'rgba(26,188,156,0.5)',  orb:'#1abc9c' },
-  };
-  const defaultColor = { a:'rgba(255,107,0,0.18)', b:'rgba(10,10,20,0.95)', c:'rgba(255,107,0,0.08)', glow:'rgba(255,107,0,0.5)', orb:'#ff6b00' };
-
-              const col = CATEGORY_COLORS[product.category_slug] || defaultColor;
-              const cardStyle = {
-                '--card-color-a': col.a, '--card-color-b': col.b,
-                '--card-color-c': col.c, '--card-glow': col.glow,
-              };
-
-              return (
-                <div key={product.id} className="fn-card product-card-enter" style={{padding:0,overflow:'hidden',display:'flex',flexDirection:'column'}} data-anim="fade-up" data-delay={String(Math.min(pIdx % 8 + 1, 8))}>
-                  {/* Product image area */}
-                  <div className="product-img-bg" style={cardStyle}>
-                    {/* Orbs */}
-                    <div className="product-orb product-orb-1" style={{background:col.orb}}/>
-                    <div className="product-orb product-orb-2" style={{background:col.orb}}/>
-                    <div className="product-orb product-orb-3" style={{background:col.orb}}/>
-                    {/* Shimmer */}
-                    <div className="product-shimmer"/>
-                    {/* Image or icon */}
-                    {product.image_url
-                      ? <>
-                          <img src={product.image_url} alt={product.name} className="product-img"
-                            referrerPolicy="no-referrer"
-                            onError={e=>{ e.target.onerror=null; e.target.style.opacity='0'; }}
-                          />
-                          <div className="product-img-glint"/>
-                        </>
-                      : null
-                    }
-                    {/* Badges */}
-                    {discount>0 && (
-                      <span style={{position:'absolute',top:10,left:10,background:'#e74c3c',color:'#fff',fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:5,zIndex:4}}>-{discount}%</span>
-                    )}
-                    {product.badge && (
-                      <span style={{position:'absolute',top:10,right:10,background:badgeColor[product.badge_color||'orange']||'var(--primary)',color:'#fff',fontSize:10,fontWeight:700,padding:'3px 8px',borderRadius:5,textTransform:'uppercase',zIndex:4}}>
-                        {product.badge}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div style={{padding:'18px 20px',flex:1,display:'flex',flexDirection:'column'}}>
-                    <div style={{fontSize:10,color:'var(--text-muted)',textTransform:'uppercase',fontWeight:700,letterSpacing:0.5,marginBottom:4}}>
-                      {product.category_name||'Item'}
-                    </div>
-                    <h3 style={{fontSize:16,fontWeight:700,marginBottom:6}}>{product.name}</h3>
-                    {product.description && (
-                      <p style={{fontSize:12.5,color:'var(--text-muted)',lineHeight:1.5,marginBottom:12}}>{product.description}</p>
-                    )}
-
-                    {/* Toggle benefits */}
-                    {features.length>0 && (
-                      <>
-                        <button onClick={()=>toggleExpand(product.id)}
-                          style={{background:'none',border:'none',color:'var(--text-muted)',fontSize:12,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:6,padding:'8px 0',transition:'color 0.2s'}}
-                          onMouseEnter={e=>e.currentTarget.style.color='var(--primary)'}
-                          onMouseLeave={e=>e.currentTarget.style.color='var(--text-muted)'}>
-                          <i className={`fa-solid ${isOpen?'fa-chevron-up':'fa-chevron-down'}`} style={{fontSize:10}}/>
-                          {isOpen ? 'Sembunyikan benefit' : `Lihat ${features.length} benefit`}
-                        </button>
-                        <div className={`benefit-panel${isOpen?' open':''}`}>
-                          <p className="benefit-title">Benefit yang kamu dapat:</p>
-                          <ul className="reward-list">
-                            {features.map((f,fi)=>(
-                              <li key={fi}><i className="fa-solid fa-check-circle"/>{f}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Price + buy */}
-                    <div style={{marginTop:'auto',paddingTop:16,borderTop:'1px solid rgba(255,255,255,0.05)',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
-                      <div>
-                        {product.original_price && product.original_price>product.price && (
-                          <div style={{fontSize:11,color:'var(--text-muted)',textDecoration:'line-through'}}>{idr(product.original_price)}</div>
-                        )}
-                        <div className="font-space" style={{fontSize:18,fontWeight:700,color:'var(--primary-light)'}}>{idr(product.price)}</div>
-                      </div>
-                      <button className="btn-primary-fn" onClick={()=>handleBuy(product)}>
-                        <i className="fa-solid fa-cart-shopping"/>
-                        Beli
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {filtered.map((product, pIdx) => (
+              <ProductCard
+                key={product.id}
+                product={product}
+                index={pIdx}
+                isOpen={!!expanded[product.id]}
+                onToggleExpand={toggleExpand}
+                onBuy={handleBuy}
+              />
+            ))}
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <footer className="fn-footer" data-anim="fade-up">
-        <p style={{fontSize:11,color:'#44444a'}}>© 2026 {serverName}. Store</p>
+      <footer className="fn-footer store-footer" data-anim="fade-up">
+        <div className="font-space" style={{fontWeight:700,fontSize:18,marginBottom:14,display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+          <svg viewBox="0 0 32 32" width="20" height="20"><path d="M16 3c-5 6-7 10-7 15a7 7 0 0014 0c0-2.4-1-3.6-1-3.6s2 1 2 4.8a9 9 0 11-18 0C6 12.5 10 9.5 16 3z" fill="var(--primary)"/></svg>
+          FANCY<span style={{color:'var(--primary)'}}> NETWORK</span>
+        </div>
+
+        <ul style={{display:'flex',justifyContent:'center',gap:20,listStyle:'none',marginBottom:18,flexWrap:'wrap',padding:0}}>
+          {[{href:'/',label:'Home'},{href:'/store',label:'Store'},{href:'/support',label:'Support'}].map(l => (
+            <li key={l.href}><Link href={l.href} style={{color:'var(--text-muted)',textDecoration:'none',fontSize:13}}>{l.label}</Link></li>
+          ))}
+        </ul>
+
+        <div className="store-footer-trust">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/>
+          </svg>
+          Pembayaran QRIS, E-Wallet &amp; Bank Transfer — terverifikasi otomatis
+        </div>
+
+        {s.discord_url ? (
+          <a href={s.discord_url} target="_blank" rel="noopener noreferrer" className="store-footer-support">
+            <i className="fa-brands fa-discord"/> Butuh bantuan? Chat kami di Discord
+          </a>
+        ) : (
+          <Link href="/support" className="store-footer-support">
+            <i className="fa-solid fa-headset"/> Butuh bantuan? Buka tiket Support
+          </Link>
+        )}
+
+        <div className="fn-footer-bottom" style={{marginTop:18}}>
+          © 2026 {serverName}. Tidak terafiliasi dengan Mojang Studios.
+        </div>
       </footer>
 
       {/* Login popup — muncul otomatis saat klik beli tanpa login */}
@@ -394,6 +336,107 @@ export default function StorePage({ settings, categories: initCategories, produc
         <CartModal product={cartItem} player={player}
           onClose={()=>{ setShowCart(false); setCartItem(null); }}/>
       )}
+
+      <style jsx global>{`
+        /* ── Flame gradient headline (Store hero) ───────────────── */
+        .flame-text { position:relative; }
+        .flame-text {
+          background: linear-gradient(180deg, #fff 10%, var(--primary-light) 55%, var(--primary) 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          filter: drop-shadow(0 0 30px rgba(255,107,0,0.35));
+        }
+
+        /* ── Ambient ember particles on store page ──────────────── */
+        .store-embers { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:0; height:480px; }
+        .ember-dot {
+          position:absolute; bottom:-10px; border-radius:50%;
+          background: radial-gradient(circle, var(--primary-light), var(--primary) 65%, transparent 100%);
+          opacity:0; animation-name: emberRise; animation-timing-function: linear; animation-iteration-count: infinite;
+        }
+        @keyframes emberRise {
+          0%   { transform:translateY(0) scale(1); opacity:0; }
+          10%  { opacity:.85; }
+          55%  { transform:translateY(-260px) translateX(14px) scale(0.85); opacity:.5; }
+          100% { transform:translateY(-460px) translateX(26px) scale(0.3); opacity:0; }
+        }
+
+        /* ── Rank card — notched "forge slot" corners ────────────── */
+        .rank-card {
+          position: relative;
+          border-radius: 18px !important;
+          clip-path: polygon(
+            14px 0, calc(100% - 14px) 0, 100% 14px,
+            100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%,
+            0 calc(100% - 14px), 0 14px
+          );
+        }
+        .rank-card .product-img-bg { border-radius: 0 !important; }
+
+        .rank-ribbon {
+          position: absolute;
+          top: 12px; left: 12px;
+          z-index: 6;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #fff;
+          font-size: 10px;
+          font-weight: 800;
+          letter-spacing: 0.4px;
+          text-transform: uppercase;
+          padding: 4px 9px;
+          border-radius: 7px;
+          box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+        }
+
+        /* ── Rank card — varian "Most Popular" (inverted, isi penuh warna aksen) ── */
+        .rank-card-popular {
+          background: linear-gradient(165deg, var(--primary) 0%, var(--primary) 55%, var(--primary-light) 100%) !important;
+          border: 1px solid rgba(255,255,255,0.18) !important;
+          box-shadow: 0 16px 40px var(--primary-glow);
+        }
+        .rank-card-popular:hover {
+          border-color: rgba(255,255,255,0.32) !important;
+          background: linear-gradient(165deg, var(--primary-light) 0%, var(--primary) 55%, var(--primary-light) 100%) !important;
+        }
+        .btn-popular-buy {
+          background: #fff;
+          color: var(--primary);
+          border: none;
+          padding: 11px 22px;
+          font-size: 13px;
+          font-weight: 800;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          transition: all 0.25s;
+        }
+        .btn-popular-buy:hover { background: rgba(255,255,255,0.88); transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.25); }
+        .btn-popular-buy:active { transform: scale(0.96); }
+
+        /* ── Store footer extras ──────────────────────────────────── */
+        .store-footer-trust {
+          display:flex; align-items:center; justify-content:center; gap:8px;
+          color: var(--text-muted); font-size:12.5px;
+          font-family: 'JetBrains Mono', 'Plus Jakarta Sans', monospace;
+          margin-bottom: 14px;
+        }
+        .store-footer-support {
+          display:inline-flex; align-items:center; gap:8px;
+          color: var(--primary-light); font-size:13px; font-weight:600;
+          text-decoration:none; padding:8px 16px; border-radius:30px;
+          background: rgba(255,107,0,0.08); border:1px solid rgba(255,107,0,0.2);
+          transition: all 0.25s;
+        }
+        .store-footer-support:hover { background: rgba(255,107,0,0.16); transform: translateY(-2px); }
+
+        @media (prefers-reduced-motion: reduce) {
+          .ember-dot { animation: none !important; opacity: 0 !important; }
+        }
+      `}</style>
     </>
   );
 }
