@@ -25,15 +25,15 @@ export default function ProductCard({ product, index = 0, onBuy }) {
   const orbColor  = CATEGORY_ORB[product.category_slug] || DEFAULT_ORB;
   const isPopular = (product.badge || '').toLowerCase().includes('popul');
 
-  // Mengikuti referensi: 3 fitur pertama jadi "Pill Tags", sisanya jadi "List Checkmark"
   const pills = features.slice(0, 3);
   const listFeatures = features.slice(3);
 
   return (
     <div
-      className={`relative flex flex-col overflow-hidden rounded-[24px] border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
+      // CLASS fn-card, rank-card, dan product-card-enter DIKEMBALIKAN DI SINI AGAR ANIMASI TIDAK RUSAK
+      className={`fn-card rank-card product-card-enter relative flex flex-col overflow-hidden rounded-[24px] border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
         isPopular
-          ? 'border-[var(--primary)] bg-[var(--primary)] text-white shadow-[0_8px_30px_rgba(255,107,0,0.25)]'
+          ? 'rank-card-popular border-[var(--primary)] bg-[var(--primary)] text-white shadow-[0_8px_30px_rgba(255,107,0,0.25)]'
           : 'border-white/10 bg-[#141414] text-white hover:border-white/20'
       }`}
       data-anim="fade-up"
@@ -50,7 +50,6 @@ export default function ProductCard({ product, index = 0, onBuy }) {
 
       {/* Header Card (Icon/Category + Title) */}
       <div className={`flex items-center gap-3.5 ${isPopular ? 'mt-6 mb-4' : 'mb-4'}`}>
-        {/* Icon Area */}
         <div
           className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-[14px] border"
           style={isPopular
@@ -61,7 +60,6 @@ export default function ProductCard({ product, index = 0, onBuy }) {
           <CategoryIcon slug={product.category_slug} size={24} strokeWidth={1.8} />
         </div>
 
-        {/* Title & Category */}
         <div>
           <div className="text-[11px] font-bold uppercase tracking-wider opacity-75">
             {product.category_name || 'Rank'}
@@ -95,14 +93,14 @@ export default function ProductCard({ product, index = 0, onBuy }) {
         </div>
       )}
 
-      {/* Title untuk Checkmark List (Sesuai referensi ada text "[Nama Produk] Feature") */}
+      {/* Title untuk Checkmark List */}
       {listFeatures.length > 0 && (
         <div className={`mb-3 text-[12px] font-extrabold tracking-wide uppercase ${isPopular ? 'text-white/90' : 'text-[var(--primary-light)]'}`}>
           {product.name} Feature
         </div>
       )}
 
-      {/* Checkmark List (Selalu Terbuka) */}
+      {/* Checkmark List */}
       <ul className="mb-6 flex flex-col gap-3">
         {(listFeatures.length > 0 ? listFeatures : features).map((f, fi) => (
           <li key={fi} className="flex items-start gap-3 text-[13px] leading-relaxed opacity-95">
@@ -112,7 +110,7 @@ export default function ProductCard({ product, index = 0, onBuy }) {
         ))}
       </ul>
 
-      {/* Footer Card (Harga & Tombol Beli di Baris yang Sama) */}
+      {/* Footer Card */}
       <div className="mt-auto flex items-center justify-between gap-3 border-t border-white/10 pt-5">
         <div className="flex flex-col">
           {discount > 0 && (
