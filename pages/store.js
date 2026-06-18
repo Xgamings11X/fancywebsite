@@ -5,7 +5,6 @@ import { useRouter } from 'next/router';
 // Redis modules loaded via dynamic import in getServerSideProps
 import FancyNav, { PlayerAvatar } from '../components/FancyNav';
 import { useTransparentLogo } from '../components/LogoImage';
-import CategoryIcon from '../components/CategoryIcon';
 import ProductCard from '../components/ProductCard';
 import LoginModal from '../components/LoginModal';
 import CartModal  from '../components/CartModal';
@@ -241,13 +240,6 @@ export default function StorePage({ settings, categories: initCategories, produc
                   }
                   onMouseEnter={e=>{ if(!isActive){ e.currentTarget.style.color='#fff'; e.currentTarget.style.borderColor=col+'88'; }}}
                   onMouseLeave={e=>{ if(!isActive){ e.currentTarget.style.color=''; e.currentTarget.style.borderColor='rgba(255,255,255,0.06)'; }}}>
-                  <span style={{
-                    display:'inline-flex',alignItems:'center',justifyContent:'center',
-                    width:22,height:22,background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.07)',
-                    borderRadius:6,flexShrink:0,color: isActive ? '#fff' : col,
-                  }}>
-                    <CategoryIcon slug={tab.id} size={12.5} strokeWidth={2}/>
-                  </span>
                   <span>{tab.label}</span>
                   {isActive && (
                     <span style={{
