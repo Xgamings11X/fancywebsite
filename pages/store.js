@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import Icon from '../components/Icon';
 import { useRouter } from 'next/router';
 // Redis modules loaded via dynamic import in getServerSideProps
 import FancyNav, { PlayerAvatar } from '../components/FancyNav';
@@ -168,7 +169,6 @@ export default function StorePage({ settings, categories: initCategories, produc
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
         <meta name="description" content={`Item Store ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
 
@@ -219,11 +219,18 @@ export default function StorePage({ settings, categories: initCategories, produc
           {/* Search bar */}
           <div style={{display:'flex',justifyContent:'flex-end',marginBottom:14}}>
             <div style={{position:'relative'}}>
-              <i className="fa-solid fa-search" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)',fontSize:13}}/>
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24" width="13" height="13" fill="none"
+                stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+                style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)',pointerEvents:'none'}}
+              >
+                <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+              </svg>
               <input value={search} onChange={e=>setSearch(e.target.value)}
                 placeholder="Cari produk..." className="fn-input"
-                style={{paddingLeft:36,width:220,borderRadius:10}}/>
-            </div>
+                aria-label="Cari produk"
+                style={{paddingLeft:36,width:220,borderRadius:10}}/>            </div>
           </div>
           {/* Category tabs */}
           <div className="tabs-container" style={{overflowX:'auto',flexWrap:'wrap',gap:6}}>
@@ -260,7 +267,13 @@ export default function StorePage({ settings, categories: initCategories, produc
         {/* Products grid */}
         {filtered.length === 0 ? (
           <div style={{textAlign:'center',padding:'80px 0'}}>
-            <i className="fa-solid fa-box-open" style={{fontSize:48,color:'var(--text-muted)',marginBottom:16,display:'block'}}/>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="48" height="48" fill="none"
+              stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+              style={{color:'var(--text-muted)',marginBottom:16,display:'inline-block'}}>
+              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
             <p style={{color:'var(--text-muted)',fontSize:15}}>{search?`Produk "${search}" tidak ditemukan`:'Belum ada produk di kategori ini'}</p>
             {search && <button onClick={()=>setSearch('')} style={{marginTop:12,background:'none',border:'none',color:'var(--primary)',cursor:'pointer',fontSize:13}}>Hapus pencarian</button>}
           </div>
@@ -302,11 +315,11 @@ export default function StorePage({ settings, categories: initCategories, produc
 
         {s.discord_url ? (
           <a href={s.discord_url} target="_blank" rel="noopener noreferrer" className="store-footer-support">
-            <i className="fa-brands fa-discord"/> Butuh bantuan? Chat kami di Discord
+            <Icon name="discord" size={14} style={{marginRight:7}}/> Butuh bantuan? Chat kami di Discord
           </a>
         ) : (
           <Link href="/support" className="store-footer-support">
-            <i className="fa-solid fa-headset"/> Butuh bantuan? Buka tiket Support
+            🎧 Butuh bantuan? Buka tiket Support
           </Link>
         )}
 

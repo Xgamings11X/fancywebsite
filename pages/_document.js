@@ -39,29 +39,6 @@ export default function Document() {
         <link rel="dns-prefetch" href="https://crafatar.com" />
         <link rel="dns-prefetch" href="https://minotar.net" />
 
-        {/* ══ FONT AWESOME 6.4 — ASYNC NON-BLOCKING ════════════════════════
-            Teknik: rel="preload" memberitahu browser untuk fetch resource
-            sekarang tapi TIDAK memblokir render. Setelah selesai, onLoad
-            mengubahnya ke rel="stylesheet" agar diterapkan.
-            Ini menghilangkan render-blocking resource #1 penyebab FCP 14 detik.
-        ════════════════════════════════════════════════════════════════════ */}
-        <link
-          rel="preload"
-          as="style"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          crossOrigin="anonymous"
-          // @ts-ignore
-          onLoad="this.onload=null;this.rel='stylesheet'"
-        />
-        {/* Fallback untuk browser tanpa JS — icon tetap muncul */}
-        <noscript>
-          <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-            crossOrigin="anonymous"
-          />
-        </noscript>
-
         {/* ══ GOOGLE FONTS — ASYNC NON-BLOCKING ════════════════════════════
             Sama seperti FA: preload → onLoad → stylesheet.
             @import di globals.css sudah DIHAPUS (render-blocking).

@@ -5,6 +5,8 @@ import FancyNav from '../components/FancyNav';
 import LogoImage, { useTransparentLogo } from '../components/LogoImage';
 import LoginModal from '../components/LoginModal';
 import toast from 'react-hot-toast';
+import Icon from '../components/Icon';
+import FancyFooter from '../components/FancyFooter';
 
 export async function getServerSideProps() {
   try {
@@ -53,11 +55,11 @@ export default function HomePage({ settings }) {
   };
 
   const socials = [
-    (s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL)    && { href: s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL,    cls:'btn-vote',    icon:'fa-star',     label:'Vote'    },
-    (s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL) && { href: s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL, cls:'btn-discord', icon:'fa-discord',  label:'Discord', brand:true },
-    (s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL)&& { href: s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL,cls:'btn-wa',      icon:'fa-whatsapp', label:'Whatsapp',brand:true },
-    (s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL)  && { href: s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL,  cls:'btn-tiktok',  icon:'fa-tiktok',   label:'TikTok',  brand:true },
-    (s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL) && { href: s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL, cls:'btn-ig',      icon:'fa-youtube',  label:'YouTube', brand:true },
+    (s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL)    && { href: s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL,    cls:'btn-vote',    icon:'star',     label:'Vote'    },
+    (s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL) && { href: s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL, cls:'btn-discord', icon:'discord',  label:'Discord', brand:true },
+    (s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL)&& { href: s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL,cls:'btn-wa',      icon:'whatsapp', label:'Whatsapp',brand:true },
+    (s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL)  && { href: s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL,  cls:'btn-tiktok',  icon:'tiktok',   label:'TikTok',  brand:true },
+    (s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL) && { href: s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL, cls:'btn-ig',      icon:'youtube',  label:'YouTube', brand:true },
   ].filter(Boolean);
 
   const famousApplyUrl = s.discord_url || process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || process.env.NEXT_PUBLIC_DISCORD_URL || '#';
@@ -70,7 +72,6 @@ export default function HomePage({ settings }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content={s.server_description || `Server Minecraft Indonesia — ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
@@ -106,9 +107,9 @@ export default function HomePage({ settings }) {
         {/* Triple IP Grid */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,width:'100%',maxWidth:750,marginBottom:24,position:'relative',zIndex:1}} className="ip-grid anim-hero-up anim-d5">
           {[
-            {label:'Java Edition IP',    addr:serverIp, icon:'fa-computer',             copy:serverIp, copyLabel:'IP Java'},
-            {label:'Bedrock Edition IP', addr:serverIp, icon:'fa-mobile-screen-button', copy:serverIp, copyLabel:'IP Bedrock'},
-            {label:'Bedrock Port',       addr:'19015',  icon:'fa-network-wired',         copy:'19015',  copyLabel:'Port Bedrock'},
+            {label:'Java Edition IP',    addr:serverIp, icon:'computer',             copy:serverIp, copyLabel:'IP Java'},
+            {label:'Bedrock Edition IP', addr:serverIp, icon:'mobile', copy:serverIp, copyLabel:'IP Bedrock'},
+            {label:'Bedrock Port',       addr:'19015',  icon:'network-wired',         copy:'19015',  copyLabel:'Port Bedrock'},
           ].map((item,i) => (
             <div key={i} className="ip-card" onClick={()=>copyIP(item.copy, item.copyLabel)}
               style={{background:'rgba(15,15,20,0.7)',border:'1px solid var(--border)',borderRadius:14,padding:'14px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:12,position:'relative',backdropFilter:'blur(10px)'}}>
@@ -116,7 +117,7 @@ export default function HomePage({ settings }) {
                 {copied===item.copyLabel ? '✓ Disalin' : 'Salin'}
               </span>
               <div style={{width:40,height:40,background:'rgba(255,107,0,0.1)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--primary)',fontSize:16,flexShrink:0}}>
-                <i className={`fa-solid ${item.icon}`}/>
+                <Icon name={item.icon} size={18}/>
               </div>
               <div style={{overflow:'hidden'}}>
                 <span style={{fontSize:9,textTransform:'uppercase',color:'var(--text-muted)',fontWeight:700,letterSpacing:0.5,display:'block'}}>{item.label}</span>
@@ -128,7 +129,7 @@ export default function HomePage({ settings }) {
 
         {/* Status pill */}
         <div className="status-pill anim-hero-up anim-d5" style={{marginBottom:32,position:'relative',zIndex:1}}>
-          <i className="fa-solid fa-circle" style={{fontSize:8,animation:'pulse 1.5s infinite'}}/>
+          <Icon name="circle" size={8} style={{animation:'pulse 1.5s infinite'}}/>
           <span id="player-count">{playerCount}</span> Players Online
         </div>
 
@@ -137,7 +138,7 @@ export default function HomePage({ settings }) {
           <div className="anim-hero-up anim-d6" style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:10,position:'relative',zIndex:1}}>
             {socials.map((x,i) => (
               <a key={i} href={x.href} target="_blank" rel="noopener noreferrer" className={`social-btn ${x.cls}`}>
-                <i className={`fa-${x.brand?'brands':'solid'} ${x.icon}`}/> {x.label}
+                <Icon name={x.icon} size={16}/> {x.label}
               </a>
             ))}
           </div>
@@ -177,10 +178,10 @@ export default function HomePage({ settings }) {
           margin:'0 auto'
         }}>
           {[
-            {icon:'fa-shield-halved', color:'#e67e22', title:'Anti-Cheat Ketat',  desc:'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.'},
-            {icon:'fa-users-rectangle', color:'#3498db', title:'Komunitas Solid',   desc:'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.'},
-            {icon:'fa-bolt',           color:'#2ecc71', title:'Low Latency',       desc:'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.'},
-            {icon:'fa-trophy',         color:'#9b59b6', title:'Event & Reward',    desc:'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.'},
+            {icon:'shield-halved', color:'#e67e22', title:'Anti-Cheat Ketat',  desc:'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.'},
+            {icon:'users', color:'#3498db', title:'Komunitas Solid',   desc:'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.'},
+            {icon:'bolt',           color:'#2ecc71', title:'Low Latency',       desc:'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.'},
+            {icon:'trophy',         color:'#9b59b6', title:'Event & Reward',    desc:'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.'},
           ].map((f,i) => (
             <div key={i} className="fn-card" style={{padding:'28px 24px',display:'flex',alignItems:'flex-start',gap:16}} data-anim="flip-in" data-delay={String(i+1)}>
               {/* Icon style synced with support page cat-icon */}
@@ -192,7 +193,7 @@ export default function HomePage({ settings }) {
                 display:'flex', alignItems:'center', justifyContent:'center',
                 color:f.color, fontSize:18, flexShrink:0
               }}>
-                <i className={`fa-solid ${f.icon}`}/>
+                <Icon name={f.icon} size={20}/>
               </div>
               <div>
                 <h4 style={{fontSize:15,fontWeight:700,marginBottom:8}}>{f.title}</h4>
@@ -219,7 +220,7 @@ export default function HomePage({ settings }) {
             <ul style={{listStyle:'none',marginBottom:35}}>
               {['Tidak memiliki masalah dengan server lain','Membuat konten Fancy Network rutin','Viewers aktif dan organik','Konten positif & membangun'].map((r,i) => (
                 <li key={i} style={{fontSize:13.5,color:'#d1d1d6',marginBottom:12,display:'flex',alignItems:'center',gap:10}}>
-                  <i className="fa-solid fa-circle-check" style={{color:'#2ecc71',fontSize:12}}/> {r}
+                  <Icon name="circle-check" size={13} color="#2ecc71"/> {r}
                 </li>
               ))}
             </ul>
@@ -227,26 +228,14 @@ export default function HomePage({ settings }) {
               style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'#fff',padding:14,borderRadius:10,fontWeight:600,fontSize:13,cursor:'pointer',width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,textDecoration:'none',transition:'all 0.3s'}}
               onMouseEnter={e=>{e.currentTarget.style.background='var(--primary)';e.currentTarget.style.borderColor='var(--primary)';}}
               onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.08)';}}>
-              Apply Requirement <i className="fa-solid fa-arrow-right"/>
+              Apply Requirement <Icon name="arrow-right" size={14} style={{marginLeft:4}}/>
             </a>
           </div>
         </div>
       </section>
 
       {/* FOOTER */}
-      <footer className="fn-footer" data-anim="fade-up">
-        <div className="font-space" style={{fontWeight:700,fontSize:18,marginBottom:12}}>FANCY<span style={{color:'var(--primary)'}}> NETWORK</span></div>
-        <ul style={{display:'flex',justifyContent:'center',gap:20,listStyle:'none',marginBottom:20,flexWrap:'wrap'}}>
-          {['/','/store','/support'].map((href, j) => ({
-            href, label: ['Home','Store','Support'][j]
-          })).map((l,i) => (
-            <li key={i}><Link href={l.href} style={{color:'var(--text-muted)',textDecoration:'none',fontSize:13}}>{l.label}</Link></li>
-          ))}
-        </ul>
-        <div className="fn-footer-bottom">
-          © 2026 {serverName}. Tidak terafiliasi dengan Mojang Studios.
-        </div>
-      </footer>
+      <FancyFooter serverName={serverName} />
 
       {showLogin && <LoginModal onClose={()=>setShowLogin(false)} onSuccess={handleLoginSuccess}/>}
 
