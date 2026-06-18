@@ -4,7 +4,9 @@ import Head from 'next/head';
 // SettingsAsync loaded server-side via dynamic import in getServerSideProps
 import FancyNav from '../../components/FancyNav';
 import LoginModal from '../../components/LoginModal';
+import FancyFooter from '../../components/FancyFooter';
 import toast from 'react-hot-toast';
+import Icon from '../../components/Icon';
 
 export async function getServerSideProps() {
   try {
@@ -14,10 +16,10 @@ export async function getServerSideProps() {
 }
 
 const TYPES = [
-  { id:'banding',       icon:'fa-gavel',        label:'Aju Banding',   desc:'Ajukan banding untuk keputusan admin / akun banned',     color:'#e67e22' },
-  { id:'bug',           icon:'fa-bug',          label:'Report Bug',    desc:'Temukan bug atau masalah teknis? Laporkan di sini',       color:'#3498db' },
-  { id:'report_player', icon:'fa-user-xmark',   label:'Report Pemain', desc:'Laporkan pemain yang melanggar aturan server',            color:'#e74c3c' },
-  { id:'lainnya',       icon:'fa-comment-dots', label:'Lainnya',       desc:'Pertanyaan umum, saran, atau feedback lainnya',          color:'#9b59b6' },
+  { id:'banding',       icon:'gavel',        label:'Aju Banding',   desc:'Ajukan banding untuk keputusan admin / akun banned',     color:'#e67e22' },
+  { id:'bug',           icon:'bug',          label:'Report Bug',    desc:'Temukan bug atau masalah teknis? Laporkan di sini',       color:'#3498db' },
+  { id:'report_player', icon:'user-xmark',   label:'Report Pemain', desc:'Laporkan pemain yang melanggar aturan server',            color:'#e74c3c' },
+  { id:'lainnya',       icon:'comment-dots', label:'Lainnya',       desc:'Pertanyaan umum, saran, atau feedback lainnya',          color:'#9b59b6' },
 ];
 
 const STATUS = {
@@ -215,7 +217,6 @@ export default function SupportPage({ settings }) {
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
         <meta name="description" content={`Support Center ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
       <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
@@ -235,11 +236,11 @@ export default function SupportPage({ settings }) {
         <div className="tabs-container" style={{marginBottom:32,maxWidth:360,margin:'0 auto 32px'}}>
           <button className={`tab-btn${view==='home'||view==='form'?' active':''}`}
             onClick={()=>setView('home')}>
-            <i className="fa-solid fa-plus-circle"/> Buat Tiket
+            <Icon name="plus-circle" size={14} style={{marginRight:6}}/> Buat Tiket
           </button>
           <button className={`tab-btn${view==='tickets'||view==='chat'?' active':''}`}
             onClick={()=>{ setView('tickets'); loadTickets(); }}>
-            <i className="fa-solid fa-list-check"/> Tiket Saya
+            <Icon name="list-check" size={14} style={{marginRight:6}}/> Tiket Saya
           </button>
         </div>
 
@@ -248,7 +249,7 @@ export default function SupportPage({ settings }) {
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))',gap:14}}>
             {!player && (
               <div style={{gridColumn:'1/-1',background:'rgba(255,107,0,0.06)',border:'1px solid rgba(255,107,0,0.2)',borderRadius:12,padding:'14px 18px',display:'flex',alignItems:'center',gap:12,marginBottom:4}}>
-                <i className="fa-solid fa-circle-exclamation" style={{color:'var(--primary)',fontSize:18}}/>
+                <Icon name="circle-exclamation" size={18} color="var(--primary)"/>
                 <p style={{fontSize:13,color:'var(--text-muted)'}}>
                   Kamu perlu <strong style={{color:'#fff',cursor:'pointer'}} onClick={()=>setShowLogin(true)}>login</strong> untuk membuat tiket.
                 </p>
@@ -257,13 +258,13 @@ export default function SupportPage({ settings }) {
             {TYPES.map(t=>(
               <button key={t.id} onClick={()=>handleSelectType(t.id)} className="support-cat-card" style={{width:'100%',textAlign:'left',background:'transparent',fontFamily:'Plus Jakarta Sans,sans-serif'}}>
                 <div className="cat-icon" style={{background:`${t.color}18`,color:t.color}}>
-                  <i className={`fa-solid ${t.icon}`}/>
+                  <Icon name={t.icon} size={16}/>
                 </div>
                 <div>
                   <p style={{fontWeight:700,fontSize:14,color:'#fff',marginBottom:4}}>{t.label}</p>
                   <p style={{fontSize:12,color:'var(--text-muted)',lineHeight:1.4}}>{t.desc}</p>
                 </div>
-                <i className="fa-solid fa-chevron-right" style={{color:'var(--text-muted)',fontSize:12,marginLeft:'auto',flexShrink:0}}/>
+                <Icon name="chevron-right" size={12} color="var(--text-muted)" style={{marginLeft:'auto',flexShrink:0}}/>
               </button>
             ))}
           </div>
@@ -273,12 +274,12 @@ export default function SupportPage({ settings }) {
         {view === 'form' && typeInfo && (
           <div className="fn-card" style={{padding:'28px 28px 32px'}} data-anim="fade-up">
             <button onClick={()=>setView('home')} style={{background:'none',border:'none',color:'var(--text-muted)',fontSize:13,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:6,marginBottom:20}}>
-              <i className="fa-solid fa-arrow-left"/> Kembali
+              <Icon name="arrow-left" size={14} style={{marginRight:6}}/> Kembali
             </button>
 
             <div style={{display:'flex',alignItems:'center',gap:14,marginBottom:24,background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.05)',borderRadius:12,padding:'14px 18px'}}>
               <div className="cat-icon" style={{background:`${typeInfo.color}18`,color:typeInfo.color,width:44,height:44,borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}>
-                <i className={`fa-solid ${typeInfo.icon}`}/>
+                <Icon name={typeInfo.icon} size={16}/>
               </div>
               <div>
                 <p className="font-space" style={{fontWeight:700,fontSize:16}}>{typeInfo.label}</p>
@@ -316,7 +317,7 @@ export default function SupportPage({ settings }) {
                 style={{width:'100%',justifyContent:'center',padding:'13px',fontSize:14,borderRadius:10,marginTop:4}}>
                 {sending
                   ? <><span className="fn-spinner" style={{width:16,height:16,borderWidth:2}}/> Mengirim...</>
-                  : <><i className={`fa-solid ${typeInfo.icon}`}/> Kirim Tiket</>
+                  : <><Icon name={typeInfo.icon} size={16}/> Kirim Tiket</>
                 }
               </button>
             </form>
@@ -328,18 +329,18 @@ export default function SupportPage({ settings }) {
           <div>
             {!player ? (
               <div style={{textAlign:'center',padding:'60px 0'}}>
-                <i className="fa-solid fa-lock" style={{fontSize:40,color:'var(--text-muted)',display:'block',marginBottom:16}}/>
+                <Icon name="lock" size={40} color="var(--text-muted)" style={{display:'block',marginBottom:16}}/>
                 <p style={{color:'var(--text-muted)',marginBottom:16}}>Login untuk melihat tiketmu</p>
                 <button className="btn-primary-fn" onClick={()=>setShowLogin(true)}>
-                  <i className="fa-solid fa-right-to-bracket"/> Login
+                  <Icon name="right-to-bracket" size={14} style={{marginRight:6}}/> Login
                 </button>
               </div>
             ) : tickets.length === 0 ? (
               <div style={{textAlign:'center',padding:'60px 0'}}>
-                <i className="fa-solid fa-inbox" style={{fontSize:40,color:'var(--text-muted)',display:'block',marginBottom:16}}/>
+                <Icon name="inbox" size={40} color="var(--text-muted)" style={{display:'block',marginBottom:16}}/>
                 <p style={{color:'var(--text-muted)',marginBottom:12}}>Belum ada tiket</p>
                 <button className="btn-ghost-fn" onClick={()=>setView('home')}>
-                  <i className="fa-solid fa-plus"/> Buat Tiket Baru
+                  <Icon name="plus" size={14} style={{marginRight:6}}/> Buat Tiket Baru
                 </button>
               </div>
             ) : (
@@ -354,7 +355,7 @@ export default function SupportPage({ settings }) {
                       <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,marginBottom:10}}>
                         <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
                           <div style={{width:36,height:36,borderRadius:8,background:`${t?.color||'var(--primary)'}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                            <i className={`fa-solid ${t?.icon||'fa-ticket'}`} style={{color:t?.color||'var(--primary)',fontSize:15}}/>
+                            <Icon name={t?.icon||'ticket'} size={15} color={t?.color||'var(--primary)'}/>
                           </div>
                           <div style={{minWidth:0}}>
                             <p style={{fontWeight:700,fontSize:14,color:'#fff',marginBottom:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tk.subject}</p>
@@ -370,11 +371,11 @@ export default function SupportPage({ settings }) {
                       </div>
                       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
                         <p style={{fontSize:12,color:'var(--text-muted)',display:'flex',alignItems:'center',gap:6}}>
-                          <i className="fa-solid fa-comment-dots"/>
+                          <Icon name="comment-dots" size={13}/>
                           {tk.messages?.length || 0} pesan
                         </p>
                         <span style={{fontSize:12,color:'var(--primary)',fontWeight:600,display:'flex',alignItems:'center',gap:4}}>
-                          <i className="fa-solid fa-arrow-right" style={{fontSize:10}}/> Buka Chat
+                          <Icon name="arrow-right" size={10} style={{marginLeft:2}}/> Buka Chat
                         </span>
                       </div>
                     </div>
@@ -392,13 +393,13 @@ export default function SupportPage({ settings }) {
             <div style={{padding:'16px 20px',borderBottom:'1px solid rgba(255,255,255,0.06)',display:'flex',alignItems:'center',gap:12}}>
               <button onClick={()=>{ setView('tickets'); loadTickets(); }}
                 style={{background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',padding:'4px 8px',borderRadius:6,display:'flex',alignItems:'center',gap:5,fontSize:12,fontWeight:600}}>
-                <i className="fa-solid fa-arrow-left"/> Kembali
+                <Icon name="arrow-left" size={14} style={{marginRight:6}}/> Kembali
               </button>
               {activeTicket && (
                 <>
                   <div style={{width:1,height:20,background:'rgba(255,255,255,0.1)'}}/>
                   <div style={{width:30,height:30,borderRadius:7,background:`${chatType?.color||'var(--primary)'}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                    <i className={`fa-solid ${chatType?.icon||'fa-ticket'}`} style={{color:chatType?.color||'var(--primary)',fontSize:13}}/>
+                    <Icon name={chatType?.icon||'ticket'} size={13} color={chatType?.color||'var(--primary)'}/>
                   </div>
                   <div style={{flex:1,minWidth:0}}>
                     <p style={{fontWeight:700,fontSize:13,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{activeTicket.subject}</p>
@@ -422,14 +423,14 @@ export default function SupportPage({ settings }) {
             <div style={{minHeight:320,maxHeight:'55vh',overflowY:'auto',padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
               {loadingChat ? (
                 <div style={{textAlign:'center',padding:'40px 0',color:'var(--text-muted)'}}>
-                  <i className="fa-solid fa-spinner fa-spin" style={{fontSize:28}}/>
+                  <Icon name="spinner" size={28} spin/>
                 </div>
               ) : activeTicket && (
                 <>
                   {/* Ticket info box */}
                   {activeTicket.evidence_url && (
                     <div style={{background:'rgba(255,255,255,0.02)',border:'1px dashed rgba(255,255,255,0.08)',borderRadius:10,padding:'10px 14px',fontSize:12,color:'var(--text-muted)'}}>
-                      <i className="fa-solid fa-link" style={{marginRight:6}}/>
+                      <Icon name="link" size={12} style={{marginRight:6}}/>
                       Bukti: <a href={activeTicket.evidence_url} target="_blank" rel="noopener noreferrer" style={{color:'#3498db',textDecoration:'none'}}>{activeTicket.evidence_url}</a>
                     </div>
                   )}
@@ -466,7 +467,7 @@ export default function SupportPage({ settings }) {
             <div style={{padding:'12px 16px',borderTop:'1px solid rgba(255,255,255,0.06)'}}>
               {isClosed ? (
                 <div style={{textAlign:'center',padding:'10px',color:'var(--text-muted)',fontSize:13}}>
-                  <i className="fa-solid fa-lock" style={{marginRight:6}}/>
+                  <Icon name="lock" size={12} style={{marginRight:6}}/>
                   Tiket ini sudah ditutup — tidak bisa mengirim pesan baru
                 </div>
               ) : (
@@ -477,7 +478,7 @@ export default function SupportPage({ settings }) {
                     className="fn-input" style={{flex:1,resize:'none',fontSize:13,padding:'10px 14px'}}/>
                   <button onClick={handleSendMessage} disabled={sendingMsg||!newMsg.trim()}
                     className="btn-primary-fn" style={{flexShrink:0,alignSelf:'flex-end',padding:'10px 16px'}}>
-                    {sendingMsg?<i className="fa-solid fa-spinner fa-spin"/>:<><i className="fa-solid fa-paper-plane"/> Kirim</>}
+                    {sendingMsg?<Icon name="spinner" size={14} spin/>:<><Icon name="paper-plane" size={14} style={{marginRight:6}}/> Kirim</>}
                   </button>
                 </div>
               )}
@@ -488,9 +489,7 @@ export default function SupportPage({ settings }) {
 
       </div>
 
-      <footer className="fn-footer" data-anim="fade-up">
-        <p style={{fontSize:11,color:'#44444a'}}>© 2026 {serverName}. Support Center</p>
-      </footer>
+      <FancyFooter serverName={serverName} />
 
       {showLogin && (
         <LoginModal onClose={()=>setShowLogin(false)} onSuccess={p=>{
