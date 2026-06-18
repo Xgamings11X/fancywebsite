@@ -360,7 +360,7 @@ export default function AdminPanel() {
                             <td>
                               {p.image_url
                                 ?<img src={p.image_url} alt="" style={{width:40,height:40,objectFit:'cover',borderRadius:8,border:'1px solid rgba(255,107,0,0.1)'}} onError={e=>e.target.style.display='none'}/>
-                                :<span style={{fontSize:28}}>{p.category_icon||'📦'}</span>
+                                :<div style={{width:40,height:40,borderRadius:8,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}/>
                               }
                             </td>
                             <td>
@@ -463,7 +463,7 @@ export default function AdminPanel() {
                               ↓
                             </button>
                           </div>
-                          <span style={{fontSize:28}}>{c.icon}</span>
+                          <span style={{width:10,height:10,borderRadius:'50%',flexShrink:0,background:{orange:'var(--primary)',red:'#e74c3c',purple:'#9b59b6',blue:'#3498db',green:'#2ecc71',yellow:'#f1c40f'}[c.color]||'var(--primary)'}}/>
                           <div>
                             <p style={{fontWeight:700,color:'#fff',fontSize:14}}>{c.name}</p>
                             <p style={{fontSize:11,color:'var(--text-muted)'}}>{c.product_count||0} produk</p>
@@ -984,7 +984,7 @@ function ProductModal({ product, categories, af, onClose, onDone }) {
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
           <div style={{gridColumn:'1/-1'}}><Field label="Nama Produk *"><input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} className="admin-input" required/></Field></div>
           <Field label="Kategori"><select value={f.category_id} onChange={e=>setF(p=>({...p,category_id:e.target.value}))} className="admin-input">
-            <option value="">— Pilih —</option>{categories.map(c=><option key={c.id} value={c.id}>{c.icon} {c.name}</option>)}
+            <option value="">— Pilih —</option>{categories.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
           </select></Field>
           <Field label="Harga (Rp) *"><input type="number" value={f.price} onChange={e=>setF(p=>({...p,price:e.target.value}))} className="admin-input" required/></Field>
           <Field label="Diskon (%)">
@@ -1050,7 +1050,7 @@ function ProductModal({ product, categories, af, onClose, onDone }) {
 // ── CategoryModal ─────────────────────────────────────────────
 function CategoryModal({ category, af, onClose, onDone }) {
   const isEdit = !!category?.id;
-  const [f, setF] = useState({id:category?.id||null,name:category?.name||'',icon:category?.icon||'📦',color:category?.color||'orange',description:category?.description||'',sort_order:category?.sort_order||0,is_active:category?.is_active!==undefined?!!category.is_active:true});
+  const [f, setF] = useState({id:category?.id||null,name:category?.name||'',color:category?.color||'orange',description:category?.description||'',sort_order:category?.sort_order||0,is_active:category?.is_active!==undefined?!!category.is_active:true});
   const [saving, setSaving] = useState(false);
 
   const submit = async e => {
@@ -1066,7 +1066,6 @@ function CategoryModal({ category, af, onClose, onDone }) {
       <form onSubmit={submit} style={{display:'flex',flexDirection:'column',gap:12}}>
         <Field label="Nama *"><input value={f.name} onChange={e=>setF(p=>({...p,name:e.target.value}))} className="admin-input" required/></Field>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-          <Field label="Icon (emoji)"><input value={f.icon} onChange={e=>setF(p=>({...p,icon:e.target.value}))} className="admin-input" style={{fontSize:22}}/></Field>
           <Field label="Warna"><select value={f.color} onChange={e=>setF(p=>({...p,color:e.target.value}))} className="admin-input">
             {['orange','red','purple','blue','green','yellow'].map(c=><option key={c} value={c}>{c}</option>)}
           </select></Field>
