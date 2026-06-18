@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import ImageUpload from '../../components/ImageUpload';
+import Icon from '../components/Icon';
 
 const TABS = [
-  { id:'dashboard', label:'Dashboard',    icon:'fa-chart-line'    },
-  { id:'products',  label:'Produk',        icon:'fa-box-open'      },
-  { id:'categories',label:'Kategori',      icon:'fa-folder-open'   },
-  { id:'redeem',    label:'Redeem Code',   icon:'fa-ticket'        },
-  { id:'orders',    label:'Log Transaksi', icon:'fa-receipt'       },
-  { id:'reports',   label:'Report',        icon:'fa-flag'          },
-  { id:'settings',  label:'Pengaturan',    icon:'fa-gear'          },
+  { id:'dashboard', label:'Dashboard',    icon:'chart-line'    },
+  { id:'products',  label:'Produk',        icon:'box-open'      },
+  { id:'categories',label:'Kategori',      icon:'folder-open'   },
+  { id:'redeem',    label:'Redeem Code',   icon:'ticket'        },
+  { id:'orders',    label:'Log Transaksi', icon:'receipt'       },
+  { id:'reports',   label:'Report',        icon:'flag'          },
+  { id:'settings',  label:'Pengaturan',    icon:'gear'          },
 ];
 
 const idr = v => `Rp ${Number(v||0).toLocaleString('id-ID')}`;
@@ -152,7 +153,7 @@ export default function AdminPanel() {
           <form onSubmit={login} style={{background:'rgba(15,15,20,0.8)',border:'1px solid rgba(255,107,0,0.15)',borderRadius:16,padding:'24px 22px',display:'flex',flexDirection:'column',gap:16}}>
             {lError && (
               <div style={{background:'rgba(231,76,60,0.08)',border:'1px solid rgba(231,76,60,0.2)',borderRadius:8,padding:'10px 14px',display:'flex',gap:8,alignItems:'center'}}>
-                <i className="fa-solid fa-circle-exclamation" style={{color:'#e74c3c',flexShrink:0}}/>
+                <Icon name="circle-exclamation" size={16} color="#e74c3c"/>
                 <span style={{fontSize:13,color:'#e74c3c'}}>{lError}</span>
               </div>
             )}
@@ -168,13 +169,13 @@ export default function AdminPanel() {
                   className="admin-input" style={{paddingRight:40}} autoComplete="current-password" required/>
                 <button type="button" onClick={()=>setShowPwd(!showPwd)}
                   style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',fontSize:14}}>
-                  <i className={`fa-solid ${showPwd?'fa-eye-slash':'fa-eye'}`}/>
+                  <Icon name={showPwd?'eye-slash':'eye'} size={14}/>
                 </button>
               </div>
             </div>
             <button type="submit" disabled={lLoading||!lForm.username||!lForm.password} className="btn-primary-fn"
               style={{width:'100%',justifyContent:'center',padding:'12px',borderRadius:10,marginTop:4,fontSize:14,opacity:lLoading||!lForm.username||!lForm.password?0.5:1}}>
-              {lLoading?<><i className="fa-solid fa-spinner fa-spin"/> Memproses...</>:<><i className="fa-solid fa-lock"/> Masuk ke Admin</>}
+              {lLoading?<><Icon name="spinner" size={14} spin style={{marginRight:6}}/> Memproses...</>:<><Icon name="lock" size={14} style={{marginRight:6}}/> Masuk ke Admin</>}
             </button>
           </form>
         </div>
@@ -195,21 +196,21 @@ export default function AdminPanel() {
             {sidebar && <span style={{fontFamily:'Space Grotesk',fontWeight:700,fontSize:14,color:'#ff6b00',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Fancy Network</span>}
             <button onClick={()=>setSidebar(!sidebar)}
               style={{marginLeft:'auto',background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',fontSize:16,flexShrink:0}}>
-              <i className={`fa-solid ${sidebar?'fa-angles-left':'fa-angles-right'}`}/>
+              <Icon name={sidebar?'angles-left':'angles-right'} size={14}/>
             </button>
           </div>
           <nav style={{flex:1,padding:'10px 8px',display:'flex',flexDirection:'column',gap:3}}>
             {TABS.map(t=>(
               <button key={t.id} onClick={()=>setTab(t.id)} className={`admin-nav-btn${tab===t.id?' active':''}`}
                 style={{color:tab===t.id?'var(--primary)':'var(--text-muted)'}}>
-                <i className={`fa-solid ${t.icon}`} style={{fontSize:14,flexShrink:0,width:20,textAlign:'center'}}/>
+                <Icon name={t.icon} size={14} style={{flexShrink:0,width:20,textAlign:'center'}}/>
                 {sidebar&&<span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{t.label}</span>}
               </button>
             ))}
           </nav>
           <div style={{padding:'10px 8px',borderTop:'1px solid rgba(255,107,0,0.08)'}}>
             <button onClick={logout} className="admin-nav-btn" style={{color:'#e74c3c'}}>
-              <i className="fa-solid fa-right-from-bracket" style={{width:20,textAlign:'center'}}/>
+              <Icon name="right-from-bracket" size={14} style={{width:20,textAlign:'center'}}/>
               {sidebar&&<span>Logout</span>}
             </button>
           </div>
@@ -226,14 +227,26 @@ export default function AdminPanel() {
                 <button className="btn-ghost-fn" style={{fontSize:12}}
                   onClick={async()=>{
                     const r = await af('/api/admin/test-webhook',{method:'POST'});
-                    if(r.success) toast.success(r.message||'Test webhook terkirim!');
-                    else toast.error(r.message||'Gagal — cek DISCORD_WEBHOOK_TX');
+                    const d = r?.details || {};
+                    // Tampilkan status Admin & Player secara terpisah
+                    const adminOk  = d.admin?.ok  || d.admin?.skipped;
+                    const playerOk = d.player?.ok || d.player?.skipped;
+                    if (adminOk && playerOk) {
+                      toast.success(r.message || 'Kedua webhook terkirim!', {duration:4000});
+                    } else {
+                      // Pisahkan toast per channel agar mudah diagnosa
+                      if (!adminOk)  toast.error(`❌ Admin: ${d.admin?.message  || 'Gagal'}`, {duration:6000});
+                      else           toast.success(`✅ Admin: OK`, {duration:3000});
+                      if (d.player?.skipped) toast('ℹ️ Player: env var kosong', {duration:3000});
+                      else if (!playerOk) toast.error(`❌ Player: ${d.player?.message || 'Gagal'}`, {duration:6000});
+                      else           toast.success(`✅ Player: OK`, {duration:3000});
+                    }
                   }}>
-                  <i className="fa-brands fa-discord"/> Test Webhook
+                  <Icon name="discord" size={14} style={{marginRight:6}}/> Test Webhook
                 </button>
               )}
               <button onClick={load} className="btn-ghost-fn" style={{fontSize:12}}>
-                <i className={`fa-solid fa-rotate${loading?' fa-spin':''}`}/> Refresh
+                <Icon name="rotate" size={14} spin={loading} style={{marginRight:6}}/> Refresh
               </button>
             </div>
           </div>
@@ -246,15 +259,15 @@ export default function AdminPanel() {
                 {/* Stats */}
                 <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:14}}>
                   {[
-                    {label:'Total Order', value:stats.total,       icon:'fa-receipt',         color:'#3498db'},
-                    {label:'Sukses',      value:stats.success,     icon:'fa-circle-check',    color:'#2ecc71'},
-                    {label:'Pending',     value:stats.pending,     icon:'fa-clock',           color:'#f1c40f'},
-                    {label:'Gagal',       value:stats.failed,      icon:'fa-circle-xmark',    color:'#e74c3c'},
-                    {label:'Revenue',     value:idr(stats.revenue),icon:'fa-chart-line',      color:'var(--primary)'},
+                    {label:'Total Order', value:stats.total,       icon:'receipt',         color:'#3498db'},
+                    {label:'Sukses',      value:stats.success,     icon:'circle-check',    color:'#2ecc71'},
+                    {label:'Pending',     value:stats.pending,     icon:'clock',           color:'#f1c40f'},
+                    {label:'Gagal',       value:stats.failed,      icon:'circle-xmark',    color:'#e74c3c'},
+                    {label:'Revenue',     value:idr(stats.revenue),icon:'chart-line',      color:'var(--primary)'},
                   ].map((s,i)=>(
                     <div key={i} className="admin-stat-card">
                       <div style={{width:36,height:36,background:`${s.color}18`,borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:12}}>
-                        <i className={`fa-solid ${s.icon}`} style={{color:s.color,fontSize:14}}/>
+                        <Icon name={s.icon} size={14} color={s.color}/>
                       </div>
                       <div style={{fontFamily:'Space Grotesk',fontSize:20,fontWeight:700,color:'#fff'}}>{s.value}</div>
                       <div style={{fontSize:11,color:'var(--text-muted)',fontWeight:600,textTransform:'uppercase',letterSpacing:0.5,marginTop:3}}>{s.label}</div>
@@ -311,11 +324,11 @@ export default function AdminPanel() {
                           finally { setProdSortSaving(false); }
                         }}
                         style={{background:'#27ae60',borderColor:'#27ae60',fontSize:12,padding:'7px 14px'}}>
-                        <i className={`fa-solid ${prodSortSaving?'fa-spinner fa-spin':'fa-floppy-disk'}`}/> {prodSortSaving?'Menyimpan...':'Simpan Urutan'}
+                        <Icon name={prodSortSaving?'spinner':'floppy-disk'} size={13} spin={prodSortSaving} style={{marginRight:6}}/> {prodSortSaving?'Menyimpan...':'Simpan Urutan'}
                       </button>
                     )}
                     <button className="btn-primary-fn" onClick={()=>{setEditProduct({});setShowProductModal(true);}}>
-                      <i className="fa-solid fa-plus"/> Tambah Produk
+                      <Icon name="plus" size={14} style={{marginRight:6}}/> Tambah Produk
                     </button>
                   </div>
                 </div>
@@ -379,11 +392,11 @@ export default function AdminPanel() {
                               <div style={{display:'flex',gap:6}}>
                                 <button onClick={()=>{setEditProduct(p);setShowProductModal(true);}}
                                   style={{background:'rgba(255,107,0,0.1)',border:'1px solid rgba(255,107,0,0.2)',color:'var(--primary)',padding:'6px 10px',borderRadius:7,cursor:'pointer',fontSize:13}}>
-                                  <i className="fa-solid fa-pen"/>
+                                  <Icon name="pen" size={13}/>
                                 </button>
                                 <button onClick={()=>del(`/api/admin/products?id=${p.id}&permanent=1`,'Hapus produk ini permanen?')}
                                   style={{background:'rgba(231,76,60,0.1)',border:'1px solid rgba(231,76,60,0.2)',color:'#e74c3c',padding:'6px 10px',borderRadius:7,cursor:'pointer',fontSize:13}}>
-                                  <i className="fa-solid fa-trash"/>
+                                  <Icon name="trash" size={13}/>
                                 </button>
                               </div>
                             </td>
@@ -417,11 +430,11 @@ export default function AdminPanel() {
                           finally { setCatSortSaving(false); }
                         }}
                         style={{background:'#27ae60',borderColor:'#27ae60',fontSize:12,padding:'7px 14px'}}>
-                        <i className={`fa-solid ${catSortSaving?'fa-spinner fa-spin':'fa-floppy-disk'}`}/> {catSortSaving?'Menyimpan...':'Simpan Urutan'}
+                        <Icon name={catSortSaving?'spinner':'floppy-disk'} size={13} spin={catSortSaving} style={{marginRight:6}}/> {catSortSaving?'Menyimpan...':'Simpan Urutan'}
                       </button>
                     )}
                     <button className="btn-primary-fn" onClick={()=>{setEditCategory({});setShowCategoryModal(true);}}>
-                      <i className="fa-solid fa-plus"/> Tambah Kategori
+                      <Icon name="plus" size={14} style={{marginRight:6}}/> Tambah Kategori
                     </button>
                   </div>
                 </div>
@@ -466,11 +479,11 @@ export default function AdminPanel() {
                         <div style={{display:'flex',gap:6}}>
                           <button onClick={()=>{setEditCategory(c);setShowCategoryModal(true);}}
                             style={{background:'rgba(255,107,0,0.1)',border:'1px solid rgba(255,107,0,0.2)',color:'var(--primary)',padding:'5px 9px',borderRadius:7,cursor:'pointer',fontSize:12}}>
-                            <i className="fa-solid fa-pen"/>
+                            <Icon name="pen" size={13}/>
                           </button>
                           <button onClick={()=>del(`/api/admin/categories?id=${c.id}`,'Hapus kategori ini?')}
                             style={{background:'rgba(231,76,60,0.1)',border:'1px solid rgba(231,76,60,0.2)',color:'#e74c3c',padding:'5px 9px',borderRadius:7,cursor:'pointer',fontSize:12}}>
-                            <i className="fa-solid fa-trash"/>
+                            <Icon name="trash" size={13}/>
                           </button>
                         </div>
                       </div>
@@ -488,7 +501,7 @@ export default function AdminPanel() {
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <p style={{color:'var(--text-muted)',fontSize:13}}>{codes.length} kode aktif</p>
                   <button className="btn-primary-fn" onClick={()=>setShowRedeemModal(true)}>
-                    <i className="fa-solid fa-plus"/> Buat Kode
+                    <Icon name="plus" size={14} style={{marginRight:6}}/> Buat Kode
                   </button>
                 </div>
                 <div className="admin-card" style={{overflow:'hidden'}}>
@@ -503,7 +516,7 @@ export default function AdminPanel() {
                                 <code style={{fontWeight:700,color:'var(--primary-light)',background:'rgba(255,107,0,0.08)',padding:'3px 8px',borderRadius:4,fontFamily:'monospace'}}>{c.code}</code>
                                 <button onClick={()=>{navigator.clipboard?.writeText(c.code);toast.success('Kode disalin!');}}
                                   style={{background:'none',border:'none',cursor:'pointer',color:'var(--text-muted)',fontSize:12}}>
-                                  <i className="fa-solid fa-copy"/>
+                                  <Icon name="copy" size={13}/>
                                 </button>
                               </div>
                             </td>
@@ -514,7 +527,7 @@ export default function AdminPanel() {
                             <td>
                               <button onClick={()=>del(`/api/admin/redeem?id=${c.id}`,'Hapus kode ini?')}
                                 style={{background:'rgba(231,76,60,0.1)',border:'1px solid rgba(231,76,60,0.2)',color:'#e74c3c',padding:'5px 9px',borderRadius:7,cursor:'pointer',fontSize:12}}>
-                                <i className="fa-solid fa-trash"/>
+                                <Icon name="trash" size={13}/>
                               </button>
                             </td>
                           </tr>
@@ -563,7 +576,7 @@ export default function AdminPanel() {
                         if(r.success) { toast.success(`${r.deleted} order dihapus`); load(); }
                         else toast.error(r.message||'Gagal');
                       }}>
-                      <i className="fa-solid fa-trash"/> Hapus Semua
+                      <Icon name="trash" size={13} style={{marginRight:6}}/> Hapus Semua
                     </button>
                   </div>
                 </div>
@@ -594,7 +607,7 @@ export default function AdminPanel() {
                                     if(r.success)toast.success('Plugin dinotifikasi!'); else toast.error('Gagal: '+(r.result?.error||'unknown'));
                                     load();
                                   }}>
-                                  <i className="fa-solid fa-paper-plane"/> Kirim
+                                  <Icon name="paper-plane" size={13} style={{marginRight:6}}/> Kirim
                                 </button>
                               )}
                             </td>
@@ -629,13 +642,13 @@ export default function AdminPanel() {
                       if(r.success) { toast.success(r.message||'Cleanup selesai'); load(); }
                       else toast.error(r.message||'Cleanup gagal');
                     }}>
-                    <i className="fa-solid fa-broom"/> Jalankan Cleanup
+                    <Icon name="broom" size={13} style={{marginRight:6}}/> Jalankan Cleanup
                   </button>
                 </div>
 
                 {tickets.length===0 ? (
                   <div style={{textAlign:'center',padding:'60px 0',color:'var(--text-muted)'}}>
-                    <i className="fa-solid fa-inbox" style={{fontSize:36,display:'block',marginBottom:12}}/>
+                    <Icon name="inbox" size={36} style={{display:'block',marginBottom:12}}/>
                     <p>Belum ada tiket {reportFilter!=='all'&&`(${reportFilter})`}</p>
                   </div>
                 ) : (
@@ -652,13 +665,13 @@ export default function AdminPanel() {
             {tab==='settings' && (
               <div>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-                  <h2 className="font-space" style={{fontSize:17,fontWeight:700}}><i className="fa-solid fa-gear" style={{marginRight:8,color:'var(--primary)'}}/>Pengaturan Website</h2>
+                  <h2 className="font-space" style={{fontSize:17,fontWeight:700}}><Icon name="gear" size={16} color="var(--primary)" style={{marginRight:8}}/>Pengaturan Website</h2>
                 </div>
                 <div style={{display:'grid',gap:18}}>
                   {/* Logo Upload */}
                   <div style={{background:'rgba(255,107,0,0.04)',border:'1px solid rgba(255,107,0,0.15)',borderRadius:12,padding:'18px 20px'}}>
                     <h3 className="font-space" style={{fontSize:13,fontWeight:700,color:'var(--primary)',marginBottom:14,letterSpacing:'0.05em'}}>
-                      <i className="fa-solid fa-image" style={{marginRight:7}}/>LOGO &amp; FAVICON
+                      <Icon name="image" size={13} style={{marginRight:7}}/>LOGO &amp; FAVICON
                     </h3>
                     <p style={{fontSize:12,color:'var(--text-muted)',marginBottom:14}}>
                       Logo ini digunakan di Navbar dan secara otomatis juga menjadi Favicon browser. Ukuran disarankan: <strong style={{color:'#fff'}}>256×256px</strong> atau <strong style={{color:'#fff'}}>512×512px</strong>, format PNG transparan.
@@ -676,7 +689,7 @@ export default function AdminPanel() {
                   {/* General settings */}
                   <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.07)',borderRadius:12,padding:'18px 20px'}}>
                     <h3 className="font-space" style={{fontSize:13,fontWeight:700,color:'var(--text-muted)',marginBottom:14,letterSpacing:'0.05em'}}>
-                      <i className="fa-solid fa-server" style={{marginRight:7}}/>INFORMASI SERVER
+                      <Icon name="server" size={13} style={{marginRight:7}}/>INFORMASI SERVER
                     </h3>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14}}>
                       {[
@@ -715,8 +728,8 @@ export default function AdminPanel() {
                     }}
                   >
                     {settingsSaving
-                      ? <><i className="fa-solid fa-spinner fa-spin"/> Menyimpan...</>
-                      : <><i className="fa-solid fa-floppy-disk"/> Simpan Pengaturan</>}
+                      ? <><Icon name="spinner" size={14} spin style={{marginRight:6}}/> Menyimpan...</>
+                      : <><Icon name="floppy-disk" size={14} style={{marginRight:6}}/> Simpan Pengaturan</>}
                   </button>
                 </div>
               </div>
@@ -743,9 +756,9 @@ function TicketCard({ tk, af, onRefresh }) {
   const msgEndRef = useRef(null);
 
   const tInfo = {
-    banding:{icon:'fa-gavel',color:'#e67e22'}, bug:{icon:'fa-bug',color:'#3498db'},
-    report_player:{icon:'fa-user-xmark',color:'#e74c3c'}, lainnya:{icon:'fa-comment-dots',color:'#9b59b6'},
-  }[tk.type] || {icon:'fa-ticket',color:'var(--primary)'};
+    banding:{icon:'gavel',color:'#e67e22'}, bug:{icon:'bug',color:'#3498db'},
+    report_player:{icon:'user-xmark',color:'#e74c3c'}, lainnya:{icon:'comment-dots',color:'#9b59b6'},
+  }[tk.type] || {icon:'ticket',color:'var(--primary)'};
 
   const st = {
     open:{label:'Menunggu',color:'#f1c40f'}, in_review:{label:'Review',color:'#3498db'},
@@ -806,7 +819,7 @@ function TicketCard({ tk, af, onRefresh }) {
       {isClosed && tk.closed_at && timeLeft !== null && (
         <div style={{background:'rgba(231,76,60,0.08)',border:'1px solid rgba(231,76,60,0.25)',borderRadius:8,padding:'8px 14px',marginBottom:14,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <i className="fa-solid fa-clock" style={{color:'#e74c3c',fontSize:13}}/>
+            <Icon name="clock" size={13} color="#e74c3c" style={{marginRight:4}}/>
             {timeLeft > 0
               ? <span style={{fontSize:12,color:'#e74c3c',fontWeight:700}}>
                   Auto-cleanup dalam <strong>{fmtTime(Math.ceil(timeLeft/1000))}</strong> — arsip akan dikirim ke webhook
@@ -826,7 +839,7 @@ function TicketCard({ tk, af, onRefresh }) {
       <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,marginBottom:10}}>
         <div style={{display:'flex',alignItems:'center',gap:10,flex:1,minWidth:0}}>
           <div style={{width:36,height:36,borderRadius:8,background:`${tInfo.color}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-            <i className={`fa-solid ${tInfo.icon}`} style={{color:tInfo.color,fontSize:14}}/>
+            <Icon name={tInfo.icon} size={14} color={tInfo.color}/>
           </div>
           <div style={{minWidth:0}}>
             <p style={{fontWeight:700,color:'#fff',fontSize:14,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{tk.subject}</p>
@@ -843,7 +856,7 @@ function TicketCard({ tk, af, onRefresh }) {
         <div style={{display:'flex',gap:6,alignItems:'center',flexShrink:0}}>
           <button onClick={()=>setExpanded(!expanded)}
             style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-muted)',padding:'5px 10px',borderRadius:7,cursor:'pointer',fontSize:12,display:'flex',alignItems:'center',gap:5}}>
-            <i className={`fa-solid fa-chevron-${expanded?'up':'down'}`} style={{fontSize:10}}/>
+            <Icon name={expanded?'chevron-up':'chevron-down'} size={10}/>
             {expanded ? 'Tutup' : 'Buka Chat'}
           </button>
           <select defaultValue={tk.status} onChange={async e=>{
@@ -858,8 +871,8 @@ function TicketCard({ tk, af, onRefresh }) {
         </div>
       </div>
 
-      {tk.target_player && <p style={{fontSize:12,color:'#e74c3c',marginBottom:6}}><i className="fa-solid fa-user-xmark" style={{marginRight:6}}/>Target: <strong>{tk.target_player}</strong></p>}
-      {tk.evidence_url  && <a href={tk.evidence_url} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:'#3498db',display:'inline-flex',alignItems:'center',gap:4,marginBottom:8,textDecoration:'none'}}><i className="fa-solid fa-link"/>Lihat Bukti</a>}
+      {tk.target_player && <p style={{fontSize:12,color:'#e74c3c',marginBottom:6}}><Icon name="user-xmark" size={12} style={{marginRight:6}}/>Target: <strong>{tk.target_player}</strong></p>}
+      {tk.evidence_url  && <a href={tk.evidence_url} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:'#3498db',display:'inline-flex',alignItems:'center',gap:4,marginBottom:8,textDecoration:'none'}}><Icon name="link" size={12} style={{marginRight:4}}/>Lihat Bukti</a>}
 
       {/* Chat area - expanded */}
       {expanded && (
@@ -898,7 +911,7 @@ function TicketCard({ tk, af, onRefresh }) {
                 className="admin-input" style={{flex:1,resize:'none',fontSize:12}}/>
               <button disabled={sending||!msg.trim()} className="btn-primary-fn"
                 style={{flexShrink:0,alignSelf:'flex-end',padding:'10px 14px'}} onClick={sendMsg}>
-                {sending ? <i className="fa-solid fa-spinner fa-spin"/> : <><i className="fa-solid fa-paper-plane"/> Kirim</>}
+                {sending ? <Icon name="spinner" size={13} spin/> : <><Icon name="paper-plane" size={13} style={{marginRight:6}}/> Kirim</>}
               </button>
             </div>
           )}
@@ -918,7 +931,7 @@ function ModalWrap({ title, onClose, children }) {
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22}}>
             <h2 style={{fontFamily:'Space Grotesk',fontWeight:700,fontSize:18,color:'#fff'}}>{title}</h2>
             <button onClick={onClose} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-muted)',width:32,height:32,borderRadius:8,cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <i className="fa-solid fa-xmark"/>
+              <Icon name="xmark" size={14}/>
             </button>
           </div>
           {children}
@@ -1023,7 +1036,7 @@ function ProductModal({ product, categories, af, onClose, onDone }) {
         <div style={{display:'flex',gap:10}}>
           <button type="button" onClick={onClose} className="btn-ghost-fn" style={{flex:1,justifyContent:'center'}}>Batal</button>
           <button type="submit" disabled={saving} className="btn-primary-fn" style={{flex:1,justifyContent:'center'}}>
-            {saving?<><i className="fa-solid fa-spinner fa-spin"/> Menyimpan...</>:<><i className="fa-solid fa-floppy-disk"/> {isEdit?'Update':'Tambah'} Produk</>}
+            {saving?<><Icon name="spinner" size={14} spin style={{marginRight:6}}/> Menyimpan...</>:<><Icon name="floppy-disk" size={14} style={{marginRight:6}}/> {isEdit?'Update':'Tambah'} Produk</>}
           </button>
         </div>
       </form>
@@ -1062,7 +1075,7 @@ function CategoryModal({ category, af, onClose, onDone }) {
         <div style={{display:'flex',gap:10,marginTop:6}}>
           <button type="button" onClick={onClose} className="btn-ghost-fn" style={{flex:1,justifyContent:'center'}}>Batal</button>
           <button type="submit" disabled={saving} className="btn-primary-fn" style={{flex:1,justifyContent:'center'}}>
-            {saving?<i className="fa-solid fa-spinner fa-spin"/>:<><i className="fa-solid fa-floppy-disk"/> Simpan</>}
+            {saving?<Icon name="spinner" size={14} spin/>:<><Icon name="floppy-disk" size={14} style={{marginRight:6}}/> Simpan</>}
           </button>
         </div>
       </form>
@@ -1106,7 +1119,7 @@ function RedeemModal({ af, onClose, onDone }) {
         <div style={{display:'flex',gap:10,marginTop:6}}>
           <button type="button" onClick={onClose} className="btn-ghost-fn" style={{flex:1,justifyContent:'center'}}>Batal</button>
           <button type="submit" disabled={saving} className="btn-primary-fn" style={{flex:1,justifyContent:'center'}}>
-            {saving?<i className="fa-solid fa-spinner fa-spin"/>:<><i className="fa-solid fa-ticket"/> Buat Kode</>}
+            {saving?<Icon name="spinner" size={14} spin/>:<><Icon name="ticket" size={14} style={{marginRight:6}}/> Buat Kode</>}
           </button>
         </div>
       </form>
