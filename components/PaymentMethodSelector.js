@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import Icon from './Icon';
 /**
  * components/PaymentMethodSelector.js  — v2 (FIXED)
  *
@@ -16,31 +18,31 @@
  *   7. Dot indikator aktif diperbesar (8px) dan diberi ring transparan.
  */
 
+/**
+ * PAYMENT_CATEGORIES — Disesuaikan dengan metode AKTIF di Midtrans Production.
+ *
+ * Aktif   : gopay_qris, gopay, bni_va, bri_va, cimb_va, permata_va, mandiri_va
+ * Dihapus : qris (statis — sedang proses), shopeepay, bca_va, other_va, dana
+ */
 export const PAYMENT_CATEGORIES = [
   {
     id:    'qris',
     label: 'QRIS',
-    icon:  'fa-qrcode',
+    icon:  'receipt',
     color: '#00a651',
     methods: [
       {
-        key:   'qris',
-        label: 'QRIS (Semua Scanner)',
-        desc:  'Scan dengan apps apapun',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_QRIS.svg/120px-Logo_QRIS.svg.png',
-      },
-      {
         key:   'gopay_qris',
-        label: 'QRIS via GoPay',
-        desc:  'Bayar dengan GoPay / Gopay+',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gopay_logo.svg/120px-Gopay_logo.svg.png',
+        label: 'QRIS Dinamis',
+        desc:  'Scan via GoPay / semua scanner',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_QRIS.svg/120px-Logo_QRIS.svg.png',
       },
     ],
   },
   {
     id:    'ewallet',
     label: 'E-Wallet',
-    icon:  'fa-wallet',
+    icon:  'bolt',
     color: '#6c5ce7',
     methods: [
       {
@@ -49,32 +51,14 @@ export const PAYMENT_CATEGORIES = [
         desc:  'Deeplink / QR GoPay',
         logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gopay_logo.svg/120px-Gopay_logo.svg.png',
       },
-      {
-        key:   'shopeepay',
-        label: 'ShopeePay',
-        desc:  'Deeplink / QR ShopeePay',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/f/fe/Shopee.svg',
-      },
     ],
   },
   {
     id:    'bank_transfer',
     label: 'Bank Transfer / VA',
-    icon:  'fa-building-columns',
+    icon:  'server',
     color: '#0984e3',
     methods: [
-      {
-        key:   'bca_va',
-        label: 'BCA Virtual Account',
-        desc:  'ATM / m-BCA / KlikBCA',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Bank_Central_Asia.svg/120px-Bank_Central_Asia.svg.png',
-      },
-      {
-        key:   'mandiri_va',
-        label: 'Mandiri Bill Payment',
-        desc:  'ATM / Livin by Mandiri',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Bank_Mandiri_logo_2016.svg/120px-Bank_Mandiri_logo_2016.svg.png',
-      },
       {
         key:   'bni_va',
         label: 'BNI Virtual Account',
@@ -88,16 +72,22 @@ export const PAYMENT_CATEGORIES = [
         logo:  'https://upload.wikimedia.org/wikipedia/commons/f/f5/BANK_BRI_logo_%28vertical%29.svg',
       },
       {
+        key:   'cimb_va',
+        label: 'CIMB Niaga VA',
+        desc:  'ATM / octo mobile',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/CIMB_Niaga.svg/120px-CIMB_Niaga.svg.png',
+      },
+      {
         key:   'permata_va',
         label: 'Permata Virtual Account',
         desc:  'ATM / PermataMobile X',
         logo:  'https://upload.wikimedia.org/wikipedia/commons/f/ff/Permata_Bank_%282024%29.svg',
       },
       {
-        key:   'other_va',
-        label: 'Bank Lainnya (VA BNI)',
-        desc:  'Semua bank via Virtual Account BNI',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/f/f0/Bank_Negara_Indonesia_logo_%282004%29.svg',
+        key:   'mandiri_va',
+        label: 'Mandiri Bill Payment',
+        desc:  'ATM / Livin by Mandiri',
+        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Bank_Mandiri_logo_2016.svg/120px-Bank_Mandiri_logo_2016.svg.png',
       },
     ],
   },
@@ -140,23 +130,21 @@ function PaymentLogo({ logo, icon, label, catColor, isActive }) {
     );
   }
 
-  // Fallback: ikon Font Awesome dengan warna kategori
+  // Fallback: Icon SVG dengan warna kategori
   return (
     <span style={boxStyle}>
-      <i
-        className={`fa-solid ${icon || 'fa-building-columns'}`}
-        style={{
-          fontSize:   22,
-          color:      isActive ? catColor : 'rgba(255,255,255,0.35)',
-          transition: 'color 0.18s',
-        }}
+      <Icon
+        name={icon || 'receipt'}
+        size={22}
+        color={isActive ? catColor : 'rgba(255,255,255,0.35)'}
+        style={{transition:'color 0.18s'}}
       />
     </span>
   );
 }
 
 // ── useState import ───────────────────────────────────────────────────────────
-import { useState } from 'react';
+
 
 // ── Komponen utama ────────────────────────────────────────────────────────────
 export default function PaymentMethodSelector({ selected, onChange, disabled = false }) {
@@ -174,10 +162,7 @@ export default function PaymentMethodSelector({ selected, onChange, disabled = f
             paddingBottom: 7,
             borderBottom:  `1px solid ${cat.color}35`,
           }}>
-            <i
-              className={`fa-solid ${cat.icon}`}
-              style={{ color: cat.color, fontSize: 11, width: 14, textAlign: 'center' }}
-            />
+            <Icon name={cat.icon} size={11} color={cat.color} style={{width:14,textAlign:'center'}}/>
             <span style={{
               fontSize:      10,
               fontWeight:    700,

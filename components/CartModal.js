@@ -11,6 +11,7 @@
  */
 
 import { useState } from 'react';
+import Icon from './Icon';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import PaymentMethodSelector, { PAYMENT_CATEGORIES } from './PaymentMethodSelector';
@@ -37,7 +38,7 @@ export default function CartModal({ product, player, onClose }) {
   const [redeemInfo,    setRedeemInfo]    = useState(null);
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [discordUser,   setDiscordUser]   = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('qris'); // default QRIS
+  const [paymentMethod, setPaymentMethod] = useState('gopay_qris'); // default QRIS Dinamis (aktif)
 
   const basePrice  = product.price;
   const finalPrice = redeemInfo ? redeemInfo.finalPrice  : basePrice;
@@ -134,7 +135,7 @@ export default function CartModal({ product, player, onClose }) {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                 <h2 className="font-space" style={{ fontSize: 18, fontWeight: 700 }}>Konfirmasi Pembelian</h2>
                 <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className="fa-solid fa-xmark"/>
+                  <Icon name="xmark" size={14}/>
                 </button>
               </div>
 
@@ -155,7 +156,7 @@ export default function CartModal({ product, player, onClose }) {
 
               {/* Player */}
               <div style={{ background: 'rgba(46,204,113,0.04)', border: '1px solid rgba(46,204,113,0.15)', borderRadius: 10, padding: '10px 14px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <i className="fa-solid fa-shield-halved" style={{ color: '#2ecc71', fontSize: 14 }}/>
+                <Icon name="shield-halved" size={14} color="#2ecc71"/>
                 <div>
                   <p style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700 }}>DIKIRIM KE</p>
                   <p style={{ fontWeight: 700, fontSize: 13, color: '#fff' }}>{player?.displayName || player?.username}</p>
@@ -165,13 +166,13 @@ export default function CartModal({ product, player, onClose }) {
               {/* Discord */}
               <div style={{ marginBottom: 14 }}>
                 <div style={{ background: 'rgba(88,101,242,0.06)', border: '1px solid rgba(88,101,242,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <i className="fa-brands fa-discord" style={{ color: '#5865F2', fontSize: 15, flexShrink: 0 }}/>
+                  <Icon name="discord" size={15} color="#5865F2" style={{flexShrink:0}}/>
                   <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.4 }}>
                     <strong style={{ color: '#fff' }}>Wajib:</strong> Username Discord diperlukan untuk klaim role otomatis setelah pembayaran.
                   </p>
                 </div>
                 <div style={{ position: 'relative' }}>
-                  <i className="fa-brands fa-discord" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#5865F2', fontSize: 13 }}/>
+                  <Icon name="discord" size={13} color="#5865F2" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}/>
                   <input
                     value={discordUser}
                     onChange={e => setDiscordUser(e.target.value)}
@@ -182,7 +183,7 @@ export default function CartModal({ product, player, onClose }) {
                 </div>
                 {discordUser.trim() && (
                   <p style={{ fontSize: 11, color: '#5865F2', marginTop: 5 }}>
-                    <i className="fa-solid fa-check-circle" style={{ marginRight: 4 }}/>
+                    <Icon name="circle-check" size={12} style={{marginRight:4}}/>
                     Discord: <strong>{discordUser.trim()}</strong>
                   </p>
                 )}
@@ -192,7 +193,7 @@ export default function CartModal({ product, player, onClose }) {
               <div style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ position: 'relative', flex: 1 }}>
-                    <i className="fa-solid fa-tag" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: 12 }}/>
+                    <Icon name="ticket" size={12} color="var(--text-muted)" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}/>
                     <input
                       value={redeemInput}
                       onChange={e => setRedeemInput(e.target.value.toUpperCase())}
@@ -210,7 +211,7 @@ export default function CartModal({ product, player, onClose }) {
                       </button>
                   }
                 </div>
-                {redeemInfo && <p style={{ fontSize: 12, color: '#2ecc71', marginTop: 6 }}><i className="fa-solid fa-check-circle" style={{ marginRight: 4 }}/>Diskon {idr(discount)} diterapkan</p>}
+                {redeemInfo && <p style={{ fontSize: 12, color: '#2ecc71', marginTop: 6 }}><Icon name="circle-check" size={12} style={{marginRight:4}}/>Diskon {idr(discount)} diterapkan</p>}
               </div>
 
               {/* Total */}
@@ -231,12 +232,12 @@ export default function CartModal({ product, player, onClose }) {
                 className="btn-primary-fn"
                 style={{ width: '100%', justifyContent: 'center', padding: '13px', fontSize: 14, borderRadius: 10, opacity: !discordUser.trim() ? 0.6 : 1 }}
               >
-                <i className="fa-solid fa-arrow-right"/> Pilih Metode Pembayaran
+                <Icon name="arrow-right" size={14} style={{marginRight:6}}/> Pilih Metode Pembayaran
               </button>
 
               {!discordUser.trim() && (
                 <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(88,101,242,0.8)', marginTop: 8 }}>
-                  <i className="fa-brands fa-discord" style={{ marginRight: 4 }}/>Isi username Discord untuk melanjutkan
+                  <Icon name="discord" size={12} style={{marginRight:4}}/>Isi username Discord untuk melanjutkan
                 </p>
               )}
             </>
@@ -248,14 +249,14 @@ export default function CartModal({ product, player, onClose }) {
               {/* Header */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
                 <button onClick={() => setStep('confirm')} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <i className="fa-solid fa-arrow-left"/>
+                  <Icon name="arrow-left" size={14}/>
                 </button>
                 <div style={{ flex: 1 }}>
                   <h2 className="font-space" style={{ fontSize: 17, fontWeight: 700 }}>Pilih Metode Pembayaran</h2>
                   <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Total: <strong style={{ color: 'var(--primary-light)' }}>{idr(finalPrice)}</strong></p>
                 </div>
                 <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-muted)', width: 32, height: 32, borderRadius: 8, cursor: 'pointer', fontSize: 15, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className="fa-solid fa-xmark"/>
+                  <Icon name="xmark" size={14}/>
                 </button>
               </div>
 
@@ -270,7 +271,7 @@ export default function CartModal({ product, player, onClose }) {
 
               {/* Selected method preview */}
               <div style={{ background: `${methodMeta.color}12`, border: `1px solid ${methodMeta.color}40`, borderRadius: 10, padding: '10px 14px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <i className="fa-solid fa-circle-check" style={{ color: methodMeta.color, fontSize: 14, flexShrink: 0 }}/>
+                <Icon name="circle-check" size={14} color={methodMeta.color} style={{flexShrink:0}}/>
                 <div>
                   <p style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700 }}>METODE DIPILIH</p>
                   <p style={{ fontWeight: 700, fontSize: 13, color: '#fff' }}>{methodMeta.label}</p>
@@ -286,12 +287,12 @@ export default function CartModal({ product, player, onClose }) {
               >
                 {loading
                   ? <><span className="fn-spinner" style={{ width: 16, height: 16, borderWidth: 2 }}/> Memproses...</>
-                  : <><i className="fa-solid fa-lock"/> Bayar {idr(finalPrice)}</>
+                  : <><Icon name="lock" size={14} style={{marginRight:6}}/> Bayar {idr(finalPrice)}</>
                 }
               </button>
 
               <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-muted)', marginTop: 10 }}>
-                <i className="fa-solid fa-shield-halved" style={{ marginRight: 4, color: '#2ecc71' }}/>
+                <Icon name="shield-halved" size={12} color="#2ecc71" style={{marginRight:4}}/>
                 Pembayaran aman via Midtrans
               </p>
             </>

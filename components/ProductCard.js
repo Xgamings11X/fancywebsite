@@ -63,7 +63,7 @@ export default function ProductCard({ product, index = 0, onBuy }) {
   return (
     <div
       /* CLASS fn-card, rank-card, product-card-enter WAJIB ADA — animasi bergantung pada ini */
-      className={`fn-card rank-card product-card-enter relative flex flex-col overflow-hidden rounded-[24px] border h-[460px] transition-all duration-300 hover:-translate-y-1 ${
+      className={`fn-card rank-card product-card-enter relative flex flex-col overflow-hidden rounded-[24px] border h-[420px] transition-all duration-300 hover:-translate-y-1 ${
         isPopular
           ? 'rank-card-popular border-[var(--primary)] bg-[var(--primary)] text-white shadow-[0_8px_30px_rgba(255,107,0,0.25)]'
           : 'text-white'

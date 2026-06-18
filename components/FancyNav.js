@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import LogoImage, { useTransparentLogo } from './LogoImage';
+import Icon from './Icon';
 
 export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -68,13 +69,13 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
               )}
             </div>
             <button onClick={onLogout} className="btn-login-nav" style={{color:'var(--text-muted)',fontSize:12}}>
-              <i className="fa-solid fa-right-from-bracket"/>
+              <Icon name="right-from-bracket" size={14}/>
               <span className="hidden sm:inline">Keluar</span>
             </button>
           </div>
         ) : (
           <button onClick={onLoginClick} className="btn-login-nav">
-            <i className="fa-solid fa-right-to-bracket"/> Login
+            <Icon name="right-to-bracket" size={14} style={{marginRight:6}}/> Login
           </button>
         )}
 
@@ -87,7 +88,7 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
             transition:'all 0.3s ease',
           }}
           onClick={() => setMenuOpen(!menuOpen)}>
-          <i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`}
+          <Icon name={menuOpen ? "xmark" : "bars"}
             style={{transition:'transform 0.35s cubic-bezier(0.34,1.56,0.64,1)',
               transform: menuOpen ? 'rotate(90deg) scale(1.1)' : 'rotate(0deg) scale(1)'}}/>
         </button>
@@ -123,13 +124,13 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
           {!player && (
             <button onClick={() => { setMenuOpen(false); onLoginClick?.(); }}
               className="btn-primary-fn justify-center w-full">
-              <i className="fa-solid fa-right-to-bracket"/> Login
+              <Icon name="right-to-bracket" size={14} style={{marginRight:6}}/> Login
             </button>
           )}
           {player && (
             <button onClick={() => { setMenuOpen(false); onLogout?.(); }}
               className="btn-ghost-fn justify-center w-full">
-              <i className="fa-solid fa-right-from-bracket"/> Keluar ({player.displayName||player.username})
+              <Icon name="right-from-bracket" size={14}/> Keluar ({player.displayName||player.username})
             </button>
           )}
         </div>
