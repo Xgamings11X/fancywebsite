@@ -323,7 +323,7 @@ export default function AdminPanel() {
                   <div style={{overflowX:'auto'}}>
                     <table className="admin-table" style={{minWidth:700}}>
                       <thead><tr>
-                        {['Urutan','Gambar','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
+                        {['Urutan','Nama','Harga','Reward Trigger','Status','Aksi'].map(h=><th key={h}>{h}</th>)}
                       </tr></thead>
                       <tbody>
                         {products.map((p,idx)=>(
@@ -356,12 +356,6 @@ export default function AdminPanel() {
                                   ↓
                                 </button>
                               </div>
-                            </td>
-                            <td>
-                              {p.image_url
-                                ?<img src={p.image_url} alt="" style={{width:40,height:40,objectFit:'cover',borderRadius:8,border:'1px solid rgba(255,107,0,0.1)'}} onError={e=>e.target.style.display='none'}/>
-                                :<div style={{width:40,height:40,borderRadius:8,background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)'}}/>
-                              }
                             </td>
                             <td>
                               <p style={{fontWeight:700,color:'#fff'}}>{p.name}</p>
@@ -952,7 +946,7 @@ function ProductModal({ product, categories, af, onClose, onDone }) {
     id:product?.id||null, name:product?.name||'', category_id:product?.category_id||'',
     description:product?.description||'', price:product?.price||'',
     discount_percent: existingDiscount || '',
-    image_url:product?.image_url||'', badge:product?.badge||'', badge_color:product?.badge_color||'orange',
+    badge:product?.badge||'', badge_color:product?.badge_color||'orange',
     reward_trigger:product?.reward_trigger||'', purchase_limit:product?.purchase_limit||0,
     limit_scope:product?.limit_scope||'per_product', sort_order:product?.sort_order||0,
     is_active:product?.is_active!==undefined?!!product.is_active:true, features:pf(product?.features),
@@ -1007,16 +1001,6 @@ function ProductModal({ product, categories, af, onClose, onDone }) {
             <input value={f.reward_trigger} onChange={e=>setF(p=>({...p,reward_trigger:e.target.value}))} className="admin-input" placeholder="contoh: rank_vip" style={{fontFamily:'monospace'}}/>
             <p style={{fontSize:11,color:'var(--text-muted)',marginTop:5}}>ID reward di config.yml plugin ShadowynAPI</p>
           </Field>
-          <div style={{gridColumn:'1/-1'}}><Field label="Gambar Produk">
-            <ImageUpload
-              value={f.image_url}
-              onChange={url => setF(p=>({...p, image_url: url}))}
-              label=""
-              hint="JPG, PNG, WEBP, GIF · Maks 2MB"
-              previewSize={72}
-              adminToken={typeof window!=='undefined' ? localStorage.getItem('admin_token')||'' : ''}
-            />
-          </Field></div>
           <div style={{gridColumn:'1/-1'}}><Field label="Deskripsi"><textarea value={f.description} onChange={e=>setF(p=>({...p,description:e.target.value}))} className="admin-input" rows={2} style={{resize:'none'}}/></Field></div>
           <div style={{gridColumn:'1/-1'}}><Field label="Fitur/Benefit (satu per baris)"><textarea value={f.features} onChange={e=>setF(p=>({...p,features:e.target.value}))} className="admin-input" rows={4} style={{resize:'none'}} placeholder={"Prefix [VIP]\nKit setiap hari\nFly di spawn"}/></Field></div>
           <Field label="Badge Text"><input value={f.badge} onChange={e=>setF(p=>({...p,badge:e.target.value}))} className="admin-input" placeholder="BEST SELLER"/></Field>
