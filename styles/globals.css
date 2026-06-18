@@ -115,10 +115,11 @@ body {
 .btn-primary-fn::before {
   content: '';
   position: absolute;
-  top: -150%; 
-  left: 150%;
-  width: 250%; 
-  height: 250%; 
+  /* Pin position to match animation start; movement via transform only (GPU composited) */
+  top: -140%;
+  left: 140%;
+  width: 250%;
+  height: 250%;
   background: linear-gradient(
     225deg,
     transparent 35%,
@@ -128,6 +129,7 @@ body {
     transparent 65%
   );
   pointer-events: none;
+  will-change: transform;
 }
 
 .btn-primary-fn:hover::before,
@@ -136,8 +138,8 @@ body {
 }
 
 @keyframes diagonalGlint {
-  0% { top: -140%; left: 140%; }
-  100% { top: 140%; left: -140%; }
+  from { transform: translate(0, 0); }
+  to   { transform: translate(-112%, 112%); }
 }
 
 .btn-primary-fn:hover {
@@ -171,10 +173,11 @@ body {
 .btn-ghost-fn::before {
   content: '';
   position: absolute;
-  top: -150%; left: 150%;
+  top: -140%; left: 140%;
   width: 250%; height: 250%;
   background: linear-gradient(225deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%);
   pointer-events: none;
+  will-change: transform;
 }
 .btn-ghost-fn:hover::before, .btn-ghost-fn:active::before { animation: diagonalGlint 1.2s cubic-bezier(0.2, 0.5, 0.25, 1) forwards; }
 .btn-ghost-fn:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.18); }
@@ -201,10 +204,11 @@ body {
 .btn-login-nav::before {
   content: '';
   position: absolute;
-  top: -150%; left: 150%;
+  top: -140%; left: 140%;
   width: 250%; height: 250%;
   background: linear-gradient(225deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%);
   pointer-events: none;
+  will-change: transform;
 }
 .btn-login-nav:hover::before, .btn-login-nav:active::before { animation: diagonalGlint 1.2s cubic-bezier(0.2, 0.5, 0.25, 1) forwards; }
 .btn-login-nav:hover { background: rgba(255,255,255,0.08); }
@@ -826,14 +830,18 @@ body.page-loaded .anim-hero-up { opacity: 1; transform: translateY(0); }
 .tagline-pill::after {
   content: '';
   position: absolute;
-  top: 0; left: -100%;
+  top: 0; left: 0;
   width: 60%; height: 100%;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  /* Start off-screen left: -80% of parent / 60% element width = -134% of element */
+  transform: translateX(-134%);
   animation: shimmerPill 3.5s ease-in-out infinite 1.5s;
+  will-change: transform;
 }
 @keyframes shimmerPill {
-  0%   { left: -80%; }
-  100% { left: 160%; }
+  from { transform: translateX(-134%); }
+  /* End at left: 160% of parent / 60% element width = 267% of element */
+  to   { transform: translateX(267%); }
 }
 
 /* ── Stats bar number pop ───────────────────────────────────────── */
@@ -956,14 +964,17 @@ body.page-loaded .anim-hero-up { opacity: 1; transform: translateY(0); }
   bottom: -6px;
   left: 0;
   height: 2px;
-  width: 0;
+  width: 100%;
   background: linear-gradient(90deg, var(--primary), transparent);
-  transition: width 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s;
   border-radius: 2px;
+  will-change: transform;
 }
 .anim-visible .section-heading-line::after,
 body.page-loaded .section-heading-line::after {
-  width: 100%;
+  transform: scaleX(1);
 }
 
 /* ── Reduce motion support ──────────────────────────────────────── */
