@@ -15,6 +15,7 @@ import { useRouter } from 'next/router';
 import FancyNav from '../../components/FancyNav';
 import LogoImage, { useTransparentLogo } from '../../components/LogoImage';
 import LoginModal from '../../components/LoginModal';
+import Icon from '../../components/Icon';
 
 export async function getServerSideProps({ params }) {
   try {
@@ -45,23 +46,26 @@ const FAILED_STATUSES = ['expire','cancel','cancelled','deny','failed','expired'
 const DONE_STATUSES   = [...PAID_STATUSES, ...FAILED_STATUSES];
 
 const STATUS_CFG = {
-  settlement: { label:'Pembayaran Berhasil',    icon:'fa-circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
-  capture:    { label:'Pembayaran Berhasil',    icon:'fa-circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
-  success:    { label:'Pembayaran Berhasil',    icon:'fa-circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
-  paid:       { label:'Pembayaran Berhasil',    icon:'fa-circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
-  pending:    { label:'Menunggu Pembayaran',    icon:'fa-clock',                color:'#ffc800', bg:'rgba(255,200,0,0.08)',   border:'rgba(255,200,0,0.2)'   },
-  expire:     { label:'Transaksi Kadaluarsa',   icon:'fa-circle-xmark',         color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
-  expired:    { label:'Transaksi Kadaluarsa',   icon:'fa-circle-xmark',         color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
-  cancel:     { label:'Transaksi Dibatalkan',   icon:'fa-ban',                  color:'#888',    bg:'rgba(136,136,136,0.08)', border:'rgba(136,136,136,0.2)' },
-  cancelled:  { label:'Transaksi Dibatalkan',   icon:'fa-ban',                  color:'#888',    bg:'rgba(136,136,136,0.08)', border:'rgba(136,136,136,0.2)' },
-  deny:       { label:'Pembayaran Ditolak',     icon:'fa-triangle-exclamation', color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
-  failed:     { label:'Pembayaran Gagal',       icon:'fa-triangle-exclamation', color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
+  settlement: { label:'Pembayaran Berhasil',    icon:'circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
+  capture:    { label:'Pembayaran Berhasil',    icon:'circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
+  success:    { label:'Pembayaran Berhasil',    icon:'circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
+  paid:       { label:'Pembayaran Berhasil',    icon:'circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
+  pending:    { label:'Menunggu Pembayaran',    icon:'clock',                color:'#ffc800', bg:'rgba(255,200,0,0.08)',   border:'rgba(255,200,0,0.2)'   },
+  expire:     { label:'Transaksi Kadaluarsa',   icon:'circle-xmark',         color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
+  expired:    { label:'Transaksi Kadaluarsa',   icon:'circle-xmark',         color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
+  cancel:     { label:'Transaksi Dibatalkan',   icon:'xmark',                  color:'#888',    bg:'rgba(136,136,136,0.08)', border:'rgba(136,136,136,0.2)' },
+  cancelled:  { label:'Transaksi Dibatalkan',   icon:'xmark',                  color:'#888',    bg:'rgba(136,136,136,0.08)', border:'rgba(136,136,136,0.2)' },
+  deny:       { label:'Pembayaran Ditolak',     icon:'circle-exclamation', color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
+  failed:     { label:'Pembayaran Gagal',       icon:'circle-exclamation', color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
 };
 
 // ── Komponen PaymentInfoPanel ─────────────────────────────────────────────────
 // Menampilkan detail pembayaran sesuai jenis metode yang dipilih user.
+// FIX: Menggunakan qrImageUrl (direct URL) + qrString (raw data fallback via QR API publik)
+// sehingga QR code selalu terrender meski Midtrans tidak mengembalikan image URL.
 function PaymentInfoPanel({ order }) {
-  const [copied, setCopied]   = useState(false);
+  const [copied,        setCopied]       = useState(false);
+  const [qrImgFailed,   setQrImgFailed]  = useState(false);
   const info   = order.payment_info || {};
   const method = order.payment_method || '';
 
@@ -70,42 +74,69 @@ function PaymentInfoPanel({ order }) {
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
-  const isVA       = ['bca_va','bni_va','bri_va','permata_va','other_va'].includes(method);
-  const isMandiri  = method === 'mandiri_va';
-  const isQRIS     = method === 'qris' || method === 'gopay_qris';
-  const isGopay    = method === 'gopay';
+  const isVA        = ['bni_va','bri_va','cimb_va','permata_va'].includes(method);
+  const isMandiri   = method === 'mandiri_va';
+  const isQRIS      = method === 'qris' || method === 'gopay_qris';
+  const isGopay     = method === 'gopay';
   const isShopeePay = method === 'shopeepay';
 
   const labelMap = {
-    qris:       'QRIS',       gopay_qris:'QRIS via GoPay',
-    gopay:      'GoPay',      shopeepay:'ShopeePay',
-    bca_va:     'BCA Virtual Account',   bni_va: 'BNI Virtual Account',
-    bri_va:     'BRI Virtual Account',   permata_va: 'Permata Virtual Account',
-    mandiri_va: 'Mandiri Bill Payment',  other_va: 'Virtual Account',
+    gopay_qris:  'QRIS Dinamis (GoPay)',
+    gopay:       'GoPay',
+    bni_va:      'BNI Virtual Account',
+    bri_va:      'BRI Virtual Account',
+    cimb_va:     'CIMB Niaga Virtual Account',
+    permata_va:  'Permata Virtual Account',
+    mandiri_va:  'Mandiri Bill Payment',
+    // backward-compat untuk order lama
+    qris:        'QRIS', shopeepay: 'ShopeePay',
+    bca_va:      'BCA Virtual Account', other_va:  'Virtual Account',
   };
+
+  // Resolusi sumber QR code:
+  // 1. qrImageUrl  → URL gambar langsung dari Midtrans (preferred)
+  // 2. qrString    → raw QR data → render via api.qrserver.com (publik, no CORS)
+  // 3. qrUrl       → backward compat dengan order lama
+  const qrImageSrc = (() => {
+    const raw = info.qrString || info.qrUrl;
+    if (info.qrImageUrl && !qrImgFailed) return { src: info.qrImageUrl, isExternal: true };
+    if (raw) {
+      if (raw.startsWith('http')) return { src: raw, isExternal: true };
+      // raw QR string → buat URL ke QR generator publik
+      return { src: `https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=10&data=${encodeURIComponent(raw)}`, isExternal: false };
+    }
+    return null;
+  })();
+
+  const hasQR = (isQRIS || isGopay) && qrImageSrc;
 
   return (
     <div style={{
-      background:   'rgba(255,200,0,0.04)',
-      border:       '1px solid rgba(255,200,0,0.15)',
+      background: 'rgba(255,200,0,0.04)',
+      border: '1px solid rgba(255,200,0,0.15)',
       borderRadius: 14,
-      padding:      '20px 22px',
+      padding: '20px 22px',
       marginBottom: 16,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <i className="fa-solid fa-credit-card" style={{ color: '#ffc800', fontSize: 15 }}/>
+        <Icon name="receipt" size={15} color="#ffc800"/>
         <span style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>
           Instruksi Pembayaran — {labelMap[method] || method}
         </span>
       </div>
 
       {/* ── QR Code (QRIS / GoPay QR) ── */}
-      {(isQRIS || isGopay) && info.qrUrl && (
+      {hasQR && (
         <div style={{ textAlign: 'center', marginBottom: 12 }}>
           <img
-            src={info.qrUrl}
+            src={qrImageSrc.src}
             alt="QR Code Pembayaran"
-            style={{ width: 200, height: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: '#fff', padding: 8 }}
+            width={200} height={200}
+            style={{ width: 200, height: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: '#fff', padding: 8, display: 'block', margin: '0 auto' }}
+            onError={() => {
+              // Jika qrImageUrl gagal load, aktifkan fallback ke qrString via API publik
+              if (!qrImgFailed) setQrImgFailed(true);
+            }}
           />
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
             Scan QR code ini dengan aplikasi {isQRIS ? 'QRIS' : 'GoPay'} kamu
@@ -118,23 +149,14 @@ function PaymentInfoPanel({ order }) {
         <button
           onClick={() => window.open(info.deeplinkUrl, '_blank', 'noopener,noreferrer')}
           style={{
-            display:        'flex',
-            alignItems:     'center',
-            justifyContent: 'center',
-            gap:            8,
-            padding:        '11px 16px',
-            background:     isGopay ? '#00aed6' : '#ee4d2d',
-            color:          '#fff',
-            borderRadius:   10,
-            fontWeight:     700,
-            fontSize:       13,
-            border:         'none',
-            cursor:         'pointer',
-            marginBottom:   10,
-            width:          '100%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            padding: '11px 16px',
+            background: isGopay ? '#00aed6' : '#ee4d2d',
+            color: '#fff', borderRadius: 10, fontWeight: 700, fontSize: 13,
+            border: 'none', cursor: 'pointer', marginBottom: 10, width: '100%',
           }}
         >
-          <i className={`fa-solid ${isGopay ? 'fa-mobile-screen-button' : 'fa-bag-shopping'}`}/>
+          <Icon name="mobile" size={16}/>
           Buka Aplikasi {isGopay ? 'GoPay' : 'ShopeePay'}
         </button>
       )}
@@ -142,29 +164,14 @@ function PaymentInfoPanel({ order }) {
       {/* ── Virtual Account (BCA/BNI/BRI/Permata/Other) ── */}
       {isVA && info.vaNumber && (
         <div>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, marginBottom: 6 }}>
-            NOMOR VIRTUAL ACCOUNT
-          </p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, marginBottom: 6 }}>{(info.vaBank||method.replace('_va','').toUpperCase())} — NOMOR VIRTUAL ACCOUNT</p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{
-              flex:          1,
-              background:    'rgba(0,0,0,0.3)',
-              border:        '1px solid rgba(255,255,255,0.1)',
-              borderRadius:  8,
-              padding:       '10px 14px',
-              fontFamily:    'monospace',
-              fontSize:      18,
-              fontWeight:    700,
-              color:         '#fff',
-              letterSpacing: 2,
-            }}>
+            <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', fontFamily: 'monospace', fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: 2 }}>
               {info.vaNumber}
             </div>
-            <button
-              onClick={() => copyText(info.vaNumber)}
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: copied ? '#2ecc71' : 'var(--text-muted)', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}
-            >
-              <i className={`fa-solid ${copied ? 'fa-check' : 'fa-copy'}`}/>
+            <button onClick={() => copyText(info.vaNumber)}
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: copied ? '#2ecc71' : 'var(--text-muted)', borderRadius: 8, padding: '10px 14px', cursor: 'pointer' }}>
+              <Icon name={copied ? 'circle-check' : 'copy'} size={14} color={copied ? '#2ecc71' : undefined}/>
             </button>
           </div>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
@@ -176,18 +183,16 @@ function PaymentInfoPanel({ order }) {
       {/* ── Mandiri Bill Payment ── */}
       {isMandiri && (info.billKey || info.billCode) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[
-            { label: 'Biller Code', value: info.billCode },
-            { label: 'Bill Key',    value: info.billKey  },
-          ].filter(f => f.value).map(f => (
+          {[{ label: 'Biller Code', value: info.billCode }, { label: 'Bill Key', value: info.billKey }]
+            .filter(f => f.value).map(f => (
             <div key={f.label}>
               <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, marginBottom: 4 }}>{f.label.toUpperCase()}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', fontFamily: 'monospace', fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: 1 }}>
                   {f.value}
                 </div>
-                <button onClick={() => copyText(f.value)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', borderRadius: 8, padding: '10px 14px', cursor: 'pointer', fontSize: 13 }}>
-                  <i className="fa-solid fa-copy"/>
+                <button onClick={() => copyText(f.value)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', borderRadius: 8, padding: '10px 14px', cursor: 'pointer' }}>
+                  <Icon name="copy" size={13}/>
                 </button>
               </div>
             </div>
@@ -198,8 +203,8 @@ function PaymentInfoPanel({ order }) {
         </div>
       )}
 
-      {/* Fallback jika payment_info kosong */}
-      {!info.qrUrl && !info.vaNumber && !info.deeplinkUrl && !info.billKey && (
+      {/* Fallback jika payment_info benar-benar kosong */}
+      {!hasQR && !info.vaNumber && !info.deeplinkUrl && !info.billKey && !info.billCode && (
         <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           Info pembayaran tidak tersedia. Hubungi admin jika pembayaran sudah dilakukan.
         </p>
@@ -307,7 +312,6 @@ export default function InvoicePage({ order: initialOrder, settings }) {
         <title>Invoice #{initialOrder.order_id} | {serverName}</title>
         <meta name="robots" content="noindex,nofollow"/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
       </Head>
 
       <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={settings}/>
@@ -318,7 +322,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
         {/* ── Status Banner ── */}
         <div style={{ width:'100%', maxWidth:820, display:'flex', alignItems:'center', gap:16, background:cfg.bg, border:`1px solid ${cfg.border}`, borderRadius:14, padding:'16px 22px', marginBottom:16, flexWrap:'wrap' }}>
           <div style={{ width:44, height:44, borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontSize:20, background:cfg.bg, color:cfg.color, border:`1px solid ${cfg.border}` }}>
-            <i className={`fa-solid ${cfg.icon}`}/>
+            <Icon name={cfg.icon} size={20} color={cfg.color}/>
           </div>
           <div style={{ flex:1, minWidth:200 }}>
             <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:16, color:'#fff' }}>{cfg.label}</div>
@@ -362,10 +366,10 @@ export default function InvoicePage({ order: initialOrder, settings }) {
             </div>
             <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8 }}>
               <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 14px', borderRadius:100, background:cfg.bg, border:`1px solid ${cfg.border}`, color:cfg.color, fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>
-                <i className={`fa-solid ${cfg.icon}`}/> {cfg.label}
+                <Icon name={cfg.icon} size={20} color={cfg.color}/> {cfg.label}
               </div>
               <button onClick={copyId} style={{ fontFamily:'Space Grotesk,sans-serif', fontSize:14, fontWeight:700, color:'#fff', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:8, padding:'5px 12px', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                <i className={`fa-solid ${copied?'fa-check':'fa-copy'}`} style={{ fontSize:11, opacity:0.6 }}/> #{initialOrder.order_id}
+                <Icon name={copied?'circle-check':'copy'} size={11} style={{opacity:0.7}}/> #{initialOrder.order_id}
               </button>
             </div>
           </header>
@@ -385,11 +389,11 @@ export default function InvoicePage({ order: initialOrder, settings }) {
                 />
                 <div>
                   <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.04)', padding:'4px 10px', borderRadius:6, border:'1px solid rgba(255,255,255,0.06)', fontWeight:600, fontSize:14, color:'#fff' }}>
-                    <i className="fa-solid fa-gamepad" style={{ fontSize:11, color:'var(--primary)' }}/> {liveOrder.player_username}
+                    <Icon name="bolt" size={11} color="var(--primary)"/> {liveOrder.player_username}
                   </div>
                   {liveOrder.discord_username && (
                     <div style={{ fontSize:12, color:'var(--text-muted)', marginTop:3, display:'flex', alignItems:'center', gap:5 }}>
-                      <i className="fa-brands fa-discord" style={{ fontSize:11, color:'#5865F2' }}/> {liveOrder.discord_username}
+                      <Icon name="discord" size={11} color="#5865F2"/> {liveOrder.discord_username}
                     </div>
                   )}
                 </div>
@@ -465,7 +469,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           {isPaid && (
             <div style={{ marginBottom:24 }}>
               <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'8px 16px', borderRadius:100, fontSize:13, fontWeight:600, ...(liveOrder.plugin_notified ? { background:'rgba(46,204,113,0.08)', border:'1px solid rgba(46,204,113,0.2)', color:'#2ecc71' } : { background:'rgba(255,200,0,0.08)', border:'1px solid rgba(255,200,0,0.2)', color:'#ffc800' }) }}>
-                <i className={`fa-solid ${liveOrder.plugin_notified ? 'fa-cube' : 'fa-hourglass-half'}`}/>
+                <Icon name={liveOrder.plugin_notified ? 'circle-check' : 'clock'} size={14}/>
                 {liveOrder.plugin_notified ? 'Item telah dikirim ke server Minecraft' : 'Menunggu pengiriman item ke server'}
               </div>
             </div>
@@ -474,16 +478,16 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           {/* Footer actions */}
           <footer style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderTop:'1px solid rgba(255,255,255,0.06)', paddingTop:28, flexWrap:'wrap', gap:16 }}>
             <Link href="/store" style={{ color:'var(--text-muted)', textDecoration:'none', fontSize:13, fontWeight:600, display:'inline-flex', alignItems:'center', gap:8 }}>
-              <i className="fa-solid fa-arrow-left"/> Kembali ke Store
+              <Icon name="arrow-left" size={13} style={{marginRight:6}}/> Kembali ke Store
             </Link>
             <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
               {!isPending && (
                 <button onClick={handleDownloadPdf} className="btn-ghost-fn" style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, fontWeight:600 }}>
-                  <i className="fa-solid fa-file-pdf"/> Download PDF
+                  <Icon name="folder-open" size={14} style={{marginRight:6}}/> Download PDF
                 </button>
               )}
               <button onClick={copyId} className="btn-ghost-fn" style={{ display:'flex', alignItems:'center', gap:8, fontSize:13, fontWeight:600 }}>
-                <i className={`fa-solid ${copied?'fa-check':'fa-copy'}`}/>
+                <Icon name={copied?'circle-check':'copy'} size={13}/>
                 {copied ? 'Tersalin!' : 'Salin ID Order'}
               </button>
             </div>
