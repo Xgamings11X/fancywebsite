@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Head from 'next/head';
 import toast from 'react-hot-toast';
 import ImageUpload from '../../components/ImageUpload';
-import Icon from '../components/Icon';
+import Icon from '../../components/Icon';
 
 const TABS = [
   { id:'dashboard', label:'Dashboard',    icon:'chart-line'    },
