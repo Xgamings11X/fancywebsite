@@ -23,7 +23,10 @@ export default async function handler(req, res) {
           payment_status:          finalStatus,
           midtrans_transaction_id: mtData.transaction_id || order.midtrans_transaction_id,
         };
-        if (paymentType) updates.payment_method = paymentType;
+        // PENTING: Jangan timpa payment_method spesifik (bni_va, mandiri_va, dll)
+        // dengan type generik Midtrans (bank_transfer/echannel/qris) — itu merusak
+        // PaymentInfoPanel yang butuh method spesifik untuk matching VA/QRIS/dll.
+        if (paymentType && !order.payment_method) updates.payment_method = paymentType;
         await OrdersAsync.update(orderId, updates);
 
         // Kalau baru saja jadi success dan belum trigger plugin/discord, jalankan via webhook internal
