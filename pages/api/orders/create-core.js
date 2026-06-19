@@ -1,6 +1,12 @@
 /**
  * pages/api/orders/create-core.js
  *
+ * ⚠️ DEPRECATED — TIDAK DIPAKAI LAGI oleh checkout aktif (components/CartModal.js).
+ * Checkout sekarang pakai Snap EMBED → /api/orders/create.js + components/SnapEmbed.js,
+ * supaya daftar metode pembayaran yang tampil adalah daftar resmi dari Midtrans,
+ * bukan UI pembayaran custom buatan sendiri (Core API charge per-method).
+ * File ini dibiarkan ada untuk referensi, bukan untuk dihapus paksa.
+ *
  * Endpoint untuk Direct Checkout via Midtrans Core API (non-popup).
  * Berbeda dengan /api/orders/create yang menggunakan Snap token,
  * endpoint ini langsung melakukan "charge" ke Core API sesuai metode pembayaran
