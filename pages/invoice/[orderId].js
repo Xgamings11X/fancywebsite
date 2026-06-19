@@ -1,7 +1,10 @@
 /**
  * pages/invoice/[orderId].js
  * - Landing → tampilkan detail invoice + tombol bayar (popup Midtrans Snap)
- * - Buka ulang popup Midtrans Snap saat klik "Bayar Sekarang"
+ * - Autopay: kalau datang dari checkout (CartModal redirect ke ?autopay=1),
+ *   popup Midtrans Snap otomatis terbuka begitu halaman ini selesai dimuat
+ *   (lihat efek "Autopay" di bawah)
+ * - Buka ulang popup Midtrans Snap saat klik "Bayar Sekarang" (manual retry)
  * - Download PDF
  * - Expired otomatis 1 hari (24 jam)
  * - Cancel jika user keluar halaman saat pending
@@ -144,7 +147,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
 
   // ── Buka popup Midtrans Snap ──────────────────────────────────────
   const [payingNow, setPayingNow] = useState(false);
-  const openMidtransPopup = async () => {
+  const openMidtransPopup = useCallback(async () => {
     const token = liveOrder?.midtrans_snap_token;
     if (!token) { toast.error('Token pembayaran tidak ditemukan. Hubungi admin.'); return; }
     setPayingNow(true);
@@ -160,7 +163,25 @@ export default function InvoicePage({ order: initialOrder, settings }) {
       toast.error(e.message || 'Gagal membuka popup pembayaran.');
     }
     setPayingNow(false);
-  };
+  }, [liveOrder?.midtrans_snap_token, initialOrder.order_id]);
+
+  // ── Autopay: baru saja dibuat dari checkout (CartModal → ?autopay=1) ──
+  // Halaman invoice (status: pending) sudah tampil duluan, BARU popup Midtrans
+  // Snap dibuka di sini. Kalau popup gagal dimuat, user tetap aman di invoice
+  // ini dan bisa klik "Bayar Sekarang" untuk coba lagi — tidak nyasar.
+  const autopayTriggered = useRef(false);
+  useEffect(() => {
+    if (!router.isReady) return;
+    if (autopayTriggered.current) return;
+    if (router.query.autopay !== '1') return;
+    if (!isPending || !liveOrder?.midtrans_snap_token) return;
+
+    autopayTriggered.current = true;
+    // Bersihkan ?autopay=1 dari URL supaya popup tidak kebuka ulang kalau
+    // halaman ini di-refresh atau dibuka lagi lewat tombol back.
+    router.replace(`/invoice/${initialOrder.order_id}`, undefined, { shallow: true });
+    openMidtransPopup();
+  }, [router.isReady, router.query.autopay, isPending, liveOrder?.midtrans_snap_token, openMidtransPopup, router, initialOrder.order_id]);
 
   // ── Download PDF ────────────────────────────────────────────────
   const handleDownloadPdf = async () => {
