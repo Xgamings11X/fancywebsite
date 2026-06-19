@@ -60,8 +60,8 @@ body {
 
 /* ── Capsule Navbar ────────────── */
 .fn-nav {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   padding: 12px 24px;
   background: rgba(15,15,20,0.85);
@@ -79,6 +79,10 @@ body {
   z-index: 1000;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 16px;
+}
+
+.fn-nav-actions {
+  justify-self: end;
 }
 
 /* ── Cards ─────────────────────── */
