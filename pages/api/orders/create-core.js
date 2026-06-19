@@ -1,30 +1,33 @@
 /**
  * pages/api/orders/create-core.js
  *
- * ⚠️ DEPRECATED — TIDAK DIPAKAI LAGI oleh checkout aktif (components/CartModal.js).
- * Checkout sekarang pakai Snap EMBED → /api/orders/create.js + components/SnapEmbed.js,
- * supaya daftar metode pembayaran yang tampil adalah daftar resmi dari Midtrans,
- * bukan UI pembayaran custom buatan sendiri (Core API charge per-method).
- * File ini dibiarkan ada untuk referensi, bukan untuk dihapus paksa.
+ * Endpoint untuk Direct Checkout via Midtrans Core API (non-popup, non-Snap).
+ * Dipanggil oleh components/CartModal.js setelah user memilih salah satu kartu
+ * di components/PaymentMethodSelector.js (UI custom) lalu menekan tombol "Bayar".
  *
- * Endpoint untuk Direct Checkout via Midtrans Core API (non-popup).
- * Berbeda dengan /api/orders/create yang menggunakan Snap token,
- * endpoint ini langsung melakukan "charge" ke Core API sesuai metode pembayaran
- * yang dipilih user di halaman checkout.
+ * Charge ke Midtrans dilakukan oleh chargeCoreTransaction() di lib/midtrans.js
+ * (memakai library resmi `midtrans-client`, struktur switch-case per metode).
  *
  * POST body:
  *   productId        {string}  — ID produk
- *   paymentMethod    {string}  — key dari PAYMENT_METHOD_CONFIG
+ *   paymentMethod    {string}  — 'gopay_qris' | 'gopay' | 'bni_va' | 'bri_va' |
+ *                                 'cimb_va' | 'permata_va' | 'mandiri_va'
  *   discord_username {string}  — wajib
  *   redeemCode       {string?} — opsional
  *
  * Response (success):
  *   { success, orderId, paymentMethod, paymentInfo, coreData, finalPrice, discountAmount }
+ *
+ *   paymentInfo berisi data SPESIFIK yang relevan untuk metode terpilih saja:
+ *     - gopay_qris        → { qrImageUrl, qrString }
+ *     - gopay              → { qrImageUrl, qrString, deeplinkUrl }
+ *     - bni_va/bri_va/...  → { vaNumber, vaBank }
+ *     - mandiri_va          → { billKey, billCode }
  */
 
 import { ProductsAsync, OrdersAsync, RedeemCodesAsync } from '../../../lib/redis.js';
 import {
-  createCoreTransaction,
+  chargeCoreTransaction,
   extractPaymentInfo,
   PAYMENT_METHOD_CONFIG,
 } from '../../../lib/midtrans.js';
@@ -129,8 +132,8 @@ export default async function handler(req, res) {
       console.error('[create-core] Discord pending error:', e.message);
     }
 
-    // ── Charge ke Midtrans Core API ─────────────────────────────────────
-    const coreData = await createCoreTransaction({
+    // ── Charge ke Midtrans Core API (switch-case per metode di lib/midtrans.js) ──
+    const coreData = await chargeCoreTransaction({
       orderId,
       amount:        finalPrice,
       playerUsername: user.username,
