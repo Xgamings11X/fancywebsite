@@ -1,7 +1,6 @@
 import { ProductsAsync, OrdersAsync, RedeemCodesAsync } from '../../../lib/redis.js';
-import { createSnapTransaction } from '../../../lib/midtrans.js';
+import { createTransaction } from '../../../lib/tripay.js';
 import { verifyToken } from '../../../lib/auth.js';
-import { webhookTransaction } from '../../../lib/discord.js';
 import { parse } from 'cookie';
 
 export default async function handler(req, res) {
@@ -44,9 +43,10 @@ export default async function handler(req, res) {
       usedCode       = code.code;
     }
 
-    const orderId = `FN-${Date.now()}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
+    const orderId   = `FN-${Date.now()}-${Math.random().toString(36).substring(2,6).toUpperCase()}`;
     const expiredAt = new Date(Date.now() + 24*60*60*1000).toISOString();
 
+    // Ambil category_name untuk invoice
     let categoryName = '';
     try {
       const { CategoriesAsync } = await import('../../../lib/redis.js');
@@ -66,22 +66,30 @@ export default async function handler(req, res) {
       expired_at: expiredAt,
     });
 
-    // ── Kirim Discord log Pending ─────────────────────────────────
-    try {
-      const newOrder = await OrdersAsync.byId(orderId);
-      await webhookTransaction(newOrder);
-    } catch (e) {
-      console.error('[order/create] Discord pending error:', e.message);
-    }
+    // Buat transaksi Tripay
+    const tripay = await createTransaction({
+      orderId, amount: finalPrice,
+      playerUsername: user.username, productName: product.name,
+    });
 
-    const snap = await createSnapTransaction({ orderId, amount: finalPrice, playerUsername: user.username, productName: product.name });
-    await OrdersAsync.update(orderId, { midtrans_snap_token: snap.snapToken });
+    await OrdersAsync.update(orderId, {
+      tripay_reference: tripay.reference,
+      tripay_pay_url:   tripay.payUrl,
+      tripay_qr_url:    tripay.qrUrl   || null,
+      tripay_pay_code:  tripay.payCode || null,
+    });
+
     if (usedCode) await RedeemCodesAsync.increment(usedCode);
 
     return res.json({
-      success:true, orderId, snapToken: snap.snapToken,
-      clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || process.env.MIDTRANS_CLIENT_KEY,
-      finalPrice, discountAmount,
+      success: true,
+      orderId,
+      payUrl:      tripay.payUrl,
+      qrUrl:       tripay.qrUrl    || null,
+      payCode:     tripay.payCode  || null,
+      reference:   tripay.reference,
+      finalPrice,
+      discountAmount,
     });
   } catch(e) {
     console.error('[order/create]', e.message);
