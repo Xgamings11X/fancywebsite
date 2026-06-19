@@ -74,10 +74,18 @@ function PaymentInfoPanel({ order }) {
     setCopied(true); setTimeout(() => setCopied(false), 2000);
   };
 
-  const isVA        = ['bni_va','bri_va','cimb_va','permata_va'].includes(method);
-  const isMandiri   = method === 'mandiri_va';
-  const isQRIS      = method === 'qris' || method === 'gopay_qris';
-  const isGopay     = method === 'gopay';
+  // ── Deteksi tipe pembayaran ──────────────────────────────────────────
+  // PENTING: deteksi diutamakan dari ISI payment_info (shape-based), bukan
+  // hanya dari string `method`. Ini supaya order LAMA yang payment_method-nya
+  // sempat ter-overwrite jadi generic Midtrans type (bank_transfer/echannel/qris,
+  // akibat bug versi sebelumnya) tetap bisa menampilkan instruksi pembayarannya.
+  const isVA        = ['bni_va','bri_va','cimb_va','permata_va','bca_va','other_va','bank_transfer'].includes(method)
+                       || (!!info.vaNumber && !info.billKey && !info.billCode);
+  const isMandiri   = method === 'mandiri_va' || method === 'echannel'
+                       || !!(info.billKey || info.billCode);
+  const isGopay     = method === 'gopay' || (!!info.deeplinkUrl && method !== 'shopeepay');
+  const isQRIS      = method === 'qris' || method === 'gopay_qris'
+                       || (!isGopay && !!(info.qrImageUrl || info.qrString || info.qrUrl));
   const isShopeePay = method === 'shopeepay';
 
   const labelMap = {
@@ -88,9 +96,13 @@ function PaymentInfoPanel({ order }) {
     cimb_va:     'CIMB Niaga Virtual Account',
     permata_va:  'Permata Virtual Account',
     mandiri_va:  'Mandiri Bill Payment',
-    // backward-compat untuk order lama
-    qris:        'QRIS', shopeepay: 'ShopeePay',
-    bca_va:      'BCA Virtual Account', other_va:  'Virtual Account',
+    // backward-compat: order lama / generic Midtrans payment_type
+    qris:           'QRIS',
+    shopeepay:      'ShopeePay',
+    bca_va:         'BCA Virtual Account',
+    other_va:       'Virtual Account',
+    bank_transfer:  info.vaBank ? `${info.vaBank} Virtual Account` : 'Virtual Account',
+    echannel:       'Mandiri Bill Payment',
   };
 
   // Resolusi sumber QR code:
@@ -108,107 +120,157 @@ function PaymentInfoPanel({ order }) {
     return null;
   })();
 
-  const hasQR = (isQRIS || isGopay) && qrImageSrc;
+  const hasQR     = (isQRIS || isGopay) && qrImageSrc;
+  const hasInfo   = hasQR || info.vaNumber || info.deeplinkUrl || info.billKey || info.billCode;
+  const vaBankLbl = info.vaBank || method.replace('_va','').replace('_',' ').toUpperCase();
+
+  // ── Sub-komponen: baris value bisa-di-copy (dipakai utk VA & Mandiri) ──
+  const CopyRow = ({ label, value }) => (
+    <div style={{ marginBottom: 12 }}>
+      <p style={{
+        fontSize: 10.5, color: 'var(--text-muted)', fontWeight: 700,
+        letterSpacing: 0.5, marginBottom: 6, textTransform: 'uppercase',
+      }}>
+        {label}
+      </p>
+      <div style={{ display: 'flex', alignItems: 'stretch', gap: 8 }}>
+        <div style={{
+          flex: 1, minWidth: 0,
+          background: 'rgba(0,0,0,0.3)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 8,
+          padding: '10px 14px',
+          fontFamily: 'monospace',
+          fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: 1.5,
+          overflowX: 'auto', whiteSpace: 'nowrap',
+        }}>
+          {value}
+        </div>
+        <button
+          onClick={() => copyText(value)}
+          aria-label={`Salin ${label}`}
+          style={{
+            flexShrink: 0,
+            background: copied ? 'rgba(46,204,113,0.12)' : 'rgba(255,255,255,0.06)',
+            border: `1px solid ${copied ? 'rgba(46,204,113,0.3)' : 'rgba(255,255,255,0.1)'}`,
+            color: copied ? '#2ecc71' : 'var(--text-muted)',
+            borderRadius: 8, padding: '0 14px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.15s',
+          }}
+        >
+          <Icon name={copied ? 'circle-check' : 'copy'} size={14}/>
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <div style={{
-      background: 'rgba(255,200,0,0.04)',
-      border: '1px solid rgba(255,200,0,0.15)',
+      background:   'rgba(255,200,0,0.04)',
+      border:       '1px solid rgba(255,200,0,0.15)',
       borderRadius: 14,
-      padding: '20px 22px',
+      padding:      0,
       marginBottom: 16,
+      overflow:     'hidden',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-        <Icon name="receipt" size={15} color="#ffc800"/>
-        <span style={{ fontWeight: 700, fontSize: 14, color: '#fff' }}>
-          Instruksi Pembayaran — {labelMap[method] || method}
+      {/* ── Header ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '14px 20px',
+        borderBottom: '1px solid rgba(255,200,0,0.12)',
+        background: 'rgba(255,200,0,0.05)',
+      }}>
+        <span style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 28, height: 28, borderRadius: 8,
+          background: 'rgba(255,200,0,0.15)', flexShrink: 0,
+        }}>
+          <Icon name="receipt" size={14} color="#ffc800"/>
         </span>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 700, letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 1 }}>
+            Instruksi Pembayaran
+          </p>
+          <p style={{ fontSize: 14, fontWeight: 700, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {labelMap[method] || method || 'Metode Pembayaran'}
+          </p>
+        </div>
       </div>
 
-      {/* ── QR Code (QRIS / GoPay QR) ── */}
-      {hasQR && (
-        <div style={{ textAlign: 'center', marginBottom: 12 }}>
-          <img
-            src={qrImageSrc.src}
-            alt="QR Code Pembayaran"
-            width={200} height={200}
-            style={{ width: 200, height: 200, borderRadius: 12, border: '1px solid rgba(255,255,255,0.1)', background: '#fff', padding: 8, display: 'block', margin: '0 auto' }}
-            onError={() => {
-              // Jika qrImageUrl gagal load, aktifkan fallback ke qrString via API publik
-              if (!qrImgFailed) setQrImgFailed(true);
-            }}
-          />
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 8 }}>
-            Scan QR code ini dengan aplikasi {isQRIS ? 'QRIS' : 'GoPay'} kamu
-          </p>
-        </div>
-      )}
+      {/* ── Body ── */}
+      <div style={{ padding: '20px 22px' }}>
 
-      {/* ── Deeplink button (GoPay / ShopeePay) ── */}
-      {(isGopay || isShopeePay) && info.deeplinkUrl && (
-        <button
-          onClick={() => window.open(info.deeplinkUrl, '_blank', 'noopener,noreferrer')}
-          style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            padding: '11px 16px',
-            background: isGopay ? '#00aed6' : '#ee4d2d',
-            color: '#fff', borderRadius: 10, fontWeight: 700, fontSize: 13,
-            border: 'none', cursor: 'pointer', marginBottom: 10, width: '100%',
-          }}
-        >
-          <Icon name="mobile" size={16}/>
-          Buka Aplikasi {isGopay ? 'GoPay' : 'ShopeePay'}
-        </button>
-      )}
-
-      {/* ── Virtual Account (BCA/BNI/BRI/Permata/Other) ── */}
-      {isVA && info.vaNumber && (
-        <div>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, marginBottom: 6 }}>{(info.vaBank||method.replace('_va','').toUpperCase())} — NOMOR VIRTUAL ACCOUNT</p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', fontFamily: 'monospace', fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: 2 }}>
-              {info.vaNumber}
+        {/* QR Code (QRIS / GoPay QR) */}
+        {hasQR && (
+          <div style={{ textAlign: 'center', marginBottom: (isVA || isMandiri) ? 20 : 4 }}>
+            <div style={{
+              display: 'inline-block', background: '#fff', borderRadius: 14,
+              padding: 10, border: '1px solid rgba(255,255,255,0.1)',
+            }}>
+              <img
+                src={qrImageSrc.src}
+                alt="QR Code Pembayaran"
+                width={200} height={200}
+                style={{ width: 200, height: 200, display: 'block', borderRadius: 6 }}
+                onError={() => { if (!qrImgFailed) setQrImgFailed(true); }}
+              />
             </div>
-            <button onClick={() => copyText(info.vaNumber)}
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: copied ? '#2ecc71' : 'var(--text-muted)', borderRadius: 8, padding: '10px 14px', cursor: 'pointer' }}>
-              <Icon name={copied ? 'circle-check' : 'copy'} size={14} color={copied ? '#2ecc71' : undefined}/>
-            </button>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 10 }}>
+              Scan QR code ini dengan aplikasi {isQRIS ? 'e-wallet / mobile banking (support QRIS)' : 'GoPay'} kamu
+            </p>
           </div>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-            Bayar melalui ATM, internet banking, atau mobile banking sebelum batas waktu.
-          </p>
-        </div>
-      )}
+        )}
 
-      {/* ── Mandiri Bill Payment ── */}
-      {isMandiri && (info.billKey || info.billCode) && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[{ label: 'Biller Code', value: info.billCode }, { label: 'Bill Key', value: info.billKey }]
-            .filter(f => f.value).map(f => (
-            <div key={f.label}>
-              <p style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 700, marginBottom: 4 }}>{f.label.toUpperCase()}</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ flex: 1, background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, padding: '10px 14px', fontFamily: 'monospace', fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: 1 }}>
-                  {f.value}
-                </div>
-                <button onClick={() => copyText(f.value)} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-muted)', borderRadius: 8, padding: '10px 14px', cursor: 'pointer' }}>
-                  <Icon name="copy" size={13}/>
-                </button>
-              </div>
-            </div>
-          ))}
-          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-            Bayar via menu Bayar / Beli di ATM Mandiri atau Livin by Mandiri.
-          </p>
-        </div>
-      )}
+        {/* Deeplink button (GoPay / ShopeePay) */}
+        {(isGopay || isShopeePay) && info.deeplinkUrl && (
+          <button
+            onClick={() => window.open(info.deeplinkUrl, '_blank', 'noopener,noreferrer')}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '12px 16px',
+              background: isGopay ? '#00aed6' : '#ee4d2d',
+              color: '#fff', borderRadius: 10, fontWeight: 700, fontSize: 13,
+              border: 'none', cursor: 'pointer', marginBottom: 12, width: '100%',
+            }}
+          >
+            <Icon name="mobile" size={16}/>
+            Buka Aplikasi {isGopay ? 'GoPay' : 'ShopeePay'}
+          </button>
+        )}
 
-      {/* Fallback jika payment_info benar-benar kosong */}
-      {!hasQR && !info.vaNumber && !info.deeplinkUrl && !info.billKey && !info.billCode && (
-        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          Info pembayaran tidak tersedia. Hubungi admin jika pembayaran sudah dilakukan.
-        </p>
-      )}
+        {/* Virtual Account */}
+        {isVA && info.vaNumber && (
+          <>
+            <CopyRow label={`Nomor Virtual Account — ${vaBankLbl}`} value={info.vaNumber}/>
+            <p style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Bayar melalui ATM, internet banking, atau mobile banking {vaBankLbl} sebelum batas waktu.
+            </p>
+          </>
+        )}
+
+        {/* Mandiri Bill Payment */}
+        {isMandiri && (info.billKey || info.billCode) && (
+          <>
+            {info.billCode && <CopyRow label="Kode Perusahaan (Biller Code)" value={info.billCode}/>}
+            {info.billKey  && <CopyRow label="Kode Pembayaran (Bill Key)"    value={info.billKey}/>}
+            <p style={{ fontSize: 11.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Bayar via menu <strong>Bayar / Beli → Multipayment</strong> di ATM Mandiri, atau Livin by Mandiri.
+            </p>
+          </>
+        )}
+
+        {/* Fallback jika payment_info benar-benar kosong */}
+        {!hasInfo && (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+            <Icon name="circle-exclamation" size={15} color="var(--text-muted)" style={{ flexShrink: 0, marginTop: 1 }}/>
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Info pembayaran belum tersedia untuk order ini. Jika kamu sudah melakukan pembayaran,
+              hubungi admin via Support dengan menyertakan Order ID di atas.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
