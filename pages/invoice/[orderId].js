@@ -1,14 +1,17 @@
 /**
- * pages/invoice/[orderId].js  (REVISI — Direct Checkout / Core API, tanpa Snap popup)
+ * pages/invoice/[orderId].js  (REVISI — Checkout via Snap EMBED)
  *
- * Perubahan utama dari versi lama:
- * - Semua logika openSnap(), snap.js, snapLoading, snapClosed, snapActive dihapus.
- * - Menampilkan info pembayaran (QR code, Virtual Account, deeplink) yang tersimpan
- *   di liveOrder.payment_info (field baru hasil Core API) langsung di halaman.
+ * Perubahan utama dari versi Core API:
+ * - Saat order masih pending DAN punya midtrans_snap_token, halaman ini menanam
+ *   (embed) box pembayaran resmi Midtrans langsung ke <div id="snap-container">
+ *   lewat <SnapEmbed> (snap.embed() — bukan pop-up snap.pay(), bukan UI custom).
+ * - <PaymentInfoPanel> (QR/VA manual) tetap dipertahankan sebagai fallback untuk
+ *   order LAMA yang dibuat lewat alur Core API sebelumnya (punya payment_info,
+ *   tapi tidak punya midtrans_snap_token).
  * - Polling status tetap berjalan untuk auto-update saat webhook Midtrans masuk.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -16,6 +19,7 @@ import FancyNav from '../../components/FancyNav';
 import LogoImage, { useTransparentLogo } from '../../components/LogoImage';
 import LoginModal from '../../components/LoginModal';
 import Icon from '../../components/Icon';
+import SnapEmbed from '../../components/SnapEmbed';
 
 export async function getServerSideProps({ params }) {
   try {
@@ -308,17 +312,16 @@ export default function InvoicePage({ order: initialOrder, settings }) {
   };
   const handleLoginSuccess = p => { setPlayer(p); localStorage.setItem('mc_player', JSON.stringify(p)); setShowLogin(false); };
 
-  // ── Verifikasi langsung saat halaman dibuka ───────────────────────────────
-  useEffect(() => {
-    const checkNow = async () => {
-      try {
-        const res  = await fetch('/api/orders/verify/' + initialOrder.order_id, { credentials: 'include' });
-        const data = await res.json();
-        if (data?.order) setLiveOrder(data.order);
-      } catch {}
-    };
-    checkNow();
-  }, []);
+  // ── Verifikasi status order (dipakai saat mount & saat callback dari SnapEmbed) ──
+  const checkNow = useCallback(async () => {
+    try {
+      const res  = await fetch('/api/orders/verify/' + initialOrder.order_id, { credentials: 'include' });
+      const data = await res.json();
+      if (data?.order) setLiveOrder(data.order);
+    } catch {}
+  }, [initialOrder.order_id]);
+
+  useEffect(() => { checkNow(); }, [checkNow]);
 
   // ── Polling status setiap 3 detik ────────────────────────────────────────
   useEffect(() => {
@@ -389,7 +392,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           <div style={{ flex:1, minWidth:200 }}>
             <div style={{ fontFamily:'Space Grotesk,sans-serif', fontWeight:700, fontSize:16, color:'#fff' }}>{cfg.label}</div>
             <div style={{ fontSize:13, color:'var(--text-muted)', marginTop:2 }}>
-              {isPaid    ? 'Item akan dikirim ke akun Minecraft kamu dalam beberapa saat.'
+              {isPaid    ? 'Item dikirim otomatis ke akun Minecraft kamu — terkirim instan begitu pembayaran berhasil dikonfirmasi.'
               : isPending ? 'Selesaikan pembayaran menggunakan instruksi di bawah.'
               :             'Transaksi ini tidak berhasil diselesaikan.'}
             </div>
@@ -403,10 +406,27 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           )}
         </div>
 
-        {/* ── Payment Info Panel (hanya saat pending) ── */}
+        {/* ── Pembayaran (hanya saat pending) ── */}
         {isPending && (
           <div style={{ width:'100%', maxWidth:820, marginBottom:0 }}>
-            <PaymentInfoPanel order={liveOrder}/>
+            {(liveOrder.midtrans_snap_token || initialOrder.midtrans_snap_token) ? (
+              <div style={{
+                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
+                padding: '20px 20px 6px', marginBottom: 16, backdropFilter: 'blur(12px)',
+              }}>
+                <h4 style={{ fontSize:11, textTransform:'uppercase', letterSpacing:'1.2px', color:'var(--primary-light)', marginBottom:14, fontWeight:700 }}>
+                  Pilih Metode Pembayaran
+                </h4>
+                <SnapEmbed
+                  snapToken={liveOrder.midtrans_snap_token || initialOrder.midtrans_snap_token}
+                  embedId="snap-container"
+                  onSuccess={checkNow}
+                  onPending={checkNow}
+                />
+              </div>
+            ) : (
+              <PaymentInfoPanel order={liveOrder}/>
+            )}
           </div>
         )}
 
@@ -532,7 +552,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
             <div style={{ marginBottom:24 }}>
               <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'8px 16px', borderRadius:100, fontSize:13, fontWeight:600, ...(liveOrder.plugin_notified ? { background:'rgba(46,204,113,0.08)', border:'1px solid rgba(46,204,113,0.2)', color:'#2ecc71' } : { background:'rgba(255,200,0,0.08)', border:'1px solid rgba(255,200,0,0.2)', color:'#ffc800' }) }}>
                 <Icon name={liveOrder.plugin_notified ? 'circle-check' : 'clock'} size={14}/>
-                {liveOrder.plugin_notified ? 'Item telah dikirim ke server Minecraft' : 'Menunggu pengiriman item ke server'}
+                {liveOrder.plugin_notified ? 'Item telah dikirim otomatis ke server Minecraft' : 'Item sedang dikirim otomatis ke server Minecraft'}
               </div>
             </div>
           )}
@@ -557,7 +577,8 @@ export default function InvoicePage({ order: initialOrder, settings }) {
         </div>
 
         <p style={{ marginTop:24, fontSize:12, color:'var(--text-muted)', textAlign:'center', maxWidth:500 }}>
-          Simpan halaman ini sebagai bukti pembayaran. Jika item belum masuk dalam 5 menit, hubungi kami di{' '}
+          Item dikirim otomatis & instan ke akun Minecraft kamu begitu pembayaran berhasil. Simpan halaman ini sebagai bukti pembayaran.
+          Jika item belum masuk, segera hubungi kami di{' '}
           <Link href="/support" style={{ color:'var(--primary)', textDecoration:'none', fontWeight:600 }}>Support</Link>.
         </p>
       </main>
