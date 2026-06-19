@@ -1,5 +1,5 @@
 import { ProductsAsync, OrdersAsync, RedeemCodesAsync } from '../../../lib/redis.js';
-import { createTransaction } from '../../../lib/tripay.js';
+import { createTransaction } from '../../../lib/midtrans.js';
 import { verifyToken } from '../../../lib/auth.js';
 import { parse } from 'cookie';
 
