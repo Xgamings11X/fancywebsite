@@ -1,5 +1,5 @@
 import { OrdersAsync }                                    from '../../../../lib/redis.js';
-import { getTransactionDetail, parseTransactionStatus }   from '../../../../lib/tripay.js';
+import { getTransactionDetail, parseTransactionStatus }   from '../../../../lib/midtrans.js';
 
 const PAID_STATUSES = ['paid', 'success'];
 const DONE_STATUSES = [...PAID_STATUSES, 'expire', 'expired', 'cancel', 'cancelled', 'failed'];
