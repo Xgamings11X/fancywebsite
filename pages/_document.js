@@ -29,9 +29,6 @@ export default function Document() {
         {/* ══ PRECONNECT — DNS + TLS handshake dimulai secepat mungkin ════ */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://upload.wikimedia.org" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://logo.clearbit.com" crossOrigin="anonymous" />
 
         {/* DNS prefetch untuk domain yang tidak perlu koneksi awal */}
         <link rel="dns-prefetch" href="https://app.sandbox.midtrans.com" />
