@@ -1,17 +1,22 @@
 /**
- * components/CartModal.js  (REVISI — Checkout via Snap EMBED)
+ * components/CartModal.js  (Checkout via Midtrans Core API — UI custom)
  *
- * Perubahan dari versi Core API:
- * 1. Modal TIDAK lagi punya step "pilih metode pembayaran" sendiri — daftar
- *    metode pembayaran resmi sekarang ditampilkan oleh Midtrans sendiri lewat
- *    Snap Embed (lihat components/SnapEmbed.js) di halaman /invoice/[orderId].
- * 2. POST ke /api/orders/create (Snap token), bukan /api/orders/create-core.
- * 3. Setelah order dibuat, redirect ke /invoice/[orderId] — di sana token Snap
- *    di-embed ke <div id="snap-container"> via snap.embed().
+ * 1. Modal sekarang punya step "pilih metode pembayaran" sendiri lewat
+ *    <PaymentMethodSelector> (QRIS Dinamis, GoPay, BNI/BRI/CIMB/Permata VA,
+ *    Mandiri Bill Payment).
+ * 2. Saat "Bayar" ditekan → POST ke /api/orders/create-core (Core API charge),
+ *    BUKAN /api/orders/create (Snap token).
+ * 3. Respons charge ditangani per-metode di redirectAfterCharge() di bawah:
+ *    - GoPay     → buka deeplink app GoPay, lalu redirect ke /invoice/[orderId]
+ *    - QRIS/VA   → langsung redirect ke /invoice/[orderId]
+ *      (halaman invoice menampilkan QR / nomor VA / bill key otomatis dari
+ *      payment_info yang sudah tersimpan di order — lihat PaymentInfoPanel
+ *      di pages/invoice/[orderId].js, tidak perlu diubah).
  */
 
 import { useState } from 'react';
 import Icon from './Icon';
+import PaymentMethodSelector from './PaymentMethodSelector';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 
@@ -26,6 +31,7 @@ export default function CartModal({ product, player, onClose }) {
   const [redeemInfo,    setRedeemInfo]    = useState(null);
   const [redeemLoading, setRedeemLoading] = useState(false);
   const [discordUser,   setDiscordUser]   = useState('');
+  const [selectedMethod, setSelectedMethod] = useState(null); // payment_type terpilih
 
   const basePrice  = product.price;
   const finalPrice = redeemInfo ? redeemInfo.finalPrice  : basePrice;
@@ -55,10 +61,14 @@ export default function CartModal({ product, player, onClose }) {
     setRedeemLoading(false);
   };
 
-  // ── Proses Pembayaran (Snap Embed) ─────────────────────────────────────────
+  // ── Proses Pembayaran (Midtrans Core API — UI custom) ───────────────────────
   const handleCheckout = async () => {
     if (!discordUser.trim()) {
       toast.error('Username Discord wajib diisi untuk klaim role!');
+      return;
+    }
+    if (!selectedMethod) {
+      toast.error('Pilih metode pembayaran terlebih dahulu!');
       return;
     }
     setLoading(true);
@@ -68,12 +78,16 @@ export default function CartModal({ product, player, onClose }) {
       const headers = { 'Content-Type': 'application/json' };
       if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const res  = await fetch('/api/orders/create', {
+      // 1) Kirim payment_type (paymentMethod) yang dipilih user ke backend.
+      //    Backend (pages/api/orders/create-core.js → lib/midtrans.js) yang
+      //    melakukan switch-case & charge ke Midtrans Core API.
+      const res  = await fetch('/api/orders/create-core', {
         method:      'POST',
         headers,
         credentials: 'include',
         body: JSON.stringify({
           productId:        product.id,
+          paymentMethod:    selectedMethod,
           redeemCode:       redeemInfo?.code || null,
           discord_username: discordUser.trim(),
         }),
@@ -96,13 +110,60 @@ export default function CartModal({ product, player, onClose }) {
         return;
       }
 
-      // Redirect ke invoice — Snap token di-embed di sana via <SnapEmbed>
-      router.push('/invoice/' + data.orderId);
+      // 2) Tangani respon sesuai metode pembayaran (buka deeplink / redirect)
+      redirectAfterCharge(data.paymentMethod, data.orderId, data.paymentInfo);
       onClose();
 
     } catch (e) {
       toast.error('Kesalahan: ' + e.message);
       setLoading(false);
+    }
+  };
+
+  // ── Logika redirect & handling setelah respon charge diterima ───────────────
+  // Adaptasi dari pola umum 'invoice-pending.html?order_id=XXX' (statis) menjadi
+  // route dinamis Next.js: /invoice/[orderId] (lihat pages/invoice/[orderId].js).
+  // Halaman tsb sudah otomatis menampilkan QR / nomor VA / bill key dari
+  // payment_info order — jadi di sini cukup buka deeplink (khusus GoPay) lalu redirect.
+  const redirectAfterCharge = (method, orderId, paymentInfo) => {
+    const invoiceUrl = `/invoice/${orderId}`;
+
+    switch (method) {
+
+      // GoPay: otomatis buka aplikasi GoPay via deeplink, lalu arahkan
+      // halaman utama ke invoice (di sana ada QR GoPay sbg fallback).
+      case 'gopay': {
+        const deeplink = paymentInfo?.deeplinkUrl;
+        if (deeplink) {
+          // Tab baru → kalau app GoPay tidak terpasang, tab ini gagal/menutup
+          // sendiri tanpa mengganggu tab utama yang sudah menuju ke invoice.
+          window.open(deeplink, '_blank', 'noopener,noreferrer');
+          // Alternatif same-tab (uncomment baris di bawah kalau mau redirect langsung tanpa tab baru):
+          // window.location.href = deeplink;
+        }
+        router.push(invoiceUrl);
+        break;
+      }
+
+      // QRIS Dinamis: tidak ada deeplink untuk dibuka — qr_string sudah
+      // tersimpan sebagai payment_info di server, redirect saja ke invoice
+      // dan kode QR akan otomatis dirender di sana.
+      case 'gopay_qris':
+        router.push(invoiceUrl);
+        break;
+
+      // Bank Transfer / VA & Mandiri Bill Payment: nomor VA / bill key-code
+      // sudah tersimpan di order, redirect saja ke invoice untuk menampilkannya.
+      case 'bni_va':
+      case 'bri_va':
+      case 'cimb_va':
+      case 'permata_va':
+      case 'mandiri_va':
+        router.push(invoiceUrl);
+        break;
+
+      default:
+        router.push(invoiceUrl);
     }
   };
 
@@ -197,6 +258,18 @@ export default function CartModal({ product, player, onClose }) {
               {redeemInfo && <p style={{ fontSize: 12, color: '#2ecc71', marginTop: 6 }}><Icon name="circle-check" size={12} style={{marginRight:4}}/>Diskon {idr(discount)} diterapkan</p>}
             </div>
 
+            {/* Metode Pembayaran (UI custom — Core API) */}
+            <div style={{ marginBottom: 16 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
+                Pilih Metode Pembayaran
+              </p>
+              <PaymentMethodSelector
+                selected={selectedMethod}
+                onChange={setSelectedMethod}
+                disabled={loading}
+              />
+            </div>
+
             {/* Total */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16, padding: '14px 0', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
               <div>
@@ -208,13 +281,13 @@ export default function CartModal({ product, player, onClose }) {
 
             <button
               onClick={handleCheckout}
-              disabled={loading || !discordUser.trim()}
+              disabled={loading || !discordUser.trim() || !selectedMethod}
               className="btn-primary-fn"
-              style={{ width: '100%', justifyContent: 'center', padding: '13px', fontSize: 14, borderRadius: 10, opacity: !discordUser.trim() ? 0.6 : 1 }}
+              style={{ width: '100%', justifyContent: 'center', padding: '13px', fontSize: 14, borderRadius: 10, opacity: (!discordUser.trim() || !selectedMethod) ? 0.6 : 1 }}
             >
               {loading
                 ? <><span className="fn-spinner" style={{ width: 16, height: 16, borderWidth: 2 }}/> Memproses...</>
-                : <><Icon name="lock" size={14} style={{marginRight:6}}/> Lanjut ke Pembayaran {idr(finalPrice)}</>
+                : <><Icon name="lock" size={14} style={{marginRight:6}}/> Bayar {idr(finalPrice)}</>
               }
             </button>
 
@@ -222,10 +295,14 @@ export default function CartModal({ product, player, onClose }) {
               <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(88,101,242,0.8)', marginTop: 8 }}>
                 <Icon name="discord" size={12} style={{marginRight:4}}/>Isi username Discord untuk melanjutkan
               </p>
+            ) : !selectedMethod ? (
+              <p style={{ textAlign: 'center', fontSize: 11, color: 'rgba(255,200,0,0.85)', marginTop: 8 }}>
+                <Icon name="circle-exclamation" size={12} style={{marginRight:4}}/>Pilih metode pembayaran di atas untuk melanjutkan
+              </p>
             ) : (
               <p style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-muted)', marginTop: 10 }}>
                 <Icon name="shield-halved" size={12} color="#2ecc71" style={{marginRight:4}}/>
-                Kamu akan memilih metode pembayaran resmi Midtrans di halaman berikutnya
+                Pembayaran diproses langsung lewat Midtrans Core API
               </p>
             )}
           </>

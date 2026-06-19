@@ -3,11 +3,10 @@ import Icon from './Icon';
 /**
  * components/PaymentMethodSelector.js  — v3
  *
- * ⚠️ DEPRECATED — TIDAK DIPAKAI LAGI oleh components/CartModal.js.
- * Sejak checkout pindah ke Snap EMBED, daftar metode pembayaran ditampilkan
- * langsung oleh Midtrans (lihat components/SnapEmbed.js), jadi selector
- * custom ini tidak lagi dirender di mana pun pada alur checkout aktif.
- * Dibiarkan ada untuk referensi, bukan untuk dihapus paksa.
+ * UI kartu pemilihan metode pembayaran custom, dirender di dalam
+ * components/CartModal.js sebelum user menekan tombol "Bayar".
+ * Method yang dipilih (selected) dikirim sebagai `paymentMethod` ke
+ * POST /api/orders/create-core (lihat lib/midtrans.js → chargeCoreTransaction).
  *
  * Perbaikan tata letak v3:
  *   - Kategori "QRIS" + "E-Wallet" digabung jadi "Pembayaran Instan" karena
