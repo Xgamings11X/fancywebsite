@@ -8,7 +8,6 @@ import FancyNav, { PlayerAvatar } from '../components/FancyNav';
 import { useTransparentLogo } from '../components/LogoImage';
 import ProductCard from '../components/ProductCard';
 import LoginModal from '../components/LoginModal';
-import CartModal  from '../components/CartModal';
 import toast from 'react-hot-toast';
 
 export async function getServerSideProps() {
