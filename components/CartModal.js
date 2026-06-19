@@ -3,20 +3,27 @@
  *
  * Modal checkout. Alurnya:
  *  1. Pemain isi Username Discord (wajib, untuk klaim role) + kode redeem (opsional)
- *  2. Klik "Bayar Sekarang" → POST /api/orders/create → dapat snapToken
- *  3. Buka popup RESMI Midtrans (Snap.js) lewat lib/snapClient.js
- *     → semua metode pembayaran (QRIS, GoPay, ShopeePay, VA Bank, dll)
- *       sudah tersedia di dalam popup itu sendiri.
- *     TIDAK ADA custom payment-method selector di sini.
- *  4. onSuccess / onPending / ditutup user → diarahkan ke /invoice/[orderId]
- *     untuk melihat status & (jika perlu) membuka ulang popup pembayaran.
+ *  2. Klik "Bayar Sekarang" → POST /api/orders/create → order dibuat (status: pending)
+ *     dan snapToken-nya sudah ikut disimpan di order tsb.
+ *  3. Langsung diarahkan ke /invoice/[orderId]?autopay=1 — popup pembayaran
+ *     RESMI Midtrans (Snap.js) baru dibuka DI HALAMAN INVOICE itu
+ *     (lihat pages/invoice/[orderId].js), bukan di sini.
+ *
+ *     Kenapa dipindah ke invoice dulu, bukan dibuka langsung di modal ini:
+ *     order sudah pasti tersimpan & punya halaman permanen sebelum popup
+ *     dibuka, jadi kalau Snap.js gagal dimuat (internet putus-putus / ad-blocker)
+ *     pemain tidak "nyasar" — mereka tetap di halaman invoice (status: pending)
+ *     dan tinggal klik "Bayar Sekarang" lagi di sana untuk retry, bukan
+ *     kehilangan jejak order-nya di tengah modal checkout.
+ *  4. Setelah pembayaran selesai di popup, halaman invoice yang sama otomatis
+ *     berubah jadi status "success" (lewat verifikasi + polling), tanpa
+ *     perlu redirect lagi.
  */
 
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Icon from './Icon';
-import { openSnapPopup } from '../lib/snapClient';
 
 const idr = v => `Rp ${Number(v || 0).toLocaleString('id-ID')}`;
 
@@ -80,27 +87,13 @@ export default function CartModal({ product, player, onClose }) {
         return;
       }
 
-      const { orderId, snapToken } = data;
+      const { orderId } = data;
 
-      // Buka popup pembayaran resmi Midtrans
-      await openSnapPopup(snapToken, {
-        onSuccess: () => {
-          toast.success('Pembayaran berhasil!');
-          router.push(`/invoice/${orderId}`);
-        },
-        onPending: () => {
-          toast('Selesaikan pembayaran kamu di popup.', { icon: '⏳' });
-          router.push(`/invoice/${orderId}`);
-        },
-        onError: () => {
-          toast.error('Pembayaran gagal. Silakan coba lagi dari halaman invoice.');
-          router.push(`/invoice/${orderId}`);
-        },
-        onClose: () => {
-          toast('Pembayaran belum selesai. Kamu bisa lanjutkan dari halaman invoice.', { icon: 'ℹ️' });
-          router.push(`/invoice/${orderId}`);
-        },
-      });
+      // Order sudah dibuat (status: pending) — arahkan ke halaman invoice dulu.
+      // Popup Midtrans Snap akan otomatis terbuka DI SANA (lihat efek "autopay"
+      // di pages/invoice/[orderId].js) begitu halamannya selesai dimuat.
+      router.push(`/invoice/${orderId}?autopay=1`);
+      return;
 
     } catch (e2) {
       setError(e2.message || 'Terjadi kesalahan. Coba lagi.');

@@ -51,7 +51,7 @@ export default function FancyNav({ player, onLoginClick, onLogout, settings }) {
       </ul>
 
       {/* Right side */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 fn-nav-actions">
         {player ? (
           <div className="flex items-center gap-2">
             {/* Player badge */}
