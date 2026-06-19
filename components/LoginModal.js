@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
+import Icon from './Icon';
 
 const UUID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
@@ -69,7 +70,7 @@ export default function LoginModal({ onClose, onSuccess, product }) {
                 <PlayerHeadPreview uuid={preview.uuid} username={preview.username} size={88}/>
               </div>
               <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:6}}>
-                <i className="fa-solid fa-circle-check" style={{color:'#2ecc71',fontSize:20}}/>
+                <Icon name="circle-check" size={20} color="#2ecc71"/>
                 <h2 className="font-space" style={{fontSize:22,fontWeight:700}}>Login Berhasil!</h2>
               </div>
               <p style={{color:'var(--primary-light)',fontWeight:700,fontSize:17,marginBottom:4}}>{preview.displayName||preview.username}</p>
@@ -92,14 +93,14 @@ export default function LoginModal({ onClose, onSuccess, product }) {
                   <p style={{color:'var(--text-muted)',fontSize:13}}>Gunakan username Minecraft kamu</p>
                 </div>
                 <button onClick={onClose} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-muted)',width:32,height:32,borderRadius:8,cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <i className="fa-solid fa-xmark"/>
+                  <Icon name="xmark" size={14}/>
                 </button>
               </div>
 
               {/* Product mini-badge */}
               {product && (
                 <div style={{background:'rgba(255,107,0,0.06)',border:'1px solid rgba(255,107,0,0.15)',borderRadius:10,padding:'10px 14px',marginBottom:20,display:'flex',alignItems:'center',gap:12}}>
-                  <i className="fa-solid fa-cart-shopping" style={{color:'var(--primary)',fontSize:16}}/>
+                  <Icon name="cart-shopping" size={16} color="var(--primary)"/>
                   <div>
                     <p style={{fontSize:10,color:'var(--text-muted)',fontWeight:700,textTransform:'uppercase',marginBottom:2}}>Kamu ingin membeli</p>
                     <p style={{fontWeight:700,fontSize:14,color:'#fff'}}>{product.name}</p>
@@ -110,25 +111,25 @@ export default function LoginModal({ onClose, onSuccess, product }) {
               {/* Platform Tabs */}
               <div className="tabs-container" style={{marginBottom:20}}>
                 <button className={`tab-btn${platform==='java'?' active':''}`} onClick={()=>{setPlatform('java');setError('');setUsername('');}}>
-                  <i className="fa-brands fa-java"/> Java
+                  <Icon name="mug" size={13} style={{marginRight:5}}/> Java
                 </button>
                 <button className={`tab-btn${platform==='bedrock'?' active':''}`} onClick={()=>{setPlatform('bedrock');setError('');setUsername('');}}>
-                  <i className="fa-solid fa-mobile-screen-button"/> Bedrock
+                  <Icon name="mobile" size={13} style={{marginRight:5}}/> Bedrock
                 </button>
               </div>
 
               {/* Info strip */}
               <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.05)',borderRadius:8,padding:'10px 14px',marginBottom:18,fontSize:12,color:'var(--text-muted)',lineHeight:1.5}}>
                 {isBedrock
-                  ? <><i className="fa-solid fa-info-circle" style={{color:'var(--primary)',marginRight:6}}/>Masukkan nickname <strong style={{color:'#fff'}}>tanpa titik</strong>. Prefix <code style={{color:'var(--primary-light)',fontWeight:700}}> . </code> ditambahkan otomatis.</>
-                  : <><i className="fa-solid fa-info-circle" style={{color:'var(--primary)',marginRight:6}}/>Masukkan username Java persis seperti di server.</>
+                  ? <><Icon name="circle-info" size={13} color="var(--primary)" style={{marginRight:6}}/>Masukkan nickname <strong style={{color:'#fff'}}>tanpa titik</strong>. Prefix <code style={{color:'var(--primary-light)',fontWeight:700}}> . </code> ditambahkan otomatis.</>
+                  : <><Icon name="circle-info" size={13} color="var(--primary)" style={{marginRight:6}}/>Masukkan username Java persis seperti di server.</>
                 }
               </div>
 
               {/* Error */}
               {error && (
                 <div style={{background:'rgba(231,76,60,0.08)',border:'1px solid rgba(231,76,60,0.2)',borderRadius:8,padding:'10px 14px',marginBottom:16,display:'flex',alignItems:'flex-start',gap:10}}>
-                  <i className="fa-solid fa-circle-exclamation" style={{color:'#e74c3c',marginTop:1,flexShrink:0}}/>
+                  <Icon name="circle-exclamation" size={13} color="#e74c3c" style={{marginTop:1,flexShrink:0}}/>
                   <p style={{fontSize:13,color:'#e74c3c',lineHeight:1.5}}>{error}</p>
                 </div>
               )}
@@ -159,7 +160,7 @@ export default function LoginModal({ onClose, onSuccess, product }) {
                   style={{width:'100%',justifyContent:'center',padding:'13px',fontSize:14,borderRadius:10}}>
                   {loading
                     ? <><span className="fn-spinner" style={{width:16,height:16,borderWidth:2}}/> Memeriksa...</>
-                    : <><i className="fa-solid fa-right-to-bracket"/> Masuk</>
+                    : <><Icon name="right-to-bracket" size={13} style={{marginRight:6}}/> Masuk</>
                   }
                 </button>
               </form>

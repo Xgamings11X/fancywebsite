@@ -20,6 +20,7 @@
  *   adminToken  {string}   token admin
  */
 import { useRef, useState, useCallback } from 'react';
+import Icon from './Icon';
 
 export default function ImageUpload({
   value       = '',
@@ -200,7 +201,7 @@ export default function ImageUpload({
           <img src={value} alt="preview" style={previewStyle} onError={e=>{e.target.style.opacity=0.3;}}/>
         ) : (
           <div style={placeholderStyle}>
-            <i className="fa-solid fa-image" style={{fontSize:22, color:'rgba(255,107,0,0.35)'}}/>
+            <Icon name="image" size={22} color="rgba(255,107,0,0.35)"/>
             <span style={{fontSize:10}}>No image</span>
           </div>
         )}
@@ -209,16 +210,16 @@ export default function ImageUpload({
         <div style={{flex:1, display:'flex', flexDirection:'column', gap:6, ...childStyle}}>
           {loading ? (
             <span style={{fontSize:13, color:'var(--primary)', display:'flex', alignItems:'center', gap:6}}>
-              <i className="fa-solid fa-spinner fa-spin"/> Mengunggah...
+              <Icon name="spinner" size={14} spin style={{marginRight:6}}/> Mengunggah...
             </span>
           ) : drag ? (
             <span style={{fontSize:14, color:'var(--primary)', fontWeight:700}}>
-              <i className="fa-solid fa-cloud-arrow-up" style={{marginRight:8}}/>Lepaskan untuk upload
+              <Icon name="cloud-arrow-up" size={14} style={{marginRight:8}}/>Lepaskan untuk upload
             </span>
           ) : (
             <>
               <span style={{fontSize:13, color:'#fff', fontWeight:600}}>
-                <i className="fa-solid fa-upload" style={{marginRight:6, color:'var(--primary)'}}/>
+                <Icon name="upload" size={14} style={{marginRight:6, color:'var(--primary)'}}/>
                 {value ? 'Ganti Gambar' : 'Upload Gambar'}
               </span>
               <span style={{fontSize:11, color:'var(--text-muted)'}}>Klik atau drag &amp; drop file di sini</span>
@@ -245,7 +246,7 @@ export default function ImageUpload({
                   style={{background:'none', border:'none', color:'#e74c3c', cursor:'pointer', fontSize:14, padding:'0 4px', pointerEvents:'auto'}}
                   title="Hapus gambar"
                 >
-                  <i className="fa-solid fa-xmark"/>
+                  <Icon name="xmark" size={13}/>
                 </button>
               )}
             </div>
@@ -263,7 +264,7 @@ export default function ImageUpload({
 
       {error && (
         <span style={{fontSize:11, color:'#e74c3c', display:'flex', alignItems:'center', gap:5}}>
-          <i className="fa-solid fa-triangle-exclamation"/> {error}
+          <Icon name="triangle-exclamation" size={13} style={{marginRight:6}}/> {error}
         </span>
       )}
     </div>

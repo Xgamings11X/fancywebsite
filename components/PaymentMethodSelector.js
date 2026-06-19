@@ -1,21 +1,22 @@
-import { useState } from 'react';
 import Icon from './Icon';
 /**
- * components/PaymentMethodSelector.js  — v2 (FIXED)
+ * components/PaymentMethodSelector.js — v3 (FIXED: no more empty/broken cards)
  *
- * ✅ Perbaikan dari screenshot:
- *   1. Logo payment (QRIS, GoPay, dll) sekarang memiliki container
- *      berukuran tetap (logoBox) sehingga tinggi kartu seragam.
- *   2. Fallback icon FA ditampilkan di dalam logoBox yang sama,
- *      tidak menyebabkan layout shift.
- *   3. Warna icon fallback mengikuti warna kategori (cat.color),
- *      bukan warna muted yang sulit dibedakan.
- *   4. Border-radius kartu lebih besar (12px) & hover shadow halus.
- *   5. Grid minmax dikecilkan ke 130px agar 2 kolom selalu muat
- *      bahkan di layar sempit (mobile ~360px).
- *   6. Active state: border lebih tebal (2px) + background sedikit
- *      lebih terang untuk kontras yang jelas.
- *   7. Dot indikator aktif diperbesar (8px) dan diberi ring transparan.
+ * ✅ Root cause dari screenshot ("bolong-bolong" / kosong):
+ *   Versi sebelumnya memuat logo bank/e-wallet dari hotlink Wikimedia Commons.
+ *   Beberapa URL itu lambat, di-throttle, atau berubah path-nya, sehingga
+ *   <img> gagal load secara tidak konsisten — beberapa kartu tampil dengan
+ *   logo penuh warna, kartu lain jatuh ke fallback ikon generik polos. Hasilnya
+ *   grid yang tidak rapi, sebagian "kosong".
+ *
+ * ✅ Fix: setiap metode sekarang punya "badge" lokal (teks + warna brand)
+ *   yang di-render murni dengan CSS/SVG inline — TIDAK ADA request gambar
+ *   eksternal sama sekali. Konsekuensinya:
+ *     1. Tidak akan pernah ada kartu kosong/patah, di kondisi network apa pun.
+ *     2. Tampilan 100% konsisten antar kartu (ukuran, kontras, keterbacaan).
+ *     3. Menghapus beberapa request gambar eksternal dari halaman checkout →
+ *        mengurangi network payload & mempercepat render modal (selaras
+ *        dengan optimasi Core Web Vitals).
  */
 
 /**
@@ -35,7 +36,7 @@ export const PAYMENT_CATEGORIES = [
         key:   'gopay_qris',
         label: 'QRIS Dinamis',
         desc:  'Scan via GoPay / semua scanner',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Logo_QRIS.svg/120px-Logo_QRIS.svg.png',
+        badge: { text: 'QRIS', bg: '#000000', fg: '#ffffff' },
       },
     ],
   },
@@ -49,7 +50,7 @@ export const PAYMENT_CATEGORIES = [
         key:   'gopay',
         label: 'GoPay',
         desc:  'Deeplink / QR GoPay',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Gopay_logo.svg/120px-Gopay_logo.svg.png',
+        badge: { text: 'GoPay', bg: '#00aa5b', fg: '#ffffff' },
       },
     ],
   },
@@ -63,88 +64,72 @@ export const PAYMENT_CATEGORIES = [
         key:   'bni_va',
         label: 'BNI Virtual Account',
         desc:  'ATM / BNI Mobile',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/f/f0/Bank_Negara_Indonesia_logo_%282004%29.svg',
+        badge: { text: 'BNI', bg: '#f37021', fg: '#ffffff' },
       },
       {
         key:   'bri_va',
         label: 'BRI Virtual Account',
         desc:  'ATM / BRImo',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/f/f5/BANK_BRI_logo_%28vertical%29.svg',
+        badge: { text: 'BRI', bg: '#00529c', fg: '#ffffff' },
       },
       {
         key:   'cimb_va',
         label: 'CIMB Niaga VA',
         desc:  'ATM / octo mobile',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9e/CIMB_Niaga.svg/120px-CIMB_Niaga.svg.png',
+        badge: { text: 'CIMB', bg: '#9e1b32', fg: '#ffffff' },
       },
       {
         key:   'permata_va',
         label: 'Permata Virtual Account',
         desc:  'ATM / PermataMobile X',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/f/ff/Permata_Bank_%282024%29.svg',
+        badge: { text: 'Permata', bg: '#00563f', fg: '#ffffff' },
       },
       {
         key:   'mandiri_va',
         label: 'Mandiri Bill Payment',
         desc:  'ATM / Livin by Mandiri',
-        logo:  'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Bank_Mandiri_logo_2016.svg/120px-Bank_Mandiri_logo_2016.svg.png',
+        badge: { text: 'Mandiri', bg: '#003d79', fg: '#ffd200' },
       },
     ],
   },
 ];
 
-// ── Helper: logo dengan fallback ke FA icon ───────────────────────────────────
-function PaymentLogo({ logo, icon, label, catColor, isActive }) {
-  const [imgFailed, setImgFailed] = useState(false);
-
-  // Ukuran container logo selalu tetap → kartu sejajar
+// ── Helper: badge lokal (teks + warna brand), tanpa request gambar ───────────
+function PaymentLogo({ badge, isActive }) {
   const boxStyle = {
     display:        'flex',
     alignItems:     'center',
     justifyContent: 'center',
-    width:          56,
+    width:          '100%',
     height:         32,
     flexShrink:     0,
   };
 
-  if (logo && !imgFailed) {
-    return (
-      <span style={boxStyle}>
-        <img
-          src={logo}
-          alt={label}
-          loading="lazy"
-          decoding="async"
-          style={{
-            maxWidth:       56,
-            maxHeight:      28,
-            width:          'auto',
-            height:         'auto',
-            objectFit:      'contain',
-            filter:         isActive ? 'none' : 'grayscale(20%) brightness(0.9)',
-            transition:     'filter 0.18s',
-          }}
-          onError={() => setImgFailed(true)}
-        />
-      </span>
-    );
-  }
-
-  // Fallback: Icon SVG dengan warna kategori
   return (
     <span style={boxStyle}>
-      <Icon
-        name={icon || 'receipt'}
-        size={22}
-        color={isActive ? catColor : 'rgba(255,255,255,0.35)'}
-        style={{transition:'color 0.18s'}}
-      />
+      <span style={{
+        display:        'inline-flex',
+        alignItems:     'center',
+        justifyContent: 'center',
+        padding:        '4px 10px',
+        borderRadius:   6,
+        background:     badge.bg,
+        color:          badge.fg,
+        fontSize:       badge.text.length > 5 ? 10 : 11,
+        fontWeight:     800,
+        letterSpacing:  0.3,
+        whiteSpace:     'nowrap',
+        maxWidth:       '100%',
+        overflow:       'hidden',
+        textOverflow:   'ellipsis',
+        opacity:        isActive ? 1 : 0.88,
+        transition:     'opacity 0.18s',
+      }}>
+        {badge.text}
+      </span>
     </span>
   );
 }
-
-// ── useState import ───────────────────────────────────────────────────────────
-
 
 // ── Komponen utama ────────────────────────────────────────────────────────────
 export default function PaymentMethodSelector({ selected, onChange, disabled = false }) {
@@ -246,14 +231,8 @@ export default function PaymentMethodSelector({ selected, onChange, disabled = f
                     }} />
                   )}
 
-                  {/* ── Logo / Icon (fixed-height container) ─────────── */}
-                  <PaymentLogo
-                    logo={m.logo}
-                    icon={m.icon}
-                    label={m.label}
-                    catColor={cat.color}
-                    isActive={isActive}
-                  />
+                  {/* ── Badge (fixed-height container, no network) ────── */}
+                  <PaymentLogo badge={m.badge} isActive={isActive} />
 
                   {/* ── Label ────────────────────────────────────────── */}
                   <span style={{
