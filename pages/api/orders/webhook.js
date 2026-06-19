@@ -37,9 +37,13 @@ export default async function handler(req, res) {
     }
 
     // ── Update status order ───────────────────────────────────────
+    // PENTING: Jangan timpa payment_method yang sudah spesifik (bni_va, mandiri_va, dll)
+    // dengan type generik Midtrans (bank_transfer / echannel / qris).
+    // payment_method sudah di-set dengan benar saat order dibuat di create-core.js.
+    const methodUpdate = order.payment_method ? {} : { payment_method: paymentType };
     await OrdersAsync.update(n.order_id, {
       payment_status:          finalStatus,
-      payment_method:          paymentType,
+      ...methodUpdate,
       midtrans_transaction_id: n.transaction_id,
       midtrans_raw:            JSON.stringify(n),
     });
