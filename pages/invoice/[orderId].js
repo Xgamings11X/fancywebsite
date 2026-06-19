@@ -1,7 +1,7 @@
 /**
  * pages/invoice/[orderId].js
- * - Landing → tampilkan detail invoice + tombol bayar via Tripay
- * - Redirect ke Tripay checkout URL saat klik Bayar Sekarang
+ * - Landing → tampilkan detail invoice + tombol bayar (popup Midtrans Snap)
+ * - Buka ulang popup Midtrans Snap saat klik "Bayar Sekarang"
  * - Download PDF
  * - Expired otomatis 1 hari (24 jam)
  * - Cancel jika user keluar halaman saat pending
@@ -11,6 +11,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
 import FancyNav from '../../components/FancyNav';
 import LogoImage, { useTransparentLogo } from '../../components/LogoImage';
 import LoginModal from '../../components/LoginModal';
@@ -141,11 +142,24 @@ export default function InvoicePage({ order: initialOrder, settings }) {
     };
   }, [isPending, isDone]);
 
-  // ── Buka Tripay ─────────────────────────────────────────────────
-  const openTripay = () => {
-    const url = liveOrder?.tripay_pay_url;
-    if (!url) { alert('URL pembayaran tidak ditemukan. Hubungi admin.'); return; }
-    window.open(url, '_blank', 'noopener,noreferrer');
+  // ── Buka popup Midtrans Snap ──────────────────────────────────────
+  const [payingNow, setPayingNow] = useState(false);
+  const openMidtransPopup = async () => {
+    const token = liveOrder?.midtrans_snap_token;
+    if (!token) { toast.error('Token pembayaran tidak ditemukan. Hubungi admin.'); return; }
+    setPayingNow(true);
+    try {
+      const { openSnapPopup } = await import('../../lib/snapClient');
+      await openSnapPopup(token, {
+        onSuccess: () => { toast.success('Pembayaran berhasil!'); fetch('/api/orders/verify/'+initialOrder.order_id,{credentials:'include'}).then(r=>r.json()).then(d=>d?.order&&setLiveOrder(d.order)).catch(()=>{}); },
+        onPending: () => { toast('Selesaikan pembayaran kamu di popup.', { icon: '⏳' }); },
+        onError:   () => { toast.error('Pembayaran gagal. Coba lagi.'); },
+        onClose:   () => {},
+      });
+    } catch (e) {
+      toast.error(e.message || 'Gagal membuka popup pembayaran.');
+    }
+    setPayingNow(false);
   };
 
   // ── Download PDF ────────────────────────────────────────────────
@@ -205,8 +219,8 @@ export default function InvoicePage({ order: initialOrder, settings }) {
             </div>
           </div>
           {isPending && (
-            <button onClick={openTripay} disabled={false} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 20px',background:'linear-gradient(135deg,var(--primary),var(--primary-light))',color:'#fff',border:'none',borderRadius:10,fontSize:13,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',flexShrink:0,opacity:1,boxShadow:'0 4px 16px rgba(255,107,0,0.3)'}}>
-              <i className={'fa-solid fa-credit-card'}/>
+            <button onClick={openMidtransPopup} disabled={payingNow} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 20px',background:'linear-gradient(135deg,var(--primary),var(--primary-light))',color:'#fff',border:'none',borderRadius:10,fontSize:13,fontWeight:700,cursor:payingNow?'not-allowed':'pointer',whiteSpace:'nowrap',flexShrink:0,opacity:payingNow?0.7:1,boxShadow:'0 4px 16px rgba(255,107,0,0.3)'}}>
+              {payingNow ? <span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> : <i className={'fa-solid fa-credit-card'}/>}
               {'Bayar Sekarang'}
             </button>
           )}
@@ -326,8 +340,8 @@ export default function InvoicePage({ order: initialOrder, settings }) {
             </Link>
             <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
               {isPending ? (
-                <button onClick={openTripay} disabled={false} className="btn-primary-fn" style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600,opacity:1}}>
-                  <i className={'fa-solid fa-credit-card'}/>
+                <button onClick={openMidtransPopup} disabled={payingNow} className="btn-primary-fn" style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600,opacity:payingNow?0.7:1,cursor:payingNow?'not-allowed':'pointer'}}>
+                  {payingNow ? <span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> : <i className={'fa-solid fa-credit-card'}/>}
                   {'Bayar Sekarang'}
                 </button>
               ) : (
