@@ -18,6 +18,7 @@ import toast from 'react-hot-toast';
 import FancyNav from '../../components/FancyNav';
 import LogoImage, { useTransparentLogo } from '../../components/LogoImage';
 import LoginModal from '../../components/LoginModal';
+import Icon from '../../components/Icon';
 
 export async function getServerSideProps({ params }) {
   try {
@@ -48,17 +49,17 @@ const FAILED_STATUSES = ['expire','cancel','cancelled','deny','failed','expired'
 const DONE_STATUSES   = [...PAID_STATUSES, ...FAILED_STATUSES];
 
 const STATUS_CFG = {
-  settlement: { label:'Pembayaran Berhasil',    icon:'fa-circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
-  capture:    { label:'Pembayaran Berhasil',    icon:'fa-circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
-  success:    { label:'Pembayaran Berhasil',    icon:'fa-circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
-  paid:       { label:'Pembayaran Berhasil',    icon:'fa-circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
-  pending:    { label:'Menunggu Pembayaran',    icon:'fa-clock',                color:'#ffc800', bg:'rgba(255,200,0,0.08)',   border:'rgba(255,200,0,0.2)'   },
-  expire:     { label:'Transaksi Kadaluarsa',   icon:'fa-circle-xmark',         color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
-  expired:    { label:'Transaksi Kadaluarsa',   icon:'fa-circle-xmark',         color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
-  cancel:     { label:'Transaksi Dibatalkan',   icon:'fa-ban',                  color:'#888',    bg:'rgba(136,136,136,0.08)', border:'rgba(136,136,136,0.2)' },
-  cancelled:  { label:'Transaksi Dibatalkan',   icon:'fa-ban',                  color:'#888',    bg:'rgba(136,136,136,0.08)', border:'rgba(136,136,136,0.2)' },
-  deny:       { label:'Pembayaran Ditolak',     icon:'fa-triangle-exclamation', color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
-  failed:     { label:'Pembayaran Gagal',       icon:'fa-triangle-exclamation', color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
+  settlement: { label:'Pembayaran Berhasil',    icon:'circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
+  capture:    { label:'Pembayaran Berhasil',    icon:'circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
+  success:    { label:'Pembayaran Berhasil',    icon:'circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
+  paid:       { label:'Pembayaran Berhasil',    icon:'circle-check',         color:'#2ecc71', bg:'rgba(46,204,113,0.08)',  border:'rgba(46,204,113,0.2)'  },
+  pending:    { label:'Menunggu Pembayaran',    icon:'clock',                color:'#ffc800', bg:'rgba(255,200,0,0.08)',   border:'rgba(255,200,0,0.2)'   },
+  expire:     { label:'Transaksi Kadaluarsa',   icon:'circle-xmark',         color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
+  expired:    { label:'Transaksi Kadaluarsa',   icon:'circle-xmark',         color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
+  cancel:     { label:'Transaksi Dibatalkan',   icon:'ban',                  color:'#888',    bg:'rgba(136,136,136,0.08)', border:'rgba(136,136,136,0.2)' },
+  cancelled:  { label:'Transaksi Dibatalkan',   icon:'ban',                  color:'#888',    bg:'rgba(136,136,136,0.08)', border:'rgba(136,136,136,0.2)' },
+  deny:       { label:'Pembayaran Ditolak',     icon:'triangle-exclamation', color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
+  failed:     { label:'Pembayaran Gagal',       icon:'triangle-exclamation', color:'#ff3b30', bg:'rgba(255,59,48,0.08)',   border:'rgba(255,59,48,0.2)'   },
 };
 
 export default function InvoicePage({ order: initialOrder, settings }) {
@@ -122,14 +123,21 @@ export default function InvoicePage({ order: initialOrder, settings }) {
     return () => clearInterval(pollRef.current);
   }, []);
 
+  // ── Sudah bayar? (ref, supaya nilainya langsung sinkron tanpa nunggu
+  // render — dipakai di bawah biar event yang lepas tembak (unload/route
+  // change/popup close) tidak pernah salah anggap order ini "dibatalkan"
+  // padahal user BARU SAJA selesai bayar) ──────────────────────────────
+  const paidRef = useRef(isPaid);
+  useEffect(() => { if (isPaid) paidRef.current = true; }, [isPaid]);
+
   // ── Cancel saat user navigasi keluar ───────────────────────────
   useEffect(() => {
     const onUnload = () => {
-      if (!isDone)
+      if (!isDone && !paidRef.current)
         navigator.sendBeacon('/api/orders/cancel', JSON.stringify({ orderId: initialOrder.order_id }));
     };
     const onRoute = url => {
-      if (!url.startsWith('/invoice/') && isPending) {
+      if (!url.startsWith('/invoice/') && isPending && !paidRef.current) {
         fetch('/api/orders/cancel', {
           method:'POST', credentials:'include',
           headers:{'Content-Type':'application/json'},
@@ -154,9 +162,24 @@ export default function InvoicePage({ order: initialOrder, settings }) {
     try {
       const { openSnapPopup } = await import('../../lib/snapClient');
       await openSnapPopup(token, {
-        onSuccess: () => { toast.success('Pembayaran berhasil!'); fetch('/api/orders/verify/'+initialOrder.order_id,{credentials:'include'}).then(r=>r.json()).then(d=>d?.order&&setLiveOrder(d.order)).catch(()=>{}); },
+        onSuccess: () => {
+          // Tandai sudah bayar SEKARANG JUGA (sebelum apapun yang async),
+          // lalu langsung tutup popup-nya sendiri — jangan nunggu Midtrans
+          // nutup otomatis (animasi suksesnya bisa beberapa detik).
+          paidRef.current = true;
+          try { window.snap?.hide?.(); } catch {}
+          toast.success('Pembayaran berhasil!');
+          // Refresh status invoice di tempat — tidak perlu redirect, kita
+          // memang sudah di halaman invoice-nya — supaya langsung berubah
+          // jadi "Pembayaran Berhasil" tanpa nunggu polling 3 detik berikutnya.
+          fetch('/api/orders/verify/'+initialOrder.order_id,{credentials:'include'})
+            .then(r=>r.json()).then(d=>d?.order&&setLiveOrder(d.order)).catch(()=>{});
+        },
         onPending: () => { toast('Selesaikan pembayaran kamu di popup.', { icon: '⏳' }); },
         onError:   () => { toast.error('Pembayaran gagal. Coba lagi.'); },
+        // Popup ditutup (baik oleh user atau oleh Midtrans setelah sukses).
+        // Kalau ternyata sudah bayar (paidRef), jangan tampilkan apa-apa —
+        // jangan dianggap "dibatalkan".
         onClose:   () => {},
       });
     } catch (e) {
@@ -229,7 +252,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
         {/* Status Banner */}
         <div style={{width:'100%',maxWidth:820,display:'flex',alignItems:'center',gap:16,background:cfg.bg,border:`1px solid ${cfg.border}`,borderRadius:14,padding:'16px 22px',marginBottom:16,flexWrap:'wrap'}}>
           <div style={{width:44,height:44,borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,fontSize:20,background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`}}>
-            <i className={`fa-solid ${cfg.icon}`}/>
+            <Icon name={cfg.icon} size={20} color={cfg.color}/>
           </div>
           <div style={{flex:1,minWidth:200}}>
             <div style={{fontFamily:'Space Grotesk,sans-serif',fontWeight:700,fontSize:16,color:'#fff'}}>{cfg.label}</div>
@@ -241,7 +264,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           </div>
           {isPending && (
             <button onClick={openMidtransPopup} disabled={payingNow} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'10px 20px',background:'linear-gradient(135deg,var(--primary),var(--primary-light))',color:'#fff',border:'none',borderRadius:10,fontSize:13,fontWeight:700,cursor:payingNow?'not-allowed':'pointer',whiteSpace:'nowrap',flexShrink:0,opacity:payingNow?0.7:1,boxShadow:'0 4px 16px rgba(255,107,0,0.3)'}}>
-              {payingNow ? <span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> : <i className={'fa-solid fa-credit-card'}/>}
+              {payingNow ? <span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> : <Icon name="credit-card" size={14}/>}
               {'Bayar Sekarang'}
             </button>
           )}
@@ -266,10 +289,10 @@ export default function InvoicePage({ order: initialOrder, settings }) {
             </div>
             <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:8}}>
               <div style={{display:'inline-flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:100,background:cfg.bg,border:`1px solid ${cfg.border}`,color:cfg.color,fontSize:12,fontWeight:700,textTransform:'uppercase',letterSpacing:1}}>
-                <i className={`fa-solid ${cfg.icon}`}/> {cfg.label}
+                <Icon name={cfg.icon} size={12} color={cfg.color}/> {cfg.label}
               </div>
               <button onClick={copyId} style={{fontFamily:'Space Grotesk,sans-serif',fontSize:14,fontWeight:700,color:'#fff',background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:8,padding:'5px 12px',cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
-                <i className={`fa-solid ${copied?'fa-check':'fa-copy'}`} style={{fontSize:11,opacity:0.6}}/> #{initialOrder.order_id}
+                <Icon name={copied?'check':'copy'} size={11} style={{opacity:0.6}}/> #{initialOrder.order_id}
               </button>
             </div>
           </header>
@@ -282,9 +305,9 @@ export default function InvoicePage({ order: initialOrder, settings }) {
                 <img src={liveOrder.player_uuid?`https://crafatar.com/avatars/${liveOrder.player_uuid}?size=64&overlay`:`https://minotar.net/helm/${encodeURIComponent(liveOrder.player_username||'steve')}/64`} alt={liveOrder.player_username} style={{width:40,height:40,borderRadius:6,imageRendering:'pixelated',flexShrink:0,border:'1px solid rgba(255,255,255,0.08)'}} onError={e=>{e.target.src='https://minotar.net/helm/steve/64';}}/>
                 <div>
                   <div style={{display:'inline-flex',alignItems:'center',gap:6,background:'rgba(255,255,255,0.04)',padding:'4px 10px',borderRadius:6,border:'1px solid rgba(255,255,255,0.06)',fontWeight:600,fontSize:14,color:'#fff'}}>
-                    <i className="fa-solid fa-gamepad" style={{fontSize:11,color:'var(--primary)'}}/> {liveOrder.player_username}
+                    <Icon name="gamepad" size={11} color="var(--primary)"/> {liveOrder.player_username}
                   </div>
-                  {liveOrder.discord_username && <div style={{fontSize:12,color:'var(--text-muted)',marginTop:3,display:'flex',alignItems:'center',gap:5}}><i className="fa-brands fa-discord" style={{fontSize:11,color:'#5865F2'}}/> {liveOrder.discord_username}</div>}
+                  {liveOrder.discord_username && <div style={{fontSize:12,color:'var(--text-muted)',marginTop:3,display:'flex',alignItems:'center',gap:5}}><Icon name="discord" size={11} color="#5865F2"/> {liveOrder.discord_username}</div>}
                 </div>
               </div>
             </div>
@@ -348,7 +371,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           {isPaid && (
             <div style={{marginBottom:24}}>
               <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'8px 16px',borderRadius:100,fontSize:13,fontWeight:600,...(liveOrder.plugin_notified?{background:'rgba(46,204,113,0.08)',border:'1px solid rgba(46,204,113,0.2)',color:'#2ecc71'}:{background:'rgba(255,200,0,0.08)',border:'1px solid rgba(255,200,0,0.2)',color:'#ffc800'})}}>
-                <i className={`fa-solid ${liveOrder.plugin_notified?'fa-cube':'fa-hourglass-half'}`}/>
+                <Icon name={liveOrder.plugin_notified?'cube':'hourglass-half'} size={14}/>
                 {liveOrder.plugin_notified?'Item telah dikirim ke server Minecraft':'Menunggu pengiriman item ke server'}
               </div>
             </div>
@@ -357,21 +380,20 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           {/* Actions */}
           <footer style={{display:'flex',justifyContent:'space-between',alignItems:'center',borderTop:'1px solid rgba(255,255,255,0.06)',paddingTop:28,flexWrap:'wrap',gap:16}}>
             <Link href="/store" style={{color:'var(--text-muted)',textDecoration:'none',fontSize:13,fontWeight:600,display:'inline-flex',alignItems:'center',gap:8}}>
-              <i className="fa-solid fa-arrow-left"/> Kembali ke Store
+              <Icon name="arrow-left" size={13}/> Kembali ke Store
             </Link>
             <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-              {isPending ? (
+              {isPending && (
                 <button onClick={openMidtransPopup} disabled={payingNow} className="btn-primary-fn" style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600,opacity:payingNow?0.7:1,cursor:payingNow?'not-allowed':'pointer'}}>
-                  {payingNow ? <span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> : <i className={'fa-solid fa-credit-card'}/>}
+                  {payingNow ? <span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> : <Icon name="credit-card" size={13}/>}
                   {'Bayar Sekarang'}
                 </button>
-              ) : (
-                <button onClick={handleDownloadPdf} className="btn-ghost-fn" style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600}}>
-                  <i className="fa-solid fa-file-pdf"/> Download PDF
-                </button>
               )}
+              <button onClick={handleDownloadPdf} className="btn-ghost-fn" style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600}}>
+                <Icon name="file-pdf" size={13}/> Download PDF
+              </button>
               <button onClick={copyId} className="btn-ghost-fn" style={{display:'flex',alignItems:'center',gap:8,fontSize:13,fontWeight:600}}>
-                <i className={`fa-solid ${copied?'fa-check':'fa-copy'}`}/>
+                <Icon name={copied?'check':'copy'} size={13}/>
                 {copied?'Tersalin!':'Salin ID Order'}
               </button>
             </div>
