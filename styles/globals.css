@@ -81,7 +81,17 @@ body {
   border-radius: 16px;
 }
 
+.fn-nav > a {
+  grid-column: 1;
+}
+
+.fn-nav > ul {
+  grid-column: 2;
+  justify-self: center;
+}
+
 .fn-nav-actions {
+  grid-column: 3;
   justify-self: end;
 }
 
