@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -8,7 +8,6 @@ import FancyNav, { PlayerAvatar } from '../components/FancyNav';
 import { useTransparentLogo } from '../components/LogoImage';
 import ProductCard from '../components/ProductCard';
 import toast from 'react-hot-toast';
-import FancyFooter from '../components/FancyFooter';
 
 const LoginModal = dynamic(() => import('../components/LoginModal'), { ssr: false });
 const CartModal  = dynamic(() => import('../components/CartModal'),  { ssr: false });
@@ -51,10 +50,10 @@ export default function StorePage({ settings, categories: initCategories, produc
   const [search,     setSearch]     = useState('');
   const [products,   setProducts]   = useState(initProducts || []);
   const [categories, setCategories] = useState(initCategories || []);
-  const [isLoaded,   setIsLoaded]   = useState(false); // Trigger Page Load Animation
+  const [isLoaded,   setIsLoaded]   = useState(false);
 
+  // 1. Ambil data produk & kelola animasi page load
   useEffect(() => {
-    // Trigger Animasi Page Load secara bertahap
     const t = setTimeout(() => setIsLoaded(true), 50);
 
     fetch('/api/store/products')
@@ -73,7 +72,16 @@ export default function StorePage({ settings, categories: initCategories, produc
     return () => clearTimeout(t);
   }, []);
 
-  // Intersection Observer untuk mendeteksi scroll item produk secara native & ringan
+  // 2. Filter Produk menggunakan useMemo agar hemat memori & performa tinggi
+  const filtered = useMemo(() => {
+    return products.filter(p => {
+      const matchTab  = activeTab === 'all' || p.category_slug === activeTab;
+      const matchSrch = !search || p.name.toLowerCase().includes(search.toLowerCase());
+      return matchTab && matchSrch;
+    });
+  }, [products, activeTab, search]);
+
+  // 3. Intersection Observer untuk scroll items (Mencegah Lag / Memory Leak)
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -82,11 +90,13 @@ export default function StorePage({ settings, categories: initCategories, produc
           observer.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0.02, rootMargin: '0px 0px -20px 0px' });
 
-    document.querySelectorAll('.scroll-animate').forEach(el => observer.observe(el));
+    const items = document.querySelectorAll('.scroll-animate');
+    items.forEach(el => observer.observe(el));
+    
     return () => observer.disconnect();
-  }, [filtered, activeTab]); // Re-observe otomatis ketika tab berganti atau hasil pencarian berubah
+  }, [filtered]); 
 
   useEffect(() => {
     try {
@@ -130,13 +140,6 @@ export default function StorePage({ settings, categories: initCategories, produc
 
   const toggleExpand = (id) => setExpanded(p=>({...p,[id]:!p[id]}));
 
-  const filtered = products.filter(p => {
-    const matchTab  = activeTab==='all' || p.category_slug===activeTab;
-    const matchSrch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    return matchTab && matchSrch;
-  });
-
-  // Semua tab dipaksa menggunakan skema warna oranye kontras tinggi secara seragam
   const allTabs = [
     { id:'all', label:'Semua', color:'#F97316' },
     ...categories.map(c=>({ id:c.slug, label:c.name, color:'#F97316' })),
@@ -151,10 +154,9 @@ export default function StorePage({ settings, categories: initCategories, produc
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      {/* BACKGROUND PUTIH PREMIUM DENGAN AKSEN JINGGA TOTALITAS */}
       <div className="orange-theme-wrapper" style={{ backgroundColor: '#FFFFFF', color: '#1A0D05', minHeight: '100vh', position: 'relative', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
         
-        {/* Ambient Warm Sunset Glow Background */}
+        {/* Soft Ambient Glow Layer */}
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }} className="gpu-glow-layer">
           <div style={{ position: 'absolute', top: '-5%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '500px', background: 'radial-gradient(circle, rgba(249,115,22,0.04) 0%, transparent 75%)', filter: 'blur(80px)' }} />
         </div>
@@ -163,14 +165,16 @@ export default function StorePage({ settings, categories: initCategories, produc
 
         <div style={{padding:'140px 6% 80px', maxWidth:1200, margin:'0 auto', position:'relative', zIndex: 1, flex: 1, width: '100%'}}>
 
-          {/* HEADER SECTION (ANIMATED VIA STAGGERED LOAD) */}
-          <div style={{textAlign:'center', marginBottom:48}} className={`load-animate ${isLoaded ? 'loaded' : ''}`}>
+          {/* HEADER SECTION (SAFE STAGGERED LOAD) */}
+          <header style={{textAlign:'center', marginBottom:48}} className={isLoaded ? 'load-animate loaded' : 'load-animate'}>
             <span style={{display:'inline-flex', alignItems:'center', gap:10, padding:'4px 14px', borderRadius:'50px', background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.25)', color:'#EA580C', fontWeight:700, fontSize:10.5, letterSpacing:'0.5px'}} className="load-item-1">
               OFFICIAL MARKETPLACE
             </span>
-            <h1 className="font-space" style={{fontSize:'clamp(42px, 8vw, 64px)', fontWeight:900, color:'#1A0D05', margin:'14px 0 8px', letterSpacing:'-1px'}} className="load-item-2">
+            
+            <h1 className="font-space load-item-2" style={{fontSize:'clamp(42px, 8vw, 64px)', fontWeight:900, color:'#1A0D05', margin:'14px 0 8px', letterSpacing:'-1px'}}>
               STORE
             </h1>
+            
             <p style={{color:'#EA580C', opacity:0.85, fontSize:14.5, maxWidth:500, margin:'0 auto 24px', fontWeight:500}} className="load-item-3">
               Setiap donasi membantu server tetap online. Item otomatis masuk secara instan!
             </p>
@@ -186,12 +190,12 @@ export default function StorePage({ settings, categories: initCategories, produc
                 )}
               </div>
             )}
-          </div>
+          </header>
 
-          {/* FILTER TOOLBAR (ANIMATED VIA STAGGERED LOAD) */}
-          <div style={{marginBottom:32, display:'flex', flexDirection:'column', gap:16}} className={`load-animate ${isLoaded ? 'loaded' : ''}`}>
+          {/* FILTER TOOLBAR */}
+          <div style={{marginBottom:32, display:'flex', flexDirection:'column', gap:16}} className={isLoaded ? 'load-animate loaded' : 'load-animate'}>
             {/* Search bar */}
-            <div style={{display:'flex', justifyContent:'flex-end'}} className="load-item-4">
+            <div style={{display:'flex', justifyContent:'flex-end'} } className="load-item-4">
               <div style={{position:'relative', width: '100%', maxWidth: 260}}>
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#EA580C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', opacity:0.7}}>
                   <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
@@ -260,7 +264,7 @@ export default function StorePage({ settings, categories: initCategories, produc
         {showCart && cartItem && <CartModal product={cartItem} player={player} onClose={()=>{ setShowCart(false); setCartItem(null); }}/>}
       </div>
 
-      {/* OVERRIDING INTERFACE STYLES & CORE ANIMATIONS */}
+      {/* CORE CSS NATIVE ANIMATIONS */}
       <style jsx global>{`
         html {
           scroll-behavior: smooth;
@@ -271,9 +275,7 @@ export default function StorePage({ settings, categories: initCategories, produc
           transform: translateZ(0);
         }
 
-        /* ---------------------------------------------
-           1. ANIMASI PAGE LOAD (STAGGERED FADE IN)
-        --------------------------------------------- */
+        /* ANIMASI PAGE LOAD STAGGERED FADE-IN */
         .load-animate [class^="load-item-"] {
           opacity: 0;
           transform: translateY(12px);
@@ -285,9 +287,7 @@ export default function StorePage({ settings, categories: initCategories, produc
         .load-animate.loaded .load-item-3 { opacity: 1; transform: translateY(0); transition-delay: 160ms; }
         .load-animate.loaded .load-item-4 { opacity: 1; transform: translateY(0); transition-delay: 220ms; }
 
-        /* ---------------------------------------------
-           2. ANIMASI SCROLL EMERGENCE (NATIVE OBSERVER)
-        --------------------------------------------- */
+        /* ANIMASI SCROLL VIA OBSERVER */
         .scroll-animate {
           opacity: 0;
           transform: translateY(20px);
@@ -299,7 +299,6 @@ export default function StorePage({ settings, categories: initCategories, produc
           transform: translateY(0);
         }
 
-        /* HOVER INTERAKTIF ELEMEN JINGGA */
         .store-input-search:focus {
           border-color: #F97316 !important;
           box-shadow: 0 0 0 3px rgba(249,115,22,0.08);
@@ -314,7 +313,6 @@ export default function StorePage({ settings, categories: initCategories, produc
           background: #EA580C !important;
         }
 
-        /* Sinkronisasi paksa elemen internal ProductCard ke oranye */
         .store-product-wrapper .btn-buy, 
         .store-product-wrapper button {
           border-radius: 10px !important;
