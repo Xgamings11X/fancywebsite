@@ -1020,20 +1020,15 @@ body.page-loaded .section-heading-line::after {
   box-shadow: 0 0 8px rgba(255,107,0,0.6);
 }
 
-/* ── Cursor glow ──────────────────────────────────────────────────
-   Small orange dot that follows cursor for premium feel
+/* ── Cursor glow (DINONAKTIFKAN) ────────────────────────────────────
+   Efek glow yang mengikuti kursor di background utama dihapus sesuai
+   permintaan. Elemen #cursor-glow ini HANYA memengaruhi background
+   (z-index:0, terpisah dari .btn-primary-fn / .rank-card-popular / dll
+   yang punya box-shadow sendiri) — jadi aman tanpa merusak glow di
+   card & tombol.
 ───────────────────────────────────────────────────────────────── */
 #cursor-glow {
-  position: fixed;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,107,0,0.06) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-  transform: translate(-50%, -50%);
-  transition: opacity 0.3s ease;
-  will-change: transform;
+  display: none !important;
 }
 
 /* ── Mobile menu animations ─────────────────────────────────────── */
