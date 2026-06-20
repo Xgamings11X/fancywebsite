@@ -736,4 +736,54 @@ body.page-loaded .anim-hero-up { opacity: 1; transform: translateY(0); }
   box-shadow: 0 0 8px rgba(249,115,22,0.6);
 }
 
-#cursor-glow { display: none !important; }
+/* --- 1. VARIABEL & RESET (Bagian Anda) --- */
+:root { ... }
+* { margin:0; padding:0; box-sizing:border-box; ... }
+
+/* --- 2. LAYOUT & KOMPONEN (Bagian Anda) --- */
+.fn-nav { ... }
+.fn-card { ... }
+.btn-primary-fn { ... }
+/* ... tempelkan semua CSS detail yang Anda miliki di sini ... */
+
+/* --- 3. OPTIMASI PERFORMA (Wajib ada di paling bawah) --- */
+/* Mencegah Layout Shift & Meningkatkan Performa Scroll */
+body {
+  overflow-x: hidden;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* GPU Acceleration untuk semua animasi */
+.anim-hero, .fn-card, .btn-primary-fn, .hero-logo, .social-btn {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Content-visibility untuk mempercepat load section bawah */
+.stats-bar, .features-section, .recruitment-section, .fn-footer {
+  content-visibility: auto;
+  contain-intrinsic-size: 500px;
+}
+
+/* Optimasi scroll mobile */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Animasi yang lebih smooth dan efisien */
+@keyframes diagonalGlint {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(-112%, 112%); }
+}
+
+/* Memperbaiki hover agar tidak "jank" */
+.fn-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+
+
