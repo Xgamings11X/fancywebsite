@@ -69,59 +69,47 @@ export default function HomePage({ settings }) {
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      {/* BASE BACKGROUND AMBIENT ORANGE */}
-      <div className="orange-theme-wrapper page-fade-in" style={{ backgroundColor: '#0B0A0A', color: '#F4F4F5', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
+      {/* BACKGROUND BACKGROUND ARANG GLOW ORANGE */}
+      <div className="orange-theme-wrapper page-fade-in" style={{ backgroundColor: '#0D0B0A', color: '#F4F4F5', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
         
-        {/* Neon Ambient Glow (Murni GPU, 0% CPU Load) */}
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-          <div style={{ position: 'absolute', top: '-15%', left: '15%', width: '650px', height: '650px', background: 'radial-gradient(circle, rgba(255,107,0,0.18) 0%, transparent 70%)', filter: 'blur(90px)' }} />
-          <div style={{ position: 'absolute', top: '40%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(234,88,12,0.12) 0%, transparent 70%)', filter: 'blur(90px)' }} />
+        {/* Ambient Glow di Background (Efek pendaran di luar elemen box tombol) */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }} className="gpu-glow-layer">
+          <div style={{ position: 'absolute', top: '-15%', left: '50%', transform: 'translateX(-50%)', width: '750px', height: '600px', background: 'radial-gradient(circle, rgba(255,90,0,0.2) 0%, transparent 70%)', filter: 'blur(90px)' }} />
+          <div style={{ position: 'absolute', bottom: '15%', right: '-5%', width: '450px', height: '450px', background: 'radial-gradient(circle, rgba(255,90,0,0.08) 0%, transparent 75%)', filter: 'blur(90px)' }} />
         </div>
 
         <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s} />
 
         {/* MAIN CONTENT */}
-        <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
+        <main style={{ flex: 1, position: 'relative', zIndex: 1, padding: '0 16px' }}>
           
           {/* HERO SECTION */}
-          <header style={{ padding: '130px 24px 60px', textAlign: 'center', position: 'relative' }}>
-            <div style={{ margin: '0 auto 24px', filter: 'drop-shadow(0 0 25px rgba(255,107,0,0.45))' }}>
-              {s.logo_url ? <img src={s.logo_url} style={{maxWidth:140, margin:'0 auto'}} alt="Server Logo"/> : <LogoImage style={{width:130, margin:'0 auto'}}/>}
+          <header style={{ padding: '120px 0 50px', textAlign: 'center' }}>
+            <div style={{ margin: '0 auto 24px', filter: 'drop-shadow(0 0 25px rgba(255,90,0,0.45))' }}>
+              {s.logo_url ? <img src={s.logo_url} style={{maxWidth:135, margin:'0 auto'}} alt="Server Logo"/> : <LogoImage style={{width:125, margin:'0 auto'}}/>}
             </div>
 
-            <div style={{ display: 'inline-flex', padding: '6px 16px', borderRadius: '50px', background: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.25)', color: '#FF8A00', fontWeight: 700, fontSize: 11, marginBottom: 20, letterSpacing: '0.5px' }}>
+            <div style={{ display: 'inline-flex', padding: '6px 16px', borderRadius: '50px', background: 'rgba(255,90,0,0.12)', border: '1px solid rgba(255,90,0,0.25)', color: '#FF7A00', fontWeight: 700, fontSize: 11, marginBottom: 20, letterSpacing: '0.5px' }}>
               SERVER EKONOMI | JAVA & BEDROCK
             </div>
 
-            <h1 className="hero-title-float" style={{ fontSize: 'clamp(36px, 7vw, 60px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 20, maxWidth: 850, margin: '0 auto 20px', lineHeight: 1.15 }}>
-              {s.hero_title || <>Mulai Petualanganmu di <span style={{ background: 'linear-gradient(135deg, #FF6B00, #FFA500)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{serverName}</span></>}
+            <h1 className="hero-title-float" style={{ fontSize: 'clamp(30px, 6.5vw, 54px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 20, maxWidth: 850, margin: '0 auto 20px', lineHeight: 1.15, letterSpacing: '-0.5px' }}>
+              {s.hero_title || <>Mulai Petualanganmu di <span style={{ background: 'linear-gradient(135deg, #FF6B00, #FF9F00)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{serverName}</span></>}
             </h1>
 
-            {/* Floating Info Version & Port Kiri Kanan khas Shadowyn Style */}
-            <div className="floating-info-container">
-              <div className="floating-info-badge badge-left">
-                <span>PORT BEDROCK</span>
-                <strong>19015</strong>
-              </div>
-              <div className="floating-info-badge badge-right">
-                <span>VERSION</span>
-                <strong>1.21+</strong>
-              </div>
-            </div>
-
-            <p style={{ color: '#A1A1AA', fontSize: 16, maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.6 }}>
+            <p style={{ color: '#A1A1AA', fontSize: 15.5, maxWidth: 540, margin: '0 auto 36px', lineHeight: 1.6 }}>
               {s.server_description || 'Server Minecraft Indonesia dengan komunitas solid dan dunia tanpa batas.'}
             </p>
 
             {/* Status Player Online */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: '99px', backgroundColor: 'rgba(255,107,0,0.08)', border: '1px solid rgba(255,107,0,0.2)', fontSize: 13, fontWeight: 600, color: '#FF8A00', marginBottom: 36 }}>
-              <div style={{ width: 8, height: 8, backgroundColor: '#FF6B00', borderRadius: '50%', position: 'relative' }}>
-                <div style={{ position: 'absolute', inset: 0, backgroundColor: '#FF6B00', borderRadius: '50%', transform: 'scale(1.8)', opacity: 0.5, animation: 'ping-orange 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: '99px', backgroundColor: 'rgba(255,90,0,0.08)', border: '1px solid rgba(255,90,0,0.2)', fontSize: 13, fontWeight: 600, color: '#FF7A00', marginBottom: 40 }}>
+              <div style={{ width: 8, height: 8, backgroundColor: '#FF5A00', borderRadius: '50%', position: 'relative' }}>
+                <div style={{ position: 'absolute', inset: 0, backgroundColor: '#FF5A00', borderRadius: '50%', transform: 'scale(1.8)', opacity: 0.5, animation: 'ping-orange 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
               </div>
               <span><strong style={{ color: '#FFFFFF', fontWeight: 800 }}>{playerCount}</strong> Players Online</span>
             </div>
 
-            {/* TRIPLE IP GRID — Kotak Terlihat Jelas & Kontras */}
+            {/* TRIPLE IP GRID — BOX TERLIHAT SANGAT KONTRAS & RESPONSIF */}
             <div className="ip-grid scroll-animate" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, width: '100%', maxWidth: 800, margin: '0 auto 36px' }}>
               {[
                 { label: 'Java Edition IP', addr: serverIp, icon: 'computer', copy: serverIp, copyLabel: 'IP Java' },
@@ -152,75 +140,71 @@ export default function HomePage({ settings }) {
             )}
           </header>
 
-          {/* LOWER CONTAINER - Melengkung Halus */}
-          <div style={{ backgroundColor: '#110F0E', borderRadius: '40px 40px 0 0', borderTop: '1px solid #1F1C1A', padding: '60px 24px 20px' }}>
+          {/* STATS BAR */}
+          <section style={{ backgroundColor: '#130E0C', borderTop: '1px solid #241A16', borderBottom: '1px solid #241A16', padding: '26px 24px', margin: '0 -16px 60px' }} className="scroll-animate">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: 16, maxWidth: 800, margin: '0 auto' }} className="stats-grid">
+              {[
+                { val: '24/7', sub: 'Server Online' },
+                { val: 'JAVA', sub: '+ Bedrock' },
+                { val: 'FREE', sub: 'Untuk Semua' },
+                { val: 'ID', sub: 'Community' },
+              ].map((st, i) => (
+                <div key={i} style={{ background: '#1F1612', border: '1px solid #3B2922', padding: '14px 8px', borderRadius: '12px' }}>
+                  <h3 className="font-space" style={{ fontSize: 24, color: '#FF6B00', fontWeight: 800 }}>{st.val}</h3>
+                  <p style={{ fontSize: 10, color: '#A1A1AA', marginTop: 4, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{st.sub}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* FEATURES */}
+          <section style={{ paddingBottom: 60, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
+            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+              <span style={{ color: '#FF6B00', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'block', marginBottom: 6 }}>FITUR UTAMA</span>
+              <h2 className="font-space" style={{ fontSize: 26, fontWeight: 800, color: '#FFFFFF' }}>Keunggulan Bermain di <span style={{ color: '#FF6B00' }}>Fancy</span></h2>
+            </div>
             
-            {/* STATS BAR */}
-            <section style={{ paddingBottom: 60 }} className="scroll-animate">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: 20, maxWidth: 800, margin: '0 auto' }} className="stats-grid">
-                {[
-                  { val: '24/7', sub: 'Server Online' },
-                  { val: 'JAVA', sub: '+ Bedrock' },
-                  { val: 'FREE', sub: 'Untuk Semua' },
-                  { val: 'ID', sub: 'Community' },
-                ].map((st, i) => (
-                  <div key={i} style={{ background: '#161413', border: '1px solid #282422', padding: '18px 12px', borderRadius: '16px' }}>
-                    <h3 className="font-space" style={{ fontSize: 26, color: '#FF6B00', fontWeight: 800 }}>{st.val}</h3>
-                    <p style={{ fontSize: 11, color: '#A1A1AA', marginTop: 4, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{st.sub}</p>
+            <div className="feature-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+              {[
+                { icon: 'shield-halved', title: 'Anti-Cheat Ketat', desc: 'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.' },
+                { icon: 'users', title: 'Komunitas Solid', desc: 'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.' },
+                { icon: 'bolt', title: 'Low Latency', desc: 'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.' },
+                { icon: 'trophy', title: 'Event & Reward', desc: 'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.' },
+              ].map((f, i) => (
+                <div key={i} className="card-orange" style={{ padding: 20, textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 14, cursor: 'default' }}>
+                  <div className="icon-orange" style={{ marginBottom: 0 }}><Icon name={f.icon} size={18} /></div>
+                  <div>
+                    <h4 style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{f.title}</h4>
+                    <p style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.5 }}>{f.desc}</p>
                   </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* RECRUITMENT */}
+          <section style={{ paddingBottom: 80, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
+            <div style={{ backgroundColor: '#130E0C', border: '1px solid #241A16', borderRadius: 16, padding: '36px 24px', maxWidth: 540, margin: '0 auto' }}>
+              <span style={{ color: '#FF6B00', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>KONTRIBUSI &amp; REWARD</span>
+              <h3 className="font-space" style={{ fontSize: 21, fontWeight: 800, color: '#FFFFFF', marginBottom: 12 }}>Rank Famous Creator</h3>
+              <p style={{ fontSize: 13.5, color: '#A1A1AA', marginBottom: 24, lineHeight: 1.6 }}>
+                Kreator Konten YouTube atau TikTok? Dapatkan hak istimewa status media, kustomisasi tag name, serta exposure di platform kami.
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0' }}>
+                {['Tidak memiliki masalah dengan server lain', 'Membuat konten Fancy Network rutin', 'Viewers aktif dan organik', 'Konten positif & membangun'].map((r, i) => (
+                  <li key={i} style={{ fontSize: 13, color: '#E4E4E7', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Icon name="circle-check" size={14} color="#FF6B00" />
+                    <span>{r}</span>
+                  </li>
                 ))}
-              </div>
-            </section>
+              </ul>
+              <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="orange-apply-btn">
+                <span>Apply Requirement</span>
+                <Icon name="arrow-right" size={14} />
+              </a>
+            </div>
+          </section>
 
-            {/* FEATURES */}
-            <section style={{ paddingBottom: 60, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
-              <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                <span style={{ color: '#FF6B00', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'block', marginBottom: 6 }}>FITUR UTAMA</span>
-                <h2 className="font-space" style={{ fontSize: 28, fontWeight: 800, color: '#FFFFFF' }}>Keunggulan Bermain di <span style={{ color: '#FF6B00' }}>Fancy</span></h2>
-              </div>
-              
-              <div className="feature-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-                {[
-                  { icon: 'shield-halved', title: 'Anti-Cheat Ketat', desc: 'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.' },
-                  { icon: 'users', title: 'Komunitas Solid', desc: 'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.' },
-                  { icon: 'bolt', title: 'Low Latency', desc: 'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.' },
-                  { icon: 'trophy', title: 'Event & Reward', desc: 'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.' },
-                ].map((f, i) => (
-                  <div key={i} className="card-orange" style={{ padding: 22, textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 14, cursor: 'default' }}>
-                    <div className="icon-orange" style={{ marginBottom: 0 }}><Icon name={f.icon} size={18} /></div>
-                    <div>
-                      <h4 style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{f.title}</h4>
-                      <p style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.5 }}>{f.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* RECRUITMENT */}
-            <section style={{ paddingBottom: 60, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
-              <div style={{ backgroundColor: '#161413', border: '1px solid #282422', borderRadius: 24, padding: '36px 28px', maxWidth: 540, margin: '0 auto' }}>
-                <span style={{ color: '#FF6B00', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>KONTRIBUSI &amp; REWARD</span>
-                <h3 className="font-space" style={{ fontSize: 22, fontWeight: 800, color: '#FFFFFF', marginBottom: 12 }}>Rank Famous Creator</h3>
-                <p style={{ fontSize: 13.5, color: '#A1A1AA', marginBottom: 24, lineHeight: 1.6 }}>
-                  Kreator Konten YouTube atau TikTok? Dapatkan hak istimewa status media, kustomisasi tag name, serta exposure di platform kami.
-                </p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0' }}>
-                  {['Tidak memiliki masalah dengan server lain', 'Membuat konten Fancy Network rutin', 'Viewers aktif dan organik', 'Konten positif & membangun'].map((r, i) => (
-                    <li key={i} style={{ fontSize: 13, color: '#E4E4E7', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Icon name="circle-check" size={14} color="#FF6B00" />
-                      <span>{r}</span>
-                    </li>
-                  ))}
-                </ul>
-                <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="orange-apply-btn">
-                  <span>Apply Requirement</span>
-                  <Icon name="arrow-right" size={14} />
-                </a>
-              </div>
-            </section>
-
-          </div>
         </main>
 
         <FancyFooter serverName={serverName} />
@@ -228,58 +212,62 @@ export default function HomePage({ settings }) {
         {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess} />}
       </div>
 
-      {/* STYLES CSS MURNI DIJALANKAN OLEH GPU — PERFORMA 100% */}
+      {/* STYLES CSS ENGINE ACCELERATED */}
       <style jsx global>{`
         html {
           scroll-behavior: smooth;
         }
 
-        /* Animasi Transisi Halaman (Home <-> Store) */
+        .gpu-glow-layer {
+          will-change: transform, opacity;
+          transform: translateZ(0);
+        }
+
+        /* Animasi Transisi Halaman */
         .page-fade-in {
-          animation: pageIn 0.35s cubic-bezier(0.215, 0.610, 0.355, 1) forwards;
+          animation: pageIn 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
           will-change: opacity, transform;
         }
         @keyframes pageIn {
-          from { opacity: 0; transform: translateY(6px); }
+          from { opacity: 0; transform: translateY(4px); }
           to { opacity: 1; transform: translateY(0); }
         }
 
         /* Animasi Scroll Viewport */
         .scroll-animate {
-          animation: slideUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+          animation: slideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
         @keyframes slideUp {
-          from { opacity: 0; transform: translateY(20px); }
+          from { opacity: 0; transform: translateY(12px); }
           to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Animasi Hero Title Floating */
         .hero-title-float {
           animation: floatTitle 4s ease-in-out infinite;
         }
         @keyframes floatTitle {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-3px); }
+          50% { transform: translateY(-2px); }
         }
 
-        /* STRUKTUR BOX KOTAK CARD: JELAS, TEGAS & AMBIENT */
+        /* DESAIN BOX KOTAK CARD: JELAS & SANGAT KONTRAS DENGAN UTAMA BACKGROUND */
         .card-orange {
-          background: #161413; /* Warna Cokelat Gelap Warm agar Kotak Tampak Jelas */
-          border: 1px solid #2A2421; /* Border tegas pemisah warna background luar */
-          border-radius: 14px;
-          padding: 14px 16px;
+          background: #1F1612; /* Warna box cokelat karat hangat - Beda jauh dengan background luar */
+          border: 1px solid #442D24; /* Border pembatas tebal penegas bentuk kotak */
+          border-radius: 12px;
+          padding: 13px 15px;
           cursor: pointer;
           display: flex;
           align-items: center;
           gap: 12px;
           position: relative;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease, background-color 0.2s ease;
         }
         .card-orange:hover {
-          background: #1C1917;
-          border-color: #FF6B00; /* Menyala Orange Tebal saat Kursor di Atas */
+          background: #2D1F1A;
+          border-color: #FF6B00; /* Menyala orange terang benderang */
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(255, 107, 0, 0.12);
+          box-shadow: 0 6px 18px rgba(255, 107, 0, 0.16);
         }
 
         .orange-copy-indicator {
@@ -288,27 +276,27 @@ export default function HomePage({ settings }) {
           right: 8px;
           font-size: 9px;
           color: #FF8A00;
-          background: rgba(255,107,0,0.1);
+          background: rgba(255,107,0,0.12);
           padding: 2px 6px;
           border-radius: 4px;
           font-weight: 700;
         }
         .icon-orange {
-          width: 38px;
-          height: 38px;
-          background: rgba(255,107,0,0.08);
+          width: 36px;
+          height: 36px;
+          background: rgba(255,107,0,0.1);
           color: #FF6B00;
           border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          border: 1px solid rgba(255,107,0,0.15);
+          border: 1px solid rgba(255,107,0,0.25);
         }
         .orange-card-label {
           font-size: 9px;
           text-transform: uppercase;
-          color: #8C8480; /* Kontras dinaikkan */
+          color: #9C8E88; /* Kontras teks label ditinggikan */
           font-weight: 700;
           letter-spacing: 0.5px;
           display: block;
@@ -321,33 +309,35 @@ export default function HomePage({ settings }) {
           margin-top: 1px;
         }
 
+        /* Tombol Media Sosial */
         .orange-social-btn {
           display: flex;
           align-items: center;
           gap: 6px;
-          padding: 8px 16px;
-          border-radius: 50px;
+          padding: 8px 14px;
+          border-radius: 8px;
           font-size: 12.5px;
           font-weight: 600;
           text-decoration: none;
-          background: #161413;
-          border: 1px solid #2A2421;
+          background: #1F1612;
+          border: 1px solid #442D24;
           color: #E4E4E7;
           transition: all 0.15s ease;
         }
         .orange-social-btn:hover {
-          background: rgba(255,107,0,0.05);
+          background: rgba(255,107,0,0.06);
           border-color: #FF6B00;
           color: #FFFFFF;
         }
 
+        /* Tombol Apply */
         .orange-apply-btn {
           background: #FF6B00;
           color: #FFFFFF;
           padding: 12px;
-          border-radius: 12px;
+          border-radius: 10px;
           font-weight: 700;
-          font-size: 13.5px;
+          font-size: 13px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -359,40 +349,24 @@ export default function HomePage({ settings }) {
           background: #E05E00;
         }
 
-        /* Floating Badge Khas Desain Screenshot */
-        .floating-info-container {
-          position: absolute;
-          width: 100%;
-          max-width: 580px;
-          top: 45%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          pointer-events: none;
-        }
-        .floating-info-badge {
-          position: absolute;
-          background: rgba(22, 20, 19, 0.6);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
-          border: 1px solid rgba(255,255,255,0.04);
-          padding: 6px 12px;
-          border-radius: 12px;
-          color: #FFFFFF;
-          display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-        }
-        .badge-left { left: -30px; top: 0; transform: rotate(-6deg); }
-        .badge-right { right: -30px; top: -10px; transform: rotate(4deg); }
-
         @keyframes ping-orange {
-          75%, 100% { transform: scale(2); opacity: 0; }
+          75%, 100% { transform: scale(1.8); opacity: 0; }
         }
+
+        /* TATA LETAK RESPONSIF — DIJAMIN PAS DI DESKTOP & LAYAR PONSEL (HP) */
         @media(max-width: 768px) {
-          .ip-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
-          .feature-grid { grid-template-columns: 1fr !important; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
-          .floating-info-container { display: none; }
+          .ip-grid { 
+            grid-template-columns: 1fr !important; 
+            gap: 10px !important; 
+          }
+          .feature-grid { 
+            grid-template-columns: 1fr !important; 
+            gap: 12px !important;
+          }
+          .stats-grid { 
+            grid-template-columns: repeat(2, 1fr) !important; 
+            gap: 10px !important; 
+          }
         }
       `}</style>
     </>
