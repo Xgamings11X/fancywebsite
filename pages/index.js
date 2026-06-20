@@ -1,125 +1,103 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, memo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import FancyNav from '../components/FancyNav';
 import LogoImage, { useTransparentLogo } from '../components/LogoImage';
-import LoginModal from '../components/LoginModal';
 import toast from 'react-hot-toast';
+
+// Lazy load komponen berat agar tidak memblokir main thread
+const LoginModal = dynamic(() => import('../components/LoginModal'), { ssr: false });
+
+// Memoized Stat Item agar tidak re-render saat state lain berubah
+const StatItem = memo(({ val, sub, delay }) => (
+  <div data-anim="scale-pop" data-delay={delay}>
+    <h3 className="font-space" style={{fontSize:24,color:'var(--primary-light)',fontWeight:700}}>{val}</h3>
+    <p style={{fontSize:12,color:'var(--text-muted)',marginTop:4,textTransform:'uppercase',fontWeight:600}}>{sub}</p>
+  </div>
+));
+
+export default function HomePage({ settings }) {
+  const s = settings || {};
+  const serverName = s.server_name || 'Fancy Network';
+  const serverIp = s.server_ip || 'fancynet.my.id';
+  const { src: logoSrc } = useTransparentLogo();
+
+  const [player, setPlayer] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [copied, setCopied] = useState('');
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    try { const r = localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
+    fetch('/api/server/status').then(r=>r.json()).then(setStatus).catch(()=>{});
+    
+    // Smooth entry
+    requestAnimationFrame(() => document.body.classList.add('page-loaded'));
+  }, []);
+
+  const copyIP = (text, label) => {
+    navigator.clipboard?.writeText(text);
+    setCopied(label);
+    toast.success(`${label} disalin!`);
+    setTimeout(() => setCopied(''), 2500);
+  };
+
+  const socials = useMemo(() => [
+    (s.vote_url) && { href: s.vote_url, cls:'btn-vote', icon:'fa-star', label:'Vote' },
+    (s.discord_url) && { href: s.discord_url, cls:'btn-discord', icon:'fa-discord', label:'Discord', brand:true },
+  ].filter(Boolean), [s]);
+
+  return (
+    <>
+      <Head>
+        <title>{serverName} | Minecraft Server Indonesia</title>
+      </Head>
+
+      <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} settings={s}/>
+
+      <header className="hero-section" style={{minHeight:'100vh', display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center', padding:'160px 24px 60px'}}>
+        <div className="anim-hero anim-d1" style={{position:'relative', zIndex:1}}>
+          {s.logo_url ? <img src={s.logo_url} alt={serverName} style={{maxWidth:180}}/> : <LogoImage alt={serverName} style={{width:160}}/>}
+        </div>
+
+        <h1 className="font-space anim-hero anim-d3" style={{fontSize:'clamp(28px,6vw,48px)', margin:'24px 0'}}>
+          {s.hero_title || "Selamat Datang"}
+        </h1>
+
+        {/* IP Grid */}
+        <div className="ip-grid anim-hero-up anim-d5">
+          {[
+            {label:'Java IP', addr:serverIp, copy:serverIp},
+            {label:'Bedrock IP', addr:serverIp, copy:serverIp},
+            {label:'Port', addr:'19015', copy:'19015'},
+          ].map((item, i) => (
+            <div key={i} className="ip-card" onClick={()=>copyIP(item.copy, item.label)}>
+              <span>{item.label}</span>
+              <p>{item.addr}</p>
+            </div>
+          ))}
+        </div>
+      </header>
+
+      {/* Stats Bar dengan komponen memoized */}
+      <section className="stats-bar" data-anim="fade-in">
+        <div style={{display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:20}}>
+          <StatItem val="24/7" sub="Online" delay="1"/>
+          <StatItem val="JAVA" sub="Bedrock" delay="2"/>
+          <StatItem val="FREE" sub="Community" delay="3"/>
+          <StatItem val="ID" sub="Server" delay="4"/>
+        </div>
+      </section>
+
+      {showLogin && <LoginModal onClose={()=>setShowLogin(false)} />}
+    </>
+  );
+}
 
 export async function getServerSideProps() {
   try {
     const { SettingsAsync } = await import('../lib/redis.js');
     return { props: { settings: await SettingsAsync.get() } };
   } catch { return { props: { settings: {} } }; }
-}
-
-export default function HomePage({ settings }) {
-  const s          = settings || {};
-  const serverName = s.server_name || 'Fancy Network';
-  // Dikonfigurasi sesuai permintaan
-  const serverIp   = 'play.fancynet.my.id';
-  const bedrockPort = '19026';
-  const { src: logoSrc } = useTransparentLogo();
-
-  const [player,    setPlayer]    = useState(null);
-  const [showLogin, setShowLogin] = useState(false);
-  const [copied,    setCopied]    = useState('');
-  const [status,    setStatus]    = useState(null);
-
-  useEffect(() => {
-    try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
-    fetch('/api/server/status').then(r=>r.json()).then(setStatus).catch(()=>{});
-    
-    // Optimasi animasi entrance
-    const t = setTimeout(() => document.body.classList.add('page-loaded'), 50);
-    return () => clearTimeout(t);
-  }, []);
-
-  const copyIP = (text, label) => {
-    navigator.clipboard?.writeText(text).catch(()=>{});
-    setCopied(label);
-    toast.success(`${label} berhasil disalin!`);
-    setTimeout(() => setCopied(''), 2500);
-  };
-
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method:'POST', credentials:'include' });
-    setPlayer(null);
-    localStorage.removeItem('mc_player');
-    toast.success('Berhasil keluar');
-  };
-
-  const handleLoginSuccess = (p) => {
-    setPlayer(p);
-    localStorage.setItem('mc_player', JSON.stringify(p));
-    setShowLogin(false);
-  };
-
-  const socials = [
-    (s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL)    && { href: s.vote_url,    cls:'btn-vote',    icon:'fa-star',     label:'Vote'    },
-    (s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL) && { href: s.discord_url, cls:'btn-discord', icon:'fa-discord',  label:'Discord', brand:true },
-    (s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL)&& { href: s.whatsapp_url,cls:'btn-wa',      icon:'fa-whatsapp', label:'Whatsapp',brand:true },
-    (s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL)  && { href: s.tiktok_url,  cls:'btn-tiktok',  icon:'fa-tiktok',   label:'TikTok',  brand:true },
-  ].filter(Boolean);
-
-  const famousApplyUrl = s.discord_url || process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || process.env.NEXT_PUBLIC_DISCORD_URL || '#';
-  const playerCount = status?.online ? status.players : (s.players_online || 0);
-
-  return (
-    <>
-      <Head>
-        <title>{serverName} | Minecraft Server Indonesia</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
-      </Head>
-
-      <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
-
-      <header style={{minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'120px 24px',willChange:'transform'}}>
-        {/* Logo */}
-        <div className="anim-hero anim-d1" style={{marginBottom:32,zIndex:1}}>
-          {s.logo_url
-            ? <img src={s.logo_url} alt={serverName} style={{maxWidth:160,filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.3))'}}/>
-            : <LogoImage style={{width:140,filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.3))'}}/>
-          }
-        </div>
-
-        <h1 className="font-space anim-hero anim-d3" style={{fontSize:'clamp(32px,5vw,48px)',fontWeight:700,marginBottom:16,zIndex:1}}>
-          Selamat Datang di <span style={{color:'var(--primary)'}}>{serverName}</span>
-        </h1>
-
-        {/* Triple IP Grid - Update IP & Port */}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,width:'100%',maxWidth:750,marginBottom:32,zIndex:1}} className="ip-grid anim-hero-up anim-d5">
-          {[
-            {label:'Java Edition', addr:serverIp, icon:'fa-computer', copy:serverIp},
-            {label:'Bedrock Edition', addr:serverIp, icon:'fa-mobile-screen-button', copy:serverIp},
-            {label:'Bedrock Port', addr:bedrockPort, icon:'fa-network-wired', copy:bedrockPort},
-          ].map((item,i) => (
-            <div key={i} className="ip-card" onClick={()=>copyIP(item.copy, item.label)}
-              style={{background:'rgba(15,15,20,0.7)',border:'1px solid var(--border)',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',gap:10,backdropFilter:'blur(10px)'}}>
-              <i className={`fa-solid ${item.icon}`} style={{color:'var(--primary)'}}/>
-              <div style={{overflow:'hidden'}}>
-                <span style={{fontSize:9,textTransform:'uppercase',display:'block',color:'var(--text-muted)'}}>{item.label}</span>
-                <span style={{fontSize:13,fontWeight:700,display:'block'}}>{item.addr}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </header>
-
-      {/* Optimasi section agar tidak dirender berat jika belum di scroll */}
-      <section style={{contentVisibility:'auto', containIntrinsicSize:'1000px'}}>
-        {/* ... Konten lainnya */}
-      </section>
-
-      {showLogin && <LoginModal onClose={()=>setShowLogin(false)} onSuccess={handleLoginSuccess}/>}
-
-      <style jsx global>{`
-        /* Performa Tweaks */
-        .anim-hero, .anim-hero-up, .ip-card, .fn-card { will-change: transform, opacity; }
-        .ip-card { transition: transform 0.2s ease, border-color 0.2s ease; }
-        .ip-card:hover { transform: translateY(-2px); border-color: var(--primary); }
-      `}</style>
-    </>
-  );
 }
