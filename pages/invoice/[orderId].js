@@ -130,12 +130,17 @@ export default function InvoicePage({ order: initialOrder, settings }) {
   const paidRef = useRef(isPaid);
   useEffect(() => { if (isPaid) paidRef.current = true; }, [isPaid]);
 
-  // ── Cancel saat user navigasi keluar ───────────────────────────
+  // ── Cancel saat user navigasi keluar (DI DALAM web aja) ────────────
+  // PENTING: sengaja TIDAK pakai `beforeunload`. Saat bayar pakai
+  // Gopay/OVO/DANA/dll, Midtrans Snap redirect ke deep-link app
+  // (mis. gopay://...) — browser mobile sering nganggep itu "mau
+  // ninggalin halaman" dan nembak `beforeunload`, padahal user cuma
+  // pindah app sebentar buat bayar, BUKAN nutup invoice-nya. Kalau
+  // dipakai, order yang lagi diproses malah ke-cancel duluan sebelum
+  // pembayarannya selesai. Jadi cancel cuma boleh kejadian kalau user
+  // BENERAN pindah halaman di dalam web ini (klik "Kembali ke Store",
+  // dsb) — itu satu-satunya sinyal yang bisa dipercaya.
   useEffect(() => {
-    const onUnload = () => {
-      if (!isDone && !paidRef.current)
-        navigator.sendBeacon('/api/orders/cancel', JSON.stringify({ orderId: initialOrder.order_id }));
-    };
     const onRoute = url => {
       if (!url.startsWith('/invoice/') && isPending && !paidRef.current) {
         fetch('/api/orders/cancel', {
@@ -145,13 +150,9 @@ export default function InvoicePage({ order: initialOrder, settings }) {
         }).catch(()=>{});
       }
     };
-    window.addEventListener('beforeunload', onUnload);
     router.events.on('routeChangeStart', onRoute);
-    return () => {
-      window.removeEventListener('beforeunload', onUnload);
-      router.events.off('routeChangeStart', onRoute);
-    };
-  }, [isPending, isDone]);
+    return () => router.events.off('routeChangeStart', onRoute);
+  }, [isPending]);
 
   // ── Buka popup Midtrans Snap ──────────────────────────────────────
   const [payingNow, setPayingNow] = useState(false);
@@ -177,9 +178,10 @@ export default function InvoicePage({ order: initialOrder, settings }) {
         },
         onPending: () => { toast('Selesaikan pembayaran kamu di popup.', { icon: '⏳' }); },
         onError:   () => { toast.error('Pembayaran gagal. Coba lagi.'); },
-        // Popup ditutup (baik oleh user atau oleh Midtrans setelah sukses).
-        // Kalau ternyata sudah bayar (paidRef), jangan tampilkan apa-apa —
-        // jangan dianggap "dibatalkan".
+        // Popup ditutup (baik oleh user atau oleh Midtrans setelah sukses,
+        // atau gara-gara balik dari app Gopay/OVO/dll). Kalau ternyata
+        // sudah bayar (paidRef), jangan tampilkan apa-apa — jangan
+        // dianggap "dibatalkan".
         onClose:   () => {},
       });
     } catch (e) {
