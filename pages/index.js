@@ -76,67 +76,67 @@ export default function HomePage({ settings }) {
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      <div className="theme-wrapper" style={{ backgroundColor: '#F8FAFC', color: '#0F172A', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
+      <div className="orange-theme-wrapper" style={{ backgroundColor: '#FAFAFA', color: '#18181B', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
         
-        {/* ================= BACKGROUND AMBIENT GLOW (LIGHT VERSION) ================= */}
+        {/* ================= LIGHT ORANGE AMBIENT GLOW (SUPER LIGHTWEIGHT) ================= */}
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-          <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(100px)' }} />
-          <div style={{ position: 'absolute', top: '30%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(100px)' }} />
+          <div style={{ position: 'absolute', top: '-15%', left: '5%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(255,107,0,0.07) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)' }} />
+          <div style={{ position: 'absolute', top: '40%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(251,146,60,0.05) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(80px)' }} />
         </div>
 
         <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s} />
 
         {/* ================= HERO SECTION ================= */}
-        <header style={{ minHeight: '90vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '120px 24px 60px', position: 'relative', zIndex: 1 }}>
+        <header style={{ minHeight: '85vh', display: 'flex', flexDirection: 'column', justifycontent: 'center', alignItems: 'center', textAlign: 'center', padding: '120px 24px 60px', position: 'relative', zIndex: 1 }}>
           
-          {/* Logo Container */}
-          <div style={{ margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 20px 40px rgba(59,130,246,0.15))' }}>
+          {/* Logo dengan Bayangan Orange Lembut */}
+          <div style={{ margin: '0 auto 28px', display: 'flex', alignItems: 'center', justifycontent: 'center', filter: 'drop-shadow(0 16px 32px rgba(255,107,0,0.12))' }}>
             {s.logo_url
-              ? <img src={s.logo_url} alt={serverName} style={{ maxWidth: 150, maxHeight: 150, display: 'block', objectFit: 'contain' }} />
-              : <LogoImage alt={serverName} style={{ width: 130, height: 130, objectFit: 'contain', display: 'block' }} />
+              ? <img src={s.logo_url} alt={serverName} style={{ maxWidth: 140, maxHeight: 140, display: 'block', objectFit: 'contain' }} />
+              : <LogoImage alt={serverName} style={{ width: 120, height: 120, objectFit: 'contain', display: 'block' }} />
             }
           </div>
 
-          {/* Badge Tagline */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: '99px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', fontSize: 12, fontWeight: 700, color: '#334155', letterSpacing: '0.5px', marginBottom: 20, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
-            <span style={{ color: '#3B82F6' }}>SERVER ECONOMY</span>
-            <span style={{ color: '#CBD5E1' }}>|</span>
+          {/* Tagline Pill (Kombinasi border tipis orange) */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: '99px', backgroundColor: '#FFFFFF', border: '1px solid #E4E4E7', fontSize: 11, fontWeight: 700, color: '#3F3F46', letterSpacing: '0.5px', marginBottom: 24, boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+            <span style={{ color: '#FF6B00' }}>SERVER ECONOMY</span>
+            <span style={{ color: '#E4E4E7' }}>|</span>
             <span>JAVA &amp; BEDROCK</span>
           </div>
 
-          {/* Title */}
-          <h1 className="font-space" style={{ fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 800, lineHeight: 1.15, marginBottom: 16, maxWidth: 800, color: '#0F172A' }}>
-            {s.hero_title || <>Selamat Datang di <span style={{ background: 'linear-gradient(to right, #3B82F6, #8B5CF6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{serverName}</span></>}
+          {/* Title Utama */}
+          <h1 className="font-space" style={{ fontSize: 'clamp(32px, 5.5vw, 54px)', fontWeight: 800, lineHeight: 1.15, marginBottom: 16, maxWidth: 850, color: '#18181B' }}>
+            {s.hero_title || <>Mulai Petualangan Seru di <span style={{ background: 'linear-gradient(135deg, #FF6B00, #FFA500)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{serverName}</span></>}
           </h1>
 
-          {/* Description */}
-          <p style={{ color: '#475569', fontSize: 16, maxWidth: 580, lineHeight: 1.6, marginBottom: 36 }}>
+          {/* Deskripsi */}
+          <p style={{ color: '#52525B', fontSize: 15.5, maxWidth: 560, lineHeight: 1.6, marginBottom: 36 }}>
             {s.server_description || 'Server Minecraft Indonesia dengan komunitas solid, event seru, dan dunia tanpa batas.'}
           </p>
 
-          {/* Player Online Status Pill */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: '99px', backgroundColor: '#EEF2F6', border: '1px solid #E2E8F0', fontSize: 13, fontWeight: 600, color: '#1E293B', marginBottom: 32 }}>
-            <div style={{ width: 8, height: 8, backgroundColor: '#10B981', borderRadius: '50%', position: 'relative' }}>
-              <div style={{ position: 'absolute', inset: 0, backgroundColor: '#10B981', borderRadius: '50%', transform: 'scale(1.8)', opacity: 0.3, animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
+          {/* Status Player Online */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: '99px', backgroundColor: '#FFF7ED', border: '1px solid #FFEDD5', fontSize: 13, fontWeight: 600, color: '#9A3412', marginBottom: 36 }}>
+            <div style={{ width: 8, height: 8, backgroundColor: '#FF6B00', borderRadius: '50%', position: 'relative' }}>
+              <div style={{ position: 'absolute', inset: 0, backgroundColor: '#FF6B00', borderRadius: '50%', transform: 'scale(1.8)', opacity: 0.4, animation: 'ping-orange 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
             </div>
-            <span><strong style={{ color: '#10B981', fontWeight: 700 }}>{playerCount}</strong> Pemain Aktif</span>
+            <span><strong style={{ color: '#FF6B00', fontWeight: 800 }}>{playerCount}</strong> Players Online</span>
           </div>
 
           {/* Triple IP Grid */}
-          <div className="ip-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, width: '100%', maxWidth: 800, marginBottom: 36 }}>
+          <div className="ip-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, width: '100%', maxWidth: 800, marginBottom: 36 }}>
             {[
               { label: 'Java Edition IP', addr: serverIp, icon: 'computer', copy: serverIp, copyLabel: 'IP Java' },
               { label: 'Bedrock Edition IP', addr: serverIp, icon: 'mobile', copy: serverIp, copyLabel: 'IP Bedrock' },
               { label: 'Bedrock Port', addr: '19015', icon: 'network-wired', copy: '19015', copyLabel: 'Port Bedrock' },
             ].map((item, i) => (
-              <div key={i} className="ip-card-light" onClick={() => copyIP(item.copy, item.copyLabel)}>
-                <span className="copy-indicator">{copied === item.copyLabel ? '✓ Disalin' : 'Salin'}</span>
-                <div className="icon-wrapper-light">
+              <div key={i} className="orange-ip-card" onClick={() => copyIP(item.copy, item.copyLabel)}>
+                <span className="orange-copy-indicator">{copied === item.copyLabel ? '✓ Disalin' : 'Salin'}</span>
+                <div className="orange-icon-wrapper">
                   <Icon name={item.icon} size={18} />
                 </div>
                 <div style={{ textAlign: 'left', overflow: 'hidden' }}>
-                  <span className="card-label-light">{item.label}</span>
-                  <span className="card-addr-light">{item.addr}</span>
+                  <span className="orange-card-label">{item.label}</span>
+                  <span className="orange-card-addr">{item.addr}</span>
                 </div>
               </div>
             ))}
@@ -144,10 +144,10 @@ export default function HomePage({ settings }) {
 
           {/* Social Media Row */}
           {socials.length > 0 && (
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
               {socials.map((x, i) => (
-                <a key={i} href={x.href} target="_blank" rel="noopener noreferrer" className={`social-btn-light ${x.cls}`}>
-                  <Icon name={x.icon} size={16} />
+                <a key={i} href={x.href} target="_blank" rel="noopener noreferrer" className={`orange-social-btn ${x.cls}`}>
+                  <Icon name={x.icon} size={15} />
                   <span>{x.label}</span>
                 </a>
               ))}
@@ -156,8 +156,8 @@ export default function HomePage({ settings }) {
         </header>
 
         {/* ================= STATS BAR ================= */}
-        <section style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0', padding: '32px 24px', position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: 20, maxWidth: 1000, margin: '0 auto' }} className="stats-grid">
+        <section style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #E4E4E7', borderBottom: '1px solid #E4E4E7', padding: '28px 24px', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: 20, maxWidth: 960, margin: '0 auto' }} className="stats-grid">
             {[
               { val: '24/7', sub: 'Server Online' },
               { val: 'JAVA', sub: '+ Bedrock' },
@@ -165,34 +165,34 @@ export default function HomePage({ settings }) {
               { val: 'ID', sub: 'Community' },
             ].map((st, i) => (
               <div key={i}>
-                <h3 className="font-space" style={{ fontSize: 28, color: '#3B82F6', fontWeight: 800 }}>{st.val}</h3>
-                <p style={{ fontSize: 11, color: '#64748B', marginTop: 2, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{st.sub}</p>
+                <h3 className="font-space" style={{ fontSize: 26, color: '#FF6B00', fontWeight: 800 }}>{st.val}</h3>
+                <p style={{ fontSize: 11, color: '#71717A', marginTop: 2, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{st.sub}</p>
               </div>
             ))}
           </div>
         </section>
 
         {/* ================= FEATURES SECTION ================= */}
-        <section style={{ padding: '90px 24px 60px', maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <div style={{ textAlign: 'center', marginBottom: 44 }}>
-            <span style={{ color: '#3B82F6', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'block', marginBottom: 6 }}>FITUR UTAMA</span>
-            <h2 className="font-space" style={{ fontSize: 32, fontWeight: 800, color: '#0F172A' }}>Keunggulan Bermain di <span style={{ color: '#3B82F6' }}>Fancy</span></h2>
+        <section style={{ padding: '80px 24px 60px', maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <span style={{ color: '#FF6B00', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'block', marginBottom: 6 }}>FITUR UTAMA</span>
+            <h2 className="font-space" style={{ fontSize: 30, fontWeight: 800, color: '#18181B' }}>Keunggulan Bermain di <span style={{ color: '#FF6B00' }}>Fancy</span></h2>
           </div>
           
-          <div className="feature-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, maxWidth: 900, margin: '0 auto' }}>
+          <div className="feature-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, maxWidth: 860, margin: '0 auto' }}>
             {[
-              { icon: 'shield-halved', color: '#3B82F6', bg: '#EFF6FF', title: 'Anti-Cheat Ketat', desc: 'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.' },
-              { icon: 'users', color: '#8B5CF6', bg: '#F5F3FF', title: 'Komunitas Solid', desc: 'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.' },
-              { icon: 'bolt', color: '#10B981', bg: '#ECFDF5', title: 'Low Latency', desc: 'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.' },
-              { icon: 'trophy', color: '#F59E0B', bg: '#FFFBEB', title: 'Event & Reward', desc: 'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.' },
+              { icon: 'shield-halved', title: 'Anti-Cheat Ketat', desc: 'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.' },
+              { icon: 'users', title: 'Komunitas Solid', desc: 'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.' },
+              { icon: 'bolt', title: 'Low Latency', desc: 'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.' },
+              { icon: 'trophy', title: 'Event & Reward', desc: 'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.' },
             ].map((f, i) => (
-              <div key={i} className="feature-card-light">
-                <div style={{ width: 44, height: 44, backgroundColor: f.bg, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: f.color, flexShrink: 0 }}>
+              <div key={i} className="orange-feature-card">
+                <div className="feature-icon-box">
                   <Icon name={f.icon} size={20} />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: 16, fontWeight: 700, color: '#1E293B', marginBottom: 4 }}>{f.title}</h4>
-                  <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.5 }}>{f.desc}</p>
+                  <h4 style={{ fontSize: 15, fontWeight: 700, color: '#18181B', marginBottom: 4 }}>{f.title}</h4>
+                  <p style={{ fontSize: 13, color: '#52525B', lineHeight: 1.5 }}>{f.desc}</p>
                 </div>
               </div>
             ))}
@@ -200,23 +200,23 @@ export default function HomePage({ settings }) {
         </section>
 
         {/* ================= RECRUITMENT SECTION ================= */}
-        <section style={{ padding: '30px 24px 100px', maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <div style={{ maxWidth: 600, margin: '0 auto' }}>
-            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 24, padding: '40px 32px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.02), 0 8px 10px -6px rgba(0,0,0,0.02)' }}>
-              <span style={{ color: '#8B5CF6', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>KONTRIBUSI &amp; REWARD</span>
-              <h3 className="font-space" style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', marginBottom: 12 }}>Rank Famous Creator</h3>
-              <p style={{ fontSize: 14, color: '#64748B', marginBottom: 24, lineHeight: 1.6 }}>
+        <section style={{ padding: '20px 24px 100px', maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div style={{ maxWidth: 580, margin: '0 auto' }}>
+            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E4E4E7', borderRadius: 20, padding: '36px 28px', boxShadow: '0 4px 20px rgba(0,0,0,0.01)' }}>
+              <span style={{ color: '#FF6B00', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>KONTRIBUSI &amp; REWARD</span>
+              <h3 className="font-space" style={{ fontSize: 22, fontWeight: 800, color: '#18181B', marginBottom: 12 }}>Rank Famous Creator</h3>
+              <p style={{ fontSize: 13.5, color: '#52525B', marginBottom: 24, lineHeight: 1.6 }}>
                 Kreator Konten YouTube atau TikTok? Dapatkan hak istimewa status media, kustomisasi tag name, serta exposure di platform kami.
               </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0' }}>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0' }}>
                 {['Tidak memiliki masalah dengan server lain', 'Membuat konten Fancy Network rutin', 'Viewers aktif dan organik', 'Konten positif & membangun'].map((r, i) => (
-                  <li key={i} style={{ fontSize: 13.5, color: '#334155', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <Icon name="circle-check" size={14} color="#10B981" />
+                  <li key={i} style={{ fontSize: 13, color: '#27272A', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Icon name="circle-check" size={14} color="#FF6B00" />
                     <span>{r}</span>
                   </li>
                 ))}
               </ul>
-              <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="apply-btn-light">
+              <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="orange-apply-btn">
                 <span>Apply Requirement</span>
                 <Icon name="arrow-right" size={14} />
               </a>
@@ -229,59 +229,60 @@ export default function HomePage({ settings }) {
         {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess} />}
       </div>
 
-      {/* ================= STYLES (OPTIMIZED) ================= */}
+      {/* ================= SCOPE STYLES ================= */}
       <style jsx>{`
-        /* IP Cards (Light Modern) */
-        .ip-card-light {
+        /* IP Cards */
+        .orange-ip-card {
           background: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          border-radius: 14px;
-          padding: 14px 16px;
+          border: 1px solid #E4E4E7;
+          border-radius: 12px;
+          padding: 12px 14px;
           cursor: pointer;
           display: flex;
-          alignItems: center;
-          gap: 12;
+          align-items: center;
+          gap: 12px;
           position: relative;
-          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+          transition: border-color 0.15s ease, box-shadow 0.15s ease;
+          will-change: transform, box-shadow;
         }
-        .ip-card-light:hover {
-          border-color: #CBD5E1;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        .orange-ip-card:hover {
+          border-color: #D4D4D8;
+          box-shadow: 0 4px 12px rgba(255, 107, 0, 0.04);
         }
-        .copy-indicator {
+        .orange-copy-indicator {
           position: absolute;
-          top: 8px;
+          top: 6px;
           right: 8px;
-          fontSize: 9px;
-          color: #94A3B8;
-          background: #F1F5F9;
+          font-size: 9px;
+          color: #71717A;
+          background: #F4F4F5;
           padding: 2px 6px;
           border-radius: 4px;
           font-weight: 700;
         }
-        .icon-wrapper-light {
-          width: 38px;
-          height: 38px;
-          background: #EFF6FF;
-          border-radius: 10px;
+        .orange-icon-wrapper {
+          width: 36px;
+          height: 36px;
+          background: #FFF7ED;
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #3B82F6;
+          color: #FF6B00;
           flex-shrink: 0;
         }
-        .card-label-light {
+        .orange-card-label {
           font-size: 9px;
           text-transform: uppercase;
-          color: #64748B;
+          color: #71717A;
           font-weight: 700;
           letter-spacing: 0.5px;
           display: block;
         }
-        .card-addr-light {
-          font-size: 14px;
+        .orange-card-addr {
+          font-size: 13.5px;
           font-weight: 700;
-          color: #1E293B;
+          color: #18181B;
           display: block;
           margin-top: 1px;
           overflow: hidden;
@@ -289,40 +290,51 @@ export default function HomePage({ settings }) {
           white-space: nowrap;
         }
 
-        /* Feature Card */
-        .feature-card-light {
+        /* Feature Cards */
+        .orange-feature-card {
           background: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          border-radius: 16px;
-          padding: 24px;
+          border: 1px solid #E4E4E7;
+          border-radius: 14px;
+          padding: 20px;
           display: flex;
           align-items: flex-start;
-          gap: 16px;
+          gap: 14px;
         }
-
-        /* Social Buttons */
-        .social-btn-light {
+        .feature-icon-box {
+          width: 40px;
+          height: 40px;
+          background: #FFF7ED;
+          border-radius: 10px;
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 10px 18px;
-          border-radius: 10px;
-          font-size: 13px;
+          justify-content: center;
+          color: #FF6B00;
+          flex-shrink: 0;
+        }
+
+        /* Social Media Buttons */
+        .orange-social-btn {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 14px;
+          border-radius: 8px;
+          font-size: 12.5px;
           font-weight: 600;
           text-decoration: none;
           background: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          color: #334155;
-          transition: background 0.15s, color 0.15s;
+          border: 1px solid #E4E4E7;
+          color: #27272A;
+          transition: background 0.1s, border-color 0.1s;
         }
-        .social-btn-light:hover {
-          background: #F8FAFC;
-          color: #0F172A;
+        .orange-social-btn:hover {
+          background: #F4F4F5;
+          border-color: #D4D4D8;
         }
 
-        /* Recruitment Apply Button */
-        .apply-btn-light {
-          background: #1E293B;
+        /* Apply Button */
+        .orange-apply-btn {
+          background: #FF6B00;
           color: #FFFFFF;
           padding: 12px;
           border-radius: 10px;
@@ -335,20 +347,19 @@ export default function HomePage({ settings }) {
           text-decoration: none;
           transition: background 0.15s;
         }
-        .apply-btn-light:hover {
-          background: #0F172A;
+        .orange-apply-btn:hover {
+          background: #E05E00;
         }
 
-        /* Keyframes untuk pulsing tanpa JS */
-        @keyframes ping {
+        @keyframes ping-orange {
           75%, 100% { transform: scale(2); opacity: 0; }
         }
 
-        /* Responsive Layouts Grid */
+        /* Responsive */
         @media(max-width: 768px) {
-          .ip-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
+          .ip-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
           .feature-grid { grid-template-columns: 1fr !important; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 24px 10px !important; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 20px 8px !important; }
         }
       `}</style>
     </>
