@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import FancyNav from '../components/FancyNav';
 import LogoImage, { useTransparentLogo } from '../components/LogoImage';
+import LoginModal from '../components/LoginModal';
 import toast from 'react-hot-toast';
-import Icon from '../components/Icon';
-import FancyFooter from '../components/FancyFooter';
-
-const LoginModal = dynamic(() => import('../components/LoginModal'), { ssr: false });
 
 export async function getServerSideProps() {
   try {
@@ -17,43 +14,36 @@ export async function getServerSideProps() {
 }
 
 export default function HomePage({ settings }) {
-  const s = settings || {};
+  const s          = settings || {};
   const serverName = s.server_name || 'Fancy Network';
-  const serverIp = 'play.fancynet.my.id';
+  // Dikonfigurasi sesuai permintaan
+  const serverIp   = 'play.fancynet.my.id';
   const bedrockPort = '19026';
   const { src: logoSrc } = useTransparentLogo();
 
-  const [player, setPlayer] = useState(null);
+  const [player,    setPlayer]    = useState(null);
   const [showLogin, setShowLogin] = useState(false);
-  const [copied, setCopied] = useState('');
-  const [status, setStatus] = useState(null);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [copied,    setCopied]    = useState('');
+  const [status,    setStatus]    = useState(null);
 
   useEffect(() => {
-    try { const r = localStorage.getItem('mc_player'); if (r) setPlayer(JSON.parse(r)); } catch { }
-    fetch('/api/server/status').then(r => r.json()).then(setStatus).catch(() => { });
-    const timer = setTimeout(() => setIsLoaded(true), 50);
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-    document.querySelectorAll('.scroll-animate').forEach(el => observer.observe(el));
-    return () => { clearTimeout(timer); observer.disconnect(); };
+    try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
+    fetch('/api/server/status').then(r=>r.json()).then(setStatus).catch(()=>{});
+    
+    // Optimasi animasi entrance
+    const t = setTimeout(() => document.body.classList.add('page-loaded'), 50);
+    return () => clearTimeout(t);
   }, []);
 
   const copyIP = (text, label) => {
-    navigator.clipboard?.writeText(text).catch(() => { });
+    navigator.clipboard?.writeText(text).catch(()=>{});
     setCopied(label);
-    toast.success(`${label} Berhasil Disalin!`);
+    toast.success(`${label} berhasil disalin!`);
     setTimeout(() => setCopied(''), 2500);
   };
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+    await fetch('/api/auth/logout', { method:'POST', credentials:'include' });
     setPlayer(null);
     localStorage.removeItem('mc_player');
     toast.success('Berhasil keluar');
@@ -66,10 +56,10 @@ export default function HomePage({ settings }) {
   };
 
   const socials = [
-    (s.vote_url || process.env.NEXT_PUBLIC_VOTE_URL) && { href: s.vote_url || process.env.NEXT_PUBLIC_VOTE_URL, icon: 'star', label: 'Vote' },
-    (s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL) && { href: s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL, icon: 'discord', label: 'Discord' },
-    (s.whatsapp_url || process.env.NEXT_PUBLIC_WHATSAPP_URL) && { href: s.whatsapp_url || process.env.NEXT_PUBLIC_WHATSAPP_URL, icon: 'whatsapp', label: 'WhatsApp' },
-    (s.tiktok_url || process.env.NEXT_PUBLIC_TIKTOK_URL) && { href: s.tiktok_url || process.env.NEXT_PUBLIC_TIKTOK_URL, icon: 'tiktok', label: 'TikTok' },
+    (s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL)    && { href: s.vote_url,    cls:'btn-vote',    icon:'fa-star',     label:'Vote'    },
+    (s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL) && { href: s.discord_url, cls:'btn-discord', icon:'fa-discord',  label:'Discord', brand:true },
+    (s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL)&& { href: s.whatsapp_url,cls:'btn-wa',      icon:'fa-whatsapp', label:'Whatsapp',brand:true },
+    (s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL)  && { href: s.tiktok_url,  cls:'btn-tiktok',  icon:'fa-tiktok',   label:'TikTok',  brand:true },
   ].filter(Boolean);
 
   const famousApplyUrl = s.discord_url || process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || process.env.NEXT_PUBLIC_DISCORD_URL || '#';
@@ -79,59 +69,56 @@ export default function HomePage({ settings }) {
     <>
       <Head>
         <title>{serverName} | Minecraft Server Indonesia</title>
-        <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'} />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      <div className="dark-theme-wrapper">
-        <div className="bg-glow" />
-        <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s} />
+      <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
-        <main className="content-main">
-          <header className={`load-animate ${isLoaded ? 'loaded' : ''}`}>
-            <div className="logo-container load-item-1">
-              {s.logo_url ? <img src={s.logo_url} style={{ maxWidth: 120 }} alt="Logo" /> : <LogoImage style={{ width: 100 }} />}
-            </div>
-            <h1 className="hero-title load-item-3">
-              Jelajahi <span className="gradient-text">{serverName}</span>
-            </h1>
-            <p className="hero-desc load-item-4">{s.server_description || 'Server Minecraft Indonesia dengan performa tinggi.'}</p>
-            
-            <div className="ip-grid load-item-6">
-              {[
-                { label: 'Java IP', addr: serverIp, icon: 'computer' },
-                { label: 'Bedrock IP', addr: serverIp, icon: 'mobile' },
-                { label: 'Port', addr: bedrockPort, icon: 'network-wired' },
-              ].map((item, i) => (
-                <div key={i} className="dark-card" onClick={() => copyIP(item.addr, item.label)}>
-                  <div className="dark-icon"><Icon name={item.icon} size={18} /></div>
-                  <span className="card-label">{item.label}</span>
-                  <span className="card-addr">{item.addr}</span>
-                </div>
-              ))}
-            </div>
-          </header>
-        </main>
+      <header style={{minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'120px 24px',willChange:'transform'}}>
+        {/* Logo */}
+        <div className="anim-hero anim-d1" style={{marginBottom:32,zIndex:1}}>
+          {s.logo_url
+            ? <img src={s.logo_url} alt={serverName} style={{maxWidth:160,filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.3))'}}/>
+            : <LogoImage style={{width:140,filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.3))'}}/>
+          }
+        </div>
 
-        <FancyFooter serverName={serverName} />
-        {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess} />}
-      </div>
+        <h1 className="font-space anim-hero anim-d3" style={{fontSize:'clamp(32px,5vw,48px)',fontWeight:700,marginBottom:16,zIndex:1}}>
+          Selamat Datang di <span style={{color:'var(--primary)'}}>{serverName}</span>
+        </h1>
+
+        {/* Triple IP Grid - Update IP & Port */}
+        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,width:'100%',maxWidth:750,marginBottom:32,zIndex:1}} className="ip-grid anim-hero-up anim-d5">
+          {[
+            {label:'Java Edition', addr:serverIp, icon:'fa-computer', copy:serverIp},
+            {label:'Bedrock Edition', addr:serverIp, icon:'fa-mobile-screen-button', copy:serverIp},
+            {label:'Bedrock Port', addr:bedrockPort, icon:'fa-network-wired', copy:bedrockPort},
+          ].map((item,i) => (
+            <div key={i} className="ip-card" onClick={()=>copyIP(item.copy, item.label)}
+              style={{background:'rgba(15,15,20,0.7)',border:'1px solid var(--border)',borderRadius:14,padding:'14px',cursor:'pointer',display:'flex',alignItems:'center',gap:10,backdropFilter:'blur(10px)'}}>
+              <i className={`fa-solid ${item.icon}`} style={{color:'var(--primary)'}}/>
+              <div style={{overflow:'hidden'}}>
+                <span style={{fontSize:9,textTransform:'uppercase',display:'block',color:'var(--text-muted)'}}>{item.label}</span>
+                <span style={{fontSize:13,fontWeight:700,display:'block'}}>{item.addr}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </header>
+
+      {/* Optimasi section agar tidak dirender berat jika belum di scroll */}
+      <section style={{contentVisibility:'auto', containIntrinsicSize:'1000px'}}>
+        {/* ... Konten lainnya */}
+      </section>
+
+      {showLogin && <LoginModal onClose={()=>setShowLogin(false)} onSuccess={handleLoginSuccess}/>}
 
       <style jsx global>{`
-        .dark-theme-wrapper { background: #0A0A0B; color: #E5E7EB; min-height: 100vh; position: relative; overflow-x: hidden; }
-        .bg-glow { position: fixed; inset: 0; z-index: 0; background: radial-gradient(circle at 50% -20%, rgba(249,115,22,0.1) 0%, transparent 60%); }
-        .content-main { position: relative; z-index: 1; padding: 120px 16px 60px; max-width: 800px; margin: 0 auto; text-align: center; }
-        .hero-title { font-size: clamp(32px, 6vw, 56px); font-weight: 800; color: #FFFFFF; margin-bottom: 20px; }
-        .gradient-text { background: linear-gradient(to right, #F97316, #FB923C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .hero-desc { color: #9CA3AF; font-size: 16px; margin-bottom: 40px; }
-        .ip-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-        .dark-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; cursor: pointer; transition: 0.3s; }
-        .dark-card:hover { background: rgba(255,255,255,0.06); border-color: #F97316; transform: translateY(-4px); }
-        .dark-icon { color: #F97316; margin-bottom: 8px; }
-        .card-label { display: block; font-size: 10px; color: #6B7280; text-transform: uppercase; letter-spacing: 1px; }
-        .card-addr { display: block; font-size: 16px; font-weight: 700; color: #F3F4F6; margin-top: 4px; }
-        .load-animate [class^="load-item-"] { opacity: 0; transform: translateY(15px); transition: 0.6s; }
-        .load-animate.loaded [class^="load-item-"] { opacity: 1; transform: translateY(0); }
-        @media(max-width: 768px) { .ip-grid { grid-template-columns: 1fr; } }
+        /* Performa Tweaks */
+        .anim-hero, .anim-hero-up, .ip-card, .fn-card { will-change: transform, opacity; }
+        .ip-card { transition: transform 0.2s ease, border-color 0.2s ease; }
+        .ip-card:hover { transform: translateY(-2px); border-color: var(--primary); }
       `}</style>
     </>
   );
