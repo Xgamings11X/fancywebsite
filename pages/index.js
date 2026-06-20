@@ -53,10 +53,10 @@ export default function HomePage({ settings }) {
   };
 
   const socials = [
-    (s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL)    && { href: s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL,    icon:'star',     label:'Vote'    },
+    (s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL)    && { href: s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL,    icon:'star',     label:'Vote Server' },
     (s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL) && { href: s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL, icon:'discord',  label:'Discord' },
-    (s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL)&& { href: s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL,icon:'whatsapp', label:'Whatsapp' },
-    (s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL)  && { href: s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL,  icon:'tiktok',   label:'TikTok'  },
+    (s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL)&& { href: s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL,icon:'whatsapp', label:'WhatsApp' },
+    (s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL)  && { href: s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL,  icon:'tiktok',   label:'TikTok' },
   ].filter(Boolean);
 
   const famousApplyUrl = s.discord_url || process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || process.env.NEXT_PUBLIC_DISCORD_URL || '#';
@@ -69,13 +69,13 @@ export default function HomePage({ settings }) {
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      {/* FULL DARK MODE WRAPPER AGAR ORANGE MENYALA TERANG */}
-      <div className="orange-theme-wrapper" style={{ backgroundColor: '#0B0A0A', color: '#F4F4F5', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
+      {/* BASE BACKGROUND AMBIENT ORANGE */}
+      <div className="orange-theme-wrapper page-fade-in" style={{ backgroundColor: '#0B0A0A', color: '#F4F4F5', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
         
-        {/* Neon Orange Ambient Glow (Statis, 0% CPU Load) */}
+        {/* Neon Ambient Glow (Murni GPU, 0% CPU Load) */}
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
-          <div style={{ position: 'absolute', top: '-15%', left: '15%', width: '650px', height: '650px', background: 'radial-gradient(circle, rgba(255,107,0,0.15) 0%, transparent 70%)', filter: 'blur(90px)' }} />
-          <div style={{ position: 'absolute', top: '40%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(234,88,12,0.1) 0%, transparent 70%)', filter: 'blur(90px)' }} />
+          <div style={{ position: 'absolute', top: '-15%', left: '15%', width: '650px', height: '650px', background: 'radial-gradient(circle, rgba(255,107,0,0.18) 0%, transparent 70%)', filter: 'blur(90px)' }} />
+          <div style={{ position: 'absolute', top: '40%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(234,88,12,0.12) 0%, transparent 70%)', filter: 'blur(90px)' }} />
         </div>
 
         <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s} />
@@ -84,7 +84,7 @@ export default function HomePage({ settings }) {
         <main style={{ flex: 1, position: 'relative', zIndex: 1 }}>
           
           {/* HERO SECTION */}
-          <header style={{ padding: '120px 24px 60px', textAlign: 'center' }}>
+          <header style={{ padding: '130px 24px 60px', textAlign: 'center', position: 'relative' }}>
             <div style={{ margin: '0 auto 24px', filter: 'drop-shadow(0 0 25px rgba(255,107,0,0.45))' }}>
               {s.logo_url ? <img src={s.logo_url} style={{maxWidth:140, margin:'0 auto'}} alt="Server Logo"/> : <LogoImage style={{width:130, margin:'0 auto'}}/>}
             </div>
@@ -93,9 +93,21 @@ export default function HomePage({ settings }) {
               SERVER EKONOMI | JAVA & BEDROCK
             </div>
 
-            <h1 style={{ fontSize: 'clamp(32px, 6vw, 56px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 20, maxWidth: 850, margin: '0 auto 20px', lineHeight: 1.15 }}>
+            <h1 className="hero-title-float" style={{ fontSize: 'clamp(36px, 7vw, 60px)', fontWeight: 800, color: '#FFFFFF', marginBottom: 20, maxWidth: 850, margin: '0 auto 20px', lineHeight: 1.15 }}>
               {s.hero_title || <>Mulai Petualanganmu di <span style={{ background: 'linear-gradient(135deg, #FF6B00, #FFA500)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{serverName}</span></>}
             </h1>
+
+            {/* Floating Info Version & Port Kiri Kanan khas Shadowyn Style */}
+            <div className="floating-info-container">
+              <div className="floating-info-badge badge-left">
+                <span>PORT BEDROCK</span>
+                <strong>19015</strong>
+              </div>
+              <div className="floating-info-badge badge-right">
+                <span>VERSION</span>
+                <strong>1.21+</strong>
+              </div>
+            </div>
 
             <p style={{ color: '#A1A1AA', fontSize: 16, maxWidth: 560, margin: '0 auto 36px', lineHeight: 1.6 }}>
               {s.server_description || 'Server Minecraft Indonesia dengan komunitas solid dan dunia tanpa batas.'}
@@ -109,8 +121,8 @@ export default function HomePage({ settings }) {
               <span><strong style={{ color: '#FFFFFF', fontWeight: 800 }}>{playerCount}</strong> Players Online</span>
             </div>
 
-            {/* TRIPLE IP GRID (Ukuran Persis Kode Awal: Max-Width 800px) */}
-            <div className="ip-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, width: '100%', maxWidth: 800, margin: '0 auto 36px' }}>
+            {/* TRIPLE IP GRID — Kotak Terlihat Jelas & Kontras */}
+            <div className="ip-grid scroll-animate" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, width: '100%', maxWidth: 800, margin: '0 auto 36px' }}>
               {[
                 { label: 'Java Edition IP', addr: serverIp, icon: 'computer', copy: serverIp, copyLabel: 'IP Java' },
                 { label: 'Bedrock Edition IP', addr: serverIp, icon: 'mobile', copy: serverIp, copyLabel: 'IP Bedrock' },
@@ -127,9 +139,9 @@ export default function HomePage({ settings }) {
               ))}
             </div>
 
-            {/* Social Media Row */}
+            {/* SOCIAL MEDIA ROW */}
             {socials.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }} className="scroll-animate">
                 {socials.map((x, i) => (
                   <a key={i} href={x.href} target="_blank" rel="noopener noreferrer" className="orange-social-btn">
                     <Icon name={x.icon} size={15} />
@@ -140,52 +152,54 @@ export default function HomePage({ settings }) {
             )}
           </header>
 
-          {/* STATS BAR */}
-          <section style={{ backgroundColor: '#121111', borderTop: '1px solid #27272A', borderBottom: '1px solid #27272A', padding: '28px 24px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: 20, maxWidth: 960, margin: '0 auto' }} className="stats-grid">
-              {[
-                { val: '24/7', sub: 'Server Online' },
-                { val: 'JAVA', sub: '+ Bedrock' },
-                { val: 'FREE', sub: 'Untuk Semua' },
-                { val: 'ID', sub: 'Community' },
-              ].map((st, i) => (
-                <div key={i}>
-                  <h3 className="font-space" style={{ fontSize: 26, color: '#FF6B00', fontWeight: 800 }}>{st.val}</h3>
-                  <p style={{ fontSize: 11, color: '#A1A1AA', marginTop: 2, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{st.sub}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* FEATURES */}
-          <section style={{ padding: '80px 24px 60px', maxWidth: 1200, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <span style={{ color: '#FF6B00', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'block', marginBottom: 6 }}>FITUR UTAMA</span>
-              <h2 className="font-space" style={{ fontSize: 30, fontWeight: 800, color: '#FFFFFF' }}>Keunggulan Bermain di <span style={{ color: '#FF6B00' }}>Fancy</span></h2>
-            </div>
+          {/* LOWER CONTAINER - Melengkung Halus */}
+          <div style={{ backgroundColor: '#110F0E', borderRadius: '40px 40px 0 0', borderTop: '1px solid #1F1C1A', padding: '60px 24px 20px' }}>
             
-            <div className="feature-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, maxWidth: 860, margin: '0 auto' }}>
-              {[
-                { icon: 'shield-halved', title: 'Anti-Cheat Ketat', desc: 'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.' },
-                { icon: 'users', title: 'Komunitas Solid', desc: 'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.' },
-                { icon: 'bolt', title: 'Low Latency', desc: 'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.' },
-                { icon: 'trophy', title: 'Event & Reward', desc: 'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.' },
-              ].map((f, i) => (
-                <div key={i} className="card-orange" style={{ padding: 20, textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 14, cursor: 'default' }}>
-                  <div className="icon-orange" style={{ marginBottom: 0 }}><Icon name={f.icon} size={20} /></div>
-                  <div>
-                    <h4 style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 4 }}>{f.title}</h4>
-                    <p style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.5 }}>{f.desc}</p>
+            {/* STATS BAR */}
+            <section style={{ paddingBottom: 60 }} className="scroll-animate">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: 20, maxWidth: 800, margin: '0 auto' }} className="stats-grid">
+                {[
+                  { val: '24/7', sub: 'Server Online' },
+                  { val: 'JAVA', sub: '+ Bedrock' },
+                  { val: 'FREE', sub: 'Untuk Semua' },
+                  { val: 'ID', sub: 'Community' },
+                ].map((st, i) => (
+                  <div key={i} style={{ background: '#161413', border: '1px solid #282422', padding: '18px 12px', borderRadius: '16px' }}>
+                    <h3 className="font-space" style={{ fontSize: 26, color: '#FF6B00', fontWeight: 800 }}>{st.val}</h3>
+                    <p style={{ fontSize: 11, color: '#A1A1AA', marginTop: 4, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{st.sub}</p>
                   </div>
-                </div>
-              ))}
-            </div>
-          </section>
+                ))}
+              </div>
+            </section>
 
-          {/* RECRUITMENT */}
-          <section style={{ padding: '20px 24px 100px', maxWidth: 1200, margin: '0 auto' }}>
-            <div style={{ maxWidth: 580, margin: '0 auto' }}>
-              <div style={{ backgroundColor: '#121111', border: '1px solid #27272A', borderRadius: 20, padding: '36px 28px' }}>
+            {/* FEATURES */}
+            <section style={{ paddingBottom: 60, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
+              <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                <span style={{ color: '#FF6B00', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'block', marginBottom: 6 }}>FITUR UTAMA</span>
+                <h2 className="font-space" style={{ fontSize: 28, fontWeight: 800, color: '#FFFFFF' }}>Keunggulan Bermain di <span style={{ color: '#FF6B00' }}>Fancy</span></h2>
+              </div>
+              
+              <div className="feature-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+                {[
+                  { icon: 'shield-halved', title: 'Anti-Cheat Ketat', desc: 'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.' },
+                  { icon: 'users', title: 'Komunitas Solid', desc: 'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.' },
+                  { icon: 'bolt', title: 'Low Latency', desc: 'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.' },
+                  { icon: 'trophy', title: 'Event & Reward', desc: 'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.' },
+                ].map((f, i) => (
+                  <div key={i} className="card-orange" style={{ padding: 22, textAlign: 'left', display: 'flex', alignItems: 'flex-start', gap: 14, cursor: 'default' }}>
+                    <div className="icon-orange" style={{ marginBottom: 0 }}><Icon name={f.icon} size={18} /></div>
+                    <div>
+                      <h4 style={{ fontSize: 15, fontWeight: 700, color: '#FFFFFF', marginBottom: 6 }}>{f.title}</h4>
+                      <p style={{ fontSize: 13, color: '#A1A1AA', lineHeight: 1.5 }}>{f.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* RECRUITMENT */}
+            <section style={{ paddingBottom: 60, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
+              <div style={{ backgroundColor: '#161413', border: '1px solid #282422', borderRadius: 24, padding: '36px 28px', maxWidth: 540, margin: '0 auto' }}>
                 <span style={{ color: '#FF6B00', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>KONTRIBUSI &amp; REWARD</span>
                 <h3 className="font-space" style={{ fontSize: 22, fontWeight: 800, color: '#FFFFFF', marginBottom: 12 }}>Rank Famous Creator</h3>
                 <p style={{ fontSize: 13.5, color: '#A1A1AA', marginBottom: 24, lineHeight: 1.6 }}>
@@ -204,36 +218,70 @@ export default function HomePage({ settings }) {
                   <Icon name="arrow-right" size={14} />
                 </a>
               </div>
-            </div>
-          </section>
+            </section>
 
+          </div>
         </main>
 
-        {/* FANCY FOOTER TETAP DI BAWAH */}
         <FancyFooter serverName={serverName} />
         
         {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess} />}
       </div>
 
-      {/* STYLES */}
-      <style jsx>{`
+      {/* STYLES CSS MURNI DIJALANKAN OLEH GPU — PERFORMA 100% */}
+      <style jsx global>{`
+        html {
+          scroll-behavior: smooth;
+        }
+
+        /* Animasi Transisi Halaman (Home <-> Store) */
+        .page-fade-in {
+          animation: pageIn 0.35s cubic-bezier(0.215, 0.610, 0.355, 1) forwards;
+          will-change: opacity, transform;
+        }
+        @keyframes pageIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Animasi Scroll Viewport */
+        .scroll-animate {
+          animation: slideUp 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+        @keyframes slideUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Animasi Hero Title Floating */
+        .hero-title-float {
+          animation: floatTitle 4s ease-in-out infinite;
+        }
+        @keyframes floatTitle {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
+        }
+
+        /* STRUKTUR BOX KOTAK CARD: JELAS, TEGAS & AMBIENT */
         .card-orange {
-          background: #121111;
-          border: 1px solid #27272A;
-          border-radius: 12px;
-          padding: 12px 14px;
+          background: #161413; /* Warna Cokelat Gelap Warm agar Kotak Tampak Jelas */
+          border: 1px solid #2A2421; /* Border tegas pemisah warna background luar */
+          border-radius: 14px;
+          padding: 14px 16px;
           cursor: pointer;
           display: flex;
           align-items: center;
           gap: 12px;
           position: relative;
-          transition: all 0.15s ease;
-          will-change: transform, box-shadow;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .card-orange:hover {
-          border-color: #FF6B00;
-          box-shadow: 0 0 15px rgba(255, 107, 0, 0.15);
+          background: #1C1917;
+          border-color: #FF6B00; /* Menyala Orange Tebal saat Kursor di Atas */
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(255, 107, 0, 0.12);
         }
+
         .orange-copy-indicator {
           position: absolute;
           top: 6px;
@@ -246,60 +294,60 @@ export default function HomePage({ settings }) {
           font-weight: 700;
         }
         .icon-orange {
-          width: 36px;
-          height: 36px;
-          background: rgba(255,107,0,0.1);
+          width: 38px;
+          height: 38px;
+          background: rgba(255,107,0,0.08);
           color: #FF6B00;
           border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
+          border: 1px solid rgba(255,107,0,0.15);
         }
         .orange-card-label {
           font-size: 9px;
           text-transform: uppercase;
-          color: #71717A;
+          color: #8C8480; /* Kontras dinaikkan */
           font-weight: 700;
           letter-spacing: 0.5px;
           display: block;
         }
         .orange-card-addr {
-          font-size: 13.5px;
-          font-weight: 700;
+          font-size: 14px;
+          font-weight: 800;
           color: #FFFFFF;
           display: block;
           margin-top: 1px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
         }
+
         .orange-social-btn {
           display: flex;
           align-items: center;
           gap: 6px;
-          padding: 8px 14px;
-          border-radius: 8px;
+          padding: 8px 16px;
+          border-radius: 50px;
           font-size: 12.5px;
           font-weight: 600;
           text-decoration: none;
-          background: #121111;
-          border: 1px solid #27272A;
+          background: #161413;
+          border: 1px solid #2A2421;
           color: #E4E4E7;
-          transition: all 0.1s;
+          transition: all 0.15s ease;
         }
         .orange-social-btn:hover {
           background: rgba(255,107,0,0.05);
           border-color: #FF6B00;
           color: #FFFFFF;
         }
+
         .orange-apply-btn {
           background: #FF6B00;
           color: #FFFFFF;
           padding: 12px;
-          border-radius: 10px;
-          font-weight: 600;
-          font-size: 13px;
+          border-radius: 12px;
+          font-weight: 700;
+          font-size: 13.5px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -310,13 +358,41 @@ export default function HomePage({ settings }) {
         .orange-apply-btn:hover {
           background: #E05E00;
         }
+
+        /* Floating Badge Khas Desain Screenshot */
+        .floating-info-container {
+          position: absolute;
+          width: 100%;
+          max-width: 580px;
+          top: 45%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+        }
+        .floating-info-badge {
+          position: absolute;
+          background: rgba(22, 20, 19, 0.6);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255,255,255,0.04);
+          padding: 6px 12px;
+          border-radius: 12px;
+          color: #FFFFFF;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+        }
+        .badge-left { left: -30px; top: 0; transform: rotate(-6deg); }
+        .badge-right { right: -30px; top: -10px; transform: rotate(4deg); }
+
         @keyframes ping-orange {
           75%, 100% { transform: scale(2); opacity: 0; }
         }
         @media(max-width: 768px) {
           .ip-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
           .feature-grid { grid-template-columns: 1fr !important; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 20px 8px !important; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 10px !important; }
+          .floating-info-container { display: none; }
         }
       `}</style>
     </>
