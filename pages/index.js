@@ -27,22 +27,19 @@ export default function HomePage({ settings }) {
   const [showLogin, setShowLogin] = useState(false);
   const [copied,    setCopied]    = useState('');
   const [status,    setStatus]    = useState(null);
-  const [isLoaded,  setIsLoaded]  = useState(false); // Trigger Page Load
+  const [isLoaded,  setIsLoaded]  = useState(false);
 
   useEffect(() => {
-    // 1. Ambil data player & status server
     try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
     fetch('/api/server/status').then(r=>r.json()).then(setStatus).catch(()=>{});
 
-    // 2. Memicu Animasi Page Load secara bertahap setelah komponen mounted
     const timer = setTimeout(() => setIsLoaded(true), 50);
 
-    // 3. Pemicu Animasi Scroll menggunakan Intersection Observer (Sangat Ringan & Native)
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('visible');
-          observer.unobserve(entry.target); // Cukup animasi sekali saja saat di-scroll
+          observer.unobserve(entry.target);
         }
       });
     }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
@@ -92,7 +89,6 @@ export default function HomePage({ settings }) {
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      {/* BACKGROUND PUTIH TERANG DENGAN ELEMEN KONTRAS FULL ORANGE */}
       <div className="orange-theme-wrapper" style={{ backgroundColor: '#FFFFFF', color: '#1A0D05', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
         
         {/* Soft Ambient Glow */}
@@ -102,10 +98,9 @@ export default function HomePage({ settings }) {
 
         <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s} />
 
-        {/* MAIN CONTENT */}
         <main style={{ flex: 1, position: 'relative', zIndex: 1, padding: '0 16px' }}>
           
-          {/* HERO SECTION (ANIMATED VIA PAGE LOAD) */}
+          {/* HERO SECTION */}
           <header style={{ padding: '120px 0 40px', textAlign: 'center' }} className={`load-animate ${isLoaded ? 'loaded' : ''}`}>
             <div style={{ margin: '0 auto 16px' }} className="load-item-1">
               {s.logo_url ? <img src={s.logo_url} style={{maxWidth:120, margin:'0 auto'}} alt="Server Logo"/> : <LogoImage style={{width:110, margin:'0 auto'}}/>}
@@ -119,7 +114,7 @@ export default function HomePage({ settings }) {
               {s.hero_title || <>Jelajahi Dunia <span style={{ color: '#F97316' }}>{serverName}</span></>}
             </h1>
 
-            <p style={{ color: '#E4580C', opacity: 0.85, fontSize: 14.5, maxWidth: 480, margin: '0 auto 28px', lineHeight: 1.5, fontWeight: 500 }} className="load-item-4">
+            <p style={{ color: '#EA580C', opacity: 0.85, fontSize: 14.5, maxWidth: 480, margin: '0 auto 28px', lineHeight: 1.5, fontWeight: 500 }} className="load-item-4">
               {s.server_description || 'Server Minecraft Indonesia dengan komunitas aktif dan performa stabil.'}
             </p>
 
@@ -131,7 +126,7 @@ export default function HomePage({ settings }) {
               <span><strong style={{ color: '#F97316', fontWeight: 800 }}>{playerCount}</strong> Online</span>
             </div>
 
-            {/* TRIPLE IP GRID — INTERACTIVE ACTION */}
+            {/* TRIPLE IP GRID — BOX ORANGE GELAP */}
             <div className="ip-grid load-item-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, width: '100%', maxWidth: 800, margin: '0 auto 32px' }}>
               {[
                 { label: 'Java IP', addr: serverIp, icon: 'computer', copy: serverIp, copyLabel: 'IP Java' },
@@ -162,7 +157,7 @@ export default function HomePage({ settings }) {
             )}
           </header>
 
-          {/* STATS BAR (ANIMATED VIA SCROLL) */}
+          {/* STATS BAR — BOX ORANGE GELAP */}
           <section style={{ backgroundColor: 'rgba(249,115,22,0.03)', borderTop: '1px solid rgba(249,115,22,0.15)', borderBottom: '1px solid rgba(249,115,22,0.15)', padding: '20px', margin: '0 -16px 48px' }} className="scroll-animate">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: 12, maxWidth: 800, margin: '0 auto' }} className="stats-grid">
               {[
@@ -171,15 +166,15 @@ export default function HomePage({ settings }) {
                 { val: 'FREE', sub: 'Play' },
                 { val: 'ID', sub: 'Community' },
               ].map((st, i) => (
-                <div key={i} style={{ background: '#FFFFFF', border: '1px solid rgba(249,115,22,0.2)', padding: '10px 4px', borderRadius: '10px' }}>
-                  <h3 className="font-space" style={{ fontSize: 20, color: '#F97316', fontWeight: 800 }}>{st.val}</h3>
-                  <p style={{ fontSize: 9, color: '#EA580C', marginTop: 2, textTransform: 'uppercase', fontWeight: 700 }}>{st.sub}</p>
+                <div key={i} className="stats-box-dark">
+                  <h3 className="font-space" style={{ fontSize: 20, color: '#FFFFFF', fontWeight: 800, margin: 0 }}>{st.val}</h3>
+                  <p style={{ fontSize: 9, color: '#FFBA85', opacity: 0.8, marginTop: 2, textTransform: 'uppercase', fontWeight: 700, margin: 0 }}>{st.sub}</p>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* FEATURES (ANIMATED VIA SCROLL) */}
+          {/* FEATURES — BOX ORANGE GELAP */}
           <section style={{ paddingBottom: 48, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
               <h2 className="font-space" style={{ fontSize: 22, fontWeight: 800, color: '#1A0D05' }}>Fitur Utama <span style={{ color: '#F97316' }}>Server</span></h2>
@@ -195,26 +190,26 @@ export default function HomePage({ settings }) {
                 <div key={i} className="card-orange" style={{ padding: 16, textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12, cursor: 'default' }}>
                   <div className="icon-orange" style={{ marginBottom: 0 }}><Icon name={f.icon} size={16} /></div>
                   <div>
-                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1A0D05', marginBottom: 2 }}>{f.title}</h4>
-                    <p style={{ fontSize: 12.5, color: '#EA580C', opacity: 0.8, lineHeight: 1.4 }}>{f.desc}</p>
+                    <h4 style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', marginBottom: 2 }}>{f.title}</h4>
+                    <p style={{ fontSize: 12.5, color: '#FFBA85', opacity: 0.8, lineHeight: 1.4, margin: 0 }}>{f.desc}</p>
                   </div>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* RECRUITMENT (ANIMATED VIA SCROLL) */}
+          {/* RECRUITMENT — BOX ORANGE GELAP */}
           <section style={{ paddingBottom: 60, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
-            <div style={{ backgroundColor: 'rgba(249,115,22,0.03)', border: '1px solid rgba(249,115,22,0.15)', borderRadius: 14, padding: '28px 20px', maxWidth: 480, margin: '0 auto' }}>
-              <h3 className="font-space" style={{ fontSize: 18, fontWeight: 800, color: '#1A0D05', marginBottom: 8 }}>Rank Famous Creator</h3>
-              <p style={{ fontSize: 13, color: '#EA580C', opacity: 0.85, marginBottom: 16, lineHeight: 1.5 }}>
+            <div style={{ backgroundColor: '#431A04', border: '1px solid rgba(249,115,22,0.3)', borderRadius: 14, padding: '28px 20px', maxWidth: 480, margin: '0 auto' }}>
+              <h3 className="font-space" style={{ fontSize: 18, fontWeight: 800, color: '#FFFFFF', marginBottom: 8 }}>Rank Famous Creator</h3>
+              <p style={{ fontSize: 13, color: '#FFBA85', opacity: 0.85, marginBottom: 16, lineHeight: 1.5 }}>
                 Dapatkan tag kustom khusus, eksposur konten, dan reward eksklusif bagi kreator aktif.
               </p>
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 20px 0' }}>
                 {['Rutin membuat konten server', 'Komunitas organik & positif'].map((r, i) => (
-                  <li key={i} style={{ fontSize: 12.5, color: '#1A0D05', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <li key={i} style={{ fontSize: 12.5, color: '#FFFFFF', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Icon name="circle-check" size={13} color="#F97316" />
-                    <span>{r}</span>
+                    <span style={{ color: '#FFBA85' }}>{r}</span>
                   </li>
                 ))}
               </ul>
@@ -232,7 +227,6 @@ export default function HomePage({ settings }) {
         {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess} />}
       </div>
 
-      {/* STYLES INTERFACE DENGAN NATIVE ANIMATIONS */}
       <style jsx global>{`
         html {
           scroll-behavior: smooth;
@@ -243,9 +237,6 @@ export default function HomePage({ settings }) {
           transform: translateZ(0);
         }
 
-        /* ---------------------------------------------
-           1. ANIMASI PAGE LOAD (STAGGERED EFFECT)
-        --------------------------------------------- */
         .load-animate [class^="load-item-"] {
           opacity: 0;
           transform: translateY(15px);
@@ -261,9 +252,6 @@ export default function HomePage({ settings }) {
         .load-animate.loaded .load-item-6 { opacity: 1; transform: translateY(0); transition-delay: 400ms; }
         .load-animate.loaded .load-item-7 { opacity: 1; transform: translateY(0); transition-delay: 470ms; }
 
-        /* ---------------------------------------------
-           2. ANIMASI SCROLL (INTERSECTION OBSERVER)
-        --------------------------------------------- */
         .scroll-animate {
           opacity: 0;
           transform: translateY(24px);
@@ -275,10 +263,10 @@ export default function HomePage({ settings }) {
           transform: translateY(0);
         }
 
-        /* CARD DAN BUTTON COMPONENT */
+        /* CARD DAN BOX UTAMA (ORANGE GELAP) */
         .card-orange {
-          background: #FFFFFF; 
-          border: 1px solid rgba(249,115,22,0.25);
+          background: #431A04; 
+          border: 1px solid rgba(249,115,22,0.3);
           border-radius: 12px;
           padding: 12px 14px;
           cursor: pointer;
@@ -289,10 +277,22 @@ export default function HomePage({ settings }) {
           transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.15s ease, background-color 0.15s ease;
         }
         .card-orange:hover {
-          background: rgba(249,115,22,0.02);
+          background: #5C2406;
           border-color: #F97316;
           transform: translateY(-2px);
-          box-shadow: 0 8px 16px rgba(249, 115, 22, 0.08);
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+        }
+
+        .stats-box-dark {
+          background: #431A04; 
+          border: 1px solid rgba(249,115,22,0.3); 
+          padding: 10px 4px; 
+          border-radius: 10px;
+          transition: all 0.2s ease;
+        }
+        .stats-box-dark:hover {
+          background: #5C2406;
+          border-color: #F97316;
         }
 
         .orange-copy-indicator {
@@ -300,8 +300,8 @@ export default function HomePage({ settings }) {
           top: 6px;
           right: 8px;
           font-size: 8.5px;
-          color: #EA580C;
-          background: rgba(249,115,22,0.08);
+          color: #FFBA85;
+          background: rgba(249,115,22,0.15);
           padding: 1px 5px;
           border-radius: 4px;
           font-weight: 700;
@@ -309,19 +309,19 @@ export default function HomePage({ settings }) {
         .icon-orange {
           width: 34px;
           height: 34px;
-          background: rgba(249,115,22,0.08);
-          color: #F97316;
+          background: rgba(249,115,22,0.15);
+          color: #FFBA85;
           border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          border: 1px solid rgba(249,115,22,0.15);
+          border: 1px solid rgba(249,115,22,0.2);
         }
         .orange-card-label {
           font-size: 8.5px;
           text-transform: uppercase;
-          color: #EA580C;
+          color: #FFBA85;
           font-weight: 700;
           letter-spacing: 0.5px;
           display: block;
@@ -329,7 +329,7 @@ export default function HomePage({ settings }) {
         .orange-card-addr {
           font-size: 13.5px;
           font-weight: 700;
-          color: #1A0D05;
+          color: #FFFFFF;
           display: block;
           margin-top: 1px;
         }
