@@ -1,5 +1,5 @@
 import { useTransparentLogo, updateFavicon } from '../../components/LogoImage';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import FancyNav from '../../components/FancyNav';
 import LoginModal from '../../components/LoginModal';
@@ -22,10 +22,10 @@ const TYPES = [
 ];
 
 const STATUS = {
-  open:      { label:'Menunggu',  color:'#EA580C', bg: 'rgba(234,88,12,0.08)' },
-  in_review: { label:'Direview', color:'#F97316', bg: 'rgba(249,115,22,0.08)' },
-  resolved:  { label:'Selasai',  color:'#16A34A', bg: 'rgba(22,163,74,0.08)' },
-  rejected:  { label:'Ditolak',  color:'#DC2626', bg: 'rgba(220,38,38,0.08)' },
+  open:      { label:'Menunggu',  color:'#FFBA85', bg: 'rgba(255,186,133,0.1)' },
+  in_review: { label:'Direview', color:'#F97316', bg: 'rgba(249,115,22,0.15)' },
+  resolved:  { label:'Selesai',  color:'#4ADE80', bg: 'rgba(74,222,128,0.1)' },
+  rejected:  { label:'Ditolak',  color:'#F87171', bg: 'rgba(248,113,113,0.1)' },
 };
 
 const fmt = d => d ? new Date(d).toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'}) : '-';
@@ -57,17 +57,13 @@ export default function SupportPage({ settings }) {
   }, [logoSrc]);
 
   useEffect(() => {
-    // Staggered page load animation trigger
     const t = setTimeout(() => setIsLoaded(true), 50);
-    
     let p = null;
     try { const r = localStorage.getItem('mc_player'); if (r) { p = JSON.parse(r); setPlayer(p); } } catch{}
     if (p) loadTickets(p);
-
     return () => clearTimeout(t);
   }, []);
 
-  // Intersection observer untuk card list tiket / menu categories support
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -239,14 +235,14 @@ export default function SupportPage({ settings }) {
         
         {/* Soft Ambient Background Glow */}
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }} className="gpu-glow-layer">
-          <div style={{ position: 'absolute', top: '-5%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '450px', background: 'radial-gradient(circle, rgba(249,115,22,0.04) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+          <div style={{ position: 'absolute', top: '-5%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '450px', background: 'radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)', filter: 'blur(80px)' }} />
         </div>
 
         <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
         <main style={{ flex: '1 0 auto', padding: '140px 16px 80px', maxWidth: '760px', width: '100%', margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
-          {/* HEADER SECTION (STAGGERED LOAD) */}
+          {/* HEADER SECTION */}
           <div style={{textAlign:'center', marginBottom:40}} className={isLoaded ? 'load-animate loaded' : 'load-animate'}>
             <span style={{display:'inline-flex', padding:'4px 12px', borderRadius:'50px', background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.25)', color:'#EA580C', fontWeight:700, fontSize:10.5, letterSpacing:'0.5px', marginBottom:12}} className="load-item-1">
               PUSAT BANTUAN
@@ -257,7 +253,7 @@ export default function SupportPage({ settings }) {
             <p style={{color:'#EA580C', opacity: 0.85, fontSize:14.5, fontWeight: 500}} className="load-item-3">{serverName} — Tim kami siap melayani kendala Anda secara responsif.</p>
           </div>
 
-          {/* NAVIGATION TABS (STAGGERED LOAD) */}
+          {/* NAVIGATION TABS */}
           <div style={{display:'flex', justifyContent:'center', gap:8, marginBottom:36, maxWidth:360, margin:'0 auto 36px'}} className={isLoaded ? 'load-animate loaded' : 'load-animate'}>
             <button className={`support-nav-tab load-item-4 ${view==='home'||view==='form'?'active':''}`} onClick={()=>setView('home')}>
               <Icon name="plus-circle" size={13} /> <span>Buat Tiket</span>
@@ -271,23 +267,23 @@ export default function SupportPage({ settings }) {
           {view === 'home' && (
             <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:14}}>
               {!player && (
-                <div style={{gridColumn:'1/-1', background:'rgba(249,115,22,0.04)', border:'1px solid rgba(249,115,22,0.2)', borderRadius:12, padding:'14px 18px', display:'flex', alignItems:'center', gap:12, marginBottom:4}} className="scroll-animate visible">
-                  <Icon name="circle-exclamation" size={16} color="#F97316"/>
-                  <p style={{fontSize:13, color:'#EA580C', fontWeight:500}}>
-                    Anda wajib <strong style={{color:'#F97316', cursor:'pointer', textDecoration:'underline'}} onClick={()=>setShowLogin(true)}>Login Akun</strong> terlebih dahulu untuk mengajukan tiket bantuan.
+                <div style={{gridColumn:'1/-1', background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:12, padding:'14px 18px', display:'flex', alignItems:'center', gap:12, marginBottom:4}} className="scroll-animate visible">
+                  <Icon name="circle-exclamation" size={16} color="#FFBA85"/>
+                  <p style={{fontSize:13, color:'#FFBA85', fontWeight:500}}>
+                    Anda wajib <strong style={{color:'#FFF', cursor:'pointer', textDecoration:'underline'}} onClick={()=>setShowLogin(true)}>Login Akun</strong> terlebih dahulu untuk mengajukan tiket bantuan.
                   </p>
                 </div>
               )}
               {TYPES.map(t=>(
-                <button key={t.id} onClick={()=>handleSelectType(t.id)} className="support-cat-card scroll-animate" style={{width:'100%', textAlign:'left', background:'#FFFFFF', border: '1px solid rgba(249,115,22,0.25)', borderRadius:14, padding:16, display:'flex', alignItems:'center', gap:14, cursor:'pointer', transition:'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'}}>
-                  <div style={{background:`rgba(249,115,22,0.08)`, color:'#F97316', width:38, height:38, borderRadius:8, display:'flex', alignItems:'center', justifyOrigin:'center', justifyContent:'center', border:'1px solid rgba(249,115,22,0.15)', flexShrink:0}}>
+                <button key={t.id} onClick={()=>handleSelectType(t.id)} className="support-cat-card scroll-animate" style={{width:'100%', textAlign:'left', background:'#431A04', border: '1px solid rgba(249,115,22,0.3)', borderRadius:14, padding:18, display:'flex', alignItems:'center', gap:14, cursor:'pointer', transition:'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'}}>
+                  <div style={{background:`rgba(259,115,22,0.15)`, color:'#FFBA85', width:38, height:38, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(249,115,22,0.2)', flexShrink:0}}>
                     <Icon name={t.icon} size={15}/>
                   </div>
                   <div style={{flex:1, minWidth:0}}>
-                    <p style={{fontWeight:800, fontSize:14, color:'#1A0D05', marginBottom:2}}>{t.label}</p>
-                    <p style={{fontSize:12, color:'#EA580C', opacity:0.8, lineHeight:1.4, overflow:'hidden', textOverflow:'ellipsis'}}>{t.desc}</p>
+                    <p style={{fontWeight:800, fontSize:14, color:'#FFFFFF', marginBottom:3}}>{t.label}</p>
+                    <p style={{fontSize:12, color:'#FFBA85', opacity:0.8, lineHeight:1.4, overflow:'hidden', textOverflow:'ellipsis'}}>{t.desc}</p>
                   </div>
-                  <Icon name="chevron-right" size={11} color="#F97316" style={{marginLeft:'auto', flexShrink:0}}/>
+                  <Icon name="chevron-right" size={11} color="#FFBA85" style={{marginLeft:'auto', flexShrink:0}}/>
                 </button>
               ))}
             </div>
@@ -295,19 +291,19 @@ export default function SupportPage({ settings }) {
 
           {/* ── VIEW FORM SUBMISSION ── */}
           {view === 'form' && typeInfo && (
-            <div style={{background:'#FFFFFF', border:'1px solid rgba(249,115,22,0.25)', borderRadius:16, padding:'28px'}} className="scroll-animate visible">
-              <button onClick={()=>setView('home')} style={{background:'none', border:'none', color:'#EA580C', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, marginBottom:20}}>
+            <div style={{background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:16, padding:'28px'}} className="scroll-animate visible">
+              <button onClick={()=>setView('home')} style={{background:'none', border:'none', color:'#FFBA85', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, marginBottom:20}}>
                 <Icon name="arrow-left" size={12}/> Kembali
               </button>
 
-              <div style={{display:'flex', alignItems:'center', gap:14, marginBottom:24, background:'rgba(249,115,22,0.03)', border:'1px solid rgba(249,115,22,0.15)', borderRadius:12, padding:'14px 18px'}}>
-                <div style={{background:`rgba(249,115,22,0.08)`, color:'#F97316', width:40, height:40, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0, border:'1px solid rgba(249,115,22,0.15)'}}>
+              <div style={{display:'flex', alignItems:'center', gap:14, marginBottom:24, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(249,115,22,0.2)', borderRadius:12, padding:'14px 18px'}}>
+                <div style={{background:`rgba(249,115,22,0.15)`, color:'#FFBA85', width:40, height:40, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0, border:'1px solid rgba(249,115,22,0.2)'}}>
                   <Icon name={typeInfo.icon} size={15}/>
                 </div>
                 <div>
-                  <p className="font-space" style={{fontWeight:800, fontSize:15, color:'#1A0D05'}}>{typeInfo.label}</p>
-                  <p style={{fontSize:12, color:'#EA580C', fontWeight:500}}>
-                    Pelapor: <strong style={{color:'#F97316'}}>{player?.displayName||player?.username}</strong>
+                  <p className="font-space" style={{fontWeight:800, fontSize:15, color:'#FFFFFF'}}>{typeInfo.label}</p>
+                  <p style={{fontSize:12, color:'#FFBA85', fontWeight:500}}>
+                    Pelapor: <strong style={{color:'#FFF'}}>{player?.displayName||player?.username}</strong>
                   </p>
                 </div>
               </div>
@@ -332,7 +328,7 @@ export default function SupportPage({ settings }) {
                     style={{resize:'vertical', minHeight:120}}/>
                 </div>
                 <div>
-                  <label className="orange-form-label">Tautan / Link Bukti Screenshot <span style={{fontWeight:500, textTransform:'none', color:'#EA580C', opacity:0.7}}>(Opsional)</span></label>
+                  <label className="orange-form-label">Tautan / Link Bukti Screenshot <span style={{fontWeight:500, textTransform:'none', color:'#FFBA85', opacity:0.6}}>(Opsional)</span></label>
                   <input value={form.evidence_url} onChange={e=>setForm(p=>({...p,evidence_url:e.target.value}))}
                     className="orange-form-input" placeholder="https://imgur.com/example..."/>
                 </div>
@@ -350,17 +346,17 @@ export default function SupportPage({ settings }) {
           {view === 'tickets' && (
             <div>
               {!player ? (
-                <div style={{textAlign:'center', padding:'60px 0', background:'#FFFFFF', border:'1px solid rgba(249,115,22,0.15)', borderRadius:16}} className="scroll-animate visible">
-                  <Icon name="lock" size={32} color="#F97316" style={{display:'block', margin:'0 auto 14px'}}/>
-                  <p style={{color:'#EA580C', marginBottom:16, fontSize:14, fontWeight:600}}>Harap masuk akun untuk meninjau riwayat tiket Anda.</p>
+                <div style={{textAlign:'center', padding:'60px 0', background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:16}} className="scroll-animate visible">
+                  <Icon name="lock" size={32} color="#FFBA85" style={{display:'block', margin:'0 auto 14px'}}/>
+                  <p style={{color:'#FFBA85', marginBottom:16, fontSize:14, fontWeight:600}}>Harap masuk akun untuk meninjau riwayat tiket Anda.</p>
                   <button className="orange-submit-ticket-btn" style={{border:'none', cursor:'pointer', display:'inline-flex', margin:'0 auto'}} onClick={()=>setShowLogin(true)}>
                     <Icon name="right-to-bracket" size={13}/> Login Akun
                   </button>
                 </div>
               ) : tickets.length === 0 ? (
-                <div style={{textAlign:'center', padding:'60px 0', background:'#FFFFFF', border:'1px solid rgba(249,115,22,0.15)', borderRadius:16}} className="scroll-animate visible">
-                  <Icon name="inbox" size={32} color="#F97316" style={{display:'block', margin:'0 auto 14px'}}/>
-                  <p style={{color:'#EA580C', marginBottom:14, fontSize:14, fontWeight:600}}>Belum ada tiket bantuan yang terdaftar.</p>
+                <div style={{textAlign:'center', padding:'60px 0', background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:16}} className="scroll-animate visible">
+                  <Icon name="inbox" size={32} color="#FFBA85" style={{display:'block', margin:'0 auto 14px'}}/>
+                  <p style={{color:'#FFBA85', marginBottom:14, fontSize:14, fontWeight:600}}>Belum ada tiket bantuan yang terdaftar.</p>
                   <button className="orange-secondary-btn" onClick={()=>setView('home')}>
                     <Icon name="plus" size={12}/> Buat Tiket Baru
                   </button>
@@ -372,27 +368,27 @@ export default function SupportPage({ settings }) {
                     const st = STATUS[tk.status] || STATUS.open;
                     return (
                       <div key={tk.ticket_id} className="support-ticket-item-card scroll-animate"
-                        style={{padding:'18px 22px', cursor:'pointer', background:'#FFFFFF', border:'1px solid rgba(249,115,22,0.25)', borderRadius:14}}
+                        style={{padding:'18px 22px', cursor:'pointer', background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:14}}
                         onClick={()=>handleOpenChat(tk)}>
-                        <div style={{display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, marginBottom:10}}>
+                        <div style={{display:'flex', alignItems:'flex-start', justifyOrigin:'space-between', justifyContent:'space-between', gap:12, marginBottom:10}}>
                           <div style={{display:'flex', alignItems:'center', gap:12, minWidth:0}}>
-                            <div style={{width:36, height:36, borderRadius:8, background:`rgba(249,115,22,0.08)`, border:'1px solid rgba(249,115,22,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-                              <Icon name={t?.icon||'ticket'} size={14} color="#F97316"/>
+                            <div style={{width:36, height:36, borderRadius:8, background:`rgba(249,115,22,0.15)`, border:'1px solid rgba(249,115,22,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                              <Icon name={t?.icon||'ticket'} size={14} color="#FFBA85"/>
                             </div>
                             <div style={{minWidth:0}}>
-                              <p style={{fontWeight:800, fontSize:14, color:'#1A0D05', marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{tk.subject}</p>
-                              <code style={{fontSize:11, color:'#EA580C', opacity:0.8, fontFamily:'monospace'}}>{tk.ticket_id}</code>
+                              <p style={{fontWeight:800, fontSize:14, color:'#FFFFFF', marginBottom:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{tk.subject}</p>
+                              <code style={{fontSize:11, color:'#FFBA85', opacity:0.8, fontFamily:'monospace'}}>{tk.ticket_id}</code>
                             </div>
                           </div>
                           <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0}}>
-                            <span style={{background: st.bg, color: st.color, border:`1px solid ${st.color}35`, padding:'3px 9px', borderRadius:6, fontSize:11, fontWeight:800}}>
+                            <span style={{background: st.bg, color: st.color, border:`1px solid ${st.color}40`, padding:'3px 9px', borderRadius:6, fontSize:11, fontWeight:800}}>
                               {st.label}
                             </span>
-                            <span style={{fontSize:10.5, color:'#EA580C', opacity:0.7, fontWeight:500}}>{fmt(tk.updated_at||tk.created_at)}</span>
+                            <span style={{fontSize:10.5, color:'#FFBA85', opacity:0.7, fontWeight:500}}>{fmt(tk.updated_at||tk.created_at)}</span>
                           </div>
                         </div>
-                        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:8, borderTop:'1px solid rgba(249,115,22,0.08)'}}>
-                          <p style={{fontSize:12, color:'#EA580C', display:'flex', alignItems:'center', gap:6, fontWeight:500}}>
+                        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:10, borderTop:'1px solid rgba(249,115,22,0.15)'}}>
+                          <p style={{fontSize:12, color:'#FFBA85', display:'flex', alignItems:'center', gap:6, fontWeight:500}}>
                             <Icon name="comment-dots" size={13}/>
                             {tk.messages?.length || 0} pesan terkirim
                           </p>
@@ -410,30 +406,30 @@ export default function SupportPage({ settings }) {
 
           {/* ── VIEW TICKET CHAT CONVERSATION ── */}
           {view === 'chat' && (
-            <div style={{background:'#FFFFFF', border:'1px solid rgba(249,115,22,0.25)', borderRadius:16, overflow:'hidden'}} className="scroll-animate visible">
+            <div style={{background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:16, overflow:'hidden'}} className="scroll-animate visible">
               {/* Chat Header Bar */}
-              <div style={{padding:'16px 20px', borderBottom:'1px solid rgba(249,115,22,0.12)', display:'flex', alignItems:'center', gap:12, background:'rgba(249,115,22,0.01)'}}>
+              <div style={{padding:'16px 20px', borderBottom:'1px solid rgba(249,115,22,0.2)', display:'flex', alignItems:'center', gap:12, background:'rgba(0,0,0,0.1)'}}>
                 <button onClick={()=>{ setView('tickets'); loadTickets(); }}
-                  style={{background:'none', border:'none', color:'#EA580C', cursor:'pointer', padding:'4px 8px', borderRadius:6, display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:700}}>
+                  style={{background:'none', border:'none', color:'#FFBA85', cursor:'pointer', padding:'4px 8px', borderRadius:6, display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:700}}>
                   <Icon name="arrow-left" size={13}/> Kembali
                 </button>
                 {activeTicket && (
                   <>
-                    <div style={{width:1, height:20, background:'rgba(249,115,22,0.2)'}}/>
-                    <div style={{width:30, height:30, borderRadius:6, background:`rgba(249,115,22,0.08)`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-                      <Icon name={chatType?.icon||'ticket'} size={13} color="#F97316"/>
+                    <div style={{width:1, height:20, background:'rgba(249,115,22,0.3)'}}/>
+                    <div style={{width:30, height:30, borderRadius:6, background:`rgba(249,115,22,0.15)`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
+                      <Icon name={chatType?.icon||'ticket'} size={13} color="#FFBA85"/>
                     </div>
                     <div style={{flex:1, minWidth:0}}>
-                      <p style={{fontWeight:800, fontSize:13, color:'#1A0D05', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{activeTicket.subject}</p>
-                      <code style={{fontSize:10, color:'#EA580C', opacity:0.8}}>{activeTicket.ticket_id}</code>
+                      <p style={{fontWeight:800, fontSize:13, color:'#FFFFFF', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{activeTicket.subject}</p>
+                      <code style={{fontSize:10, color:'#FFBA85', opacity:0.8}}>{activeTicket.ticket_id}</code>
                     </div>
-                    <span style={{background: chatStatus?.bg, color: chatStatus?.color, border:`1px solid ${chatStatus?.color}35`, padding:'4px 10px', borderRadius:6, fontSize:11, fontWeight:800, flexShrink:0}}>
+                    <span style={{background: chatStatus?.bg, color: chatStatus?.color, border:`1px solid ${chatStatus?.color}40`, padding:'4px 10px', borderRadius:6, fontSize:11, fontWeight:800, flexShrink:0}}>
                       {chatStatus?.label}
                     </span>
                     {/* Live Stream Status Indicator */}
                     <div style={{flexShrink:0}}>
-                      <span style={{display:'flex', alignItems:'center', gap:4, fontSize:10, fontWeight:700, color:sseStatus==='live'?'#16A34A':sseStatus==='polling'?'#D97706':'#EA580C'}}>
-                        <span style={{width:6, height:6, borderRadius:'50%', background:sseStatus==='live'?'#16A34A':sseStatus==='polling'?'#D97706':'#EA580C', display:'inline-block', animation:sseStatus==='live'?'pulse-dot 2s infinite':undefined}}/>
+                      <span style={{display:'flex', alignItems:'center', gap:4, fontSize:10, fontWeight:700, color:sseStatus==='live'?'#4ADE80':sseStatus==='polling'?'#FB923C':'#FFBA85'}}>
+                        <span style={{width:6, height:6, borderRadius:'50%', background:sseStatus==='live'?'#4ADE80':sseStatus==='polling'?'#FB923C':'#FFBA85', display:'inline-block', animation:sseStatus==='live'?'pulse-dot 2s infinite':undefined}}/>
                         {sseStatus==='live'?'Live':sseStatus==='polling'?'Poll':'...'}
                       </span>
                     </div>
@@ -442,17 +438,17 @@ export default function SupportPage({ settings }) {
               </div>
 
               {/* Chat Messages Log Area */}
-              <div style={{minHeight:320, maxHeight:'52vh', overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:14, background:'#FFFFFF'}}>
+              <div style={{minHeight:320, maxHeight:'52vh', overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:14, background:'rgba(0,0,0,0.05)'}}>
                 {loadingChat ? (
-                  <div style={{textAlign:'center', padding:'40px 0', color:'#F97316'}}>
+                  <div style={{textAlign:'center', padding:'40px 0', color:'#FFBA85'}}>
                     <Icon name="spinner" size={24} spin/>
                   </div>
                 ) : activeTicket && (
                   <>
                     {activeTicket.evidence_url && (
-                      <div style={{background:'rgba(249,115,22,0.04)', border:'1px dashed rgba(249,115,22,0.25)', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#1A0D05', fontWeight:500}}>
+                      <div style={{background:'rgba(0,0,0,0.15)', border:'1px dashed rgba(249,115,22,0.3)', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#FFBA85', fontWeight:500}}>
                         <Icon name="link" size={12} style={{marginRight:6}} color="#F97316"/>
-                        Tautan Bukti: <a href={activeTicket.evidence_url} target="_blank" rel="noopener noreferrer" style={{color:'#F97316', textDecoration:'underline', fontWeight:700}}>{activeTicket.evidence_url}</a>
+                        Tautan Bukti: <a href={activeTicket.evidence_url} target="_blank" rel="noopener noreferrer" style={{color:'#FB923C', textDecoration:'underline', fontWeight:700}}>{activeTicket.evidence_url}</a>
                       </div>
                     )}
                     
@@ -463,18 +459,18 @@ export default function SupportPage({ settings }) {
                         <div key={msg.id||i} style={{display:'flex', flexDirection:'column', alignItems: isAdmin ? 'flex-start' : 'flex-end'}}>
                           <div style={{
                             maxWidth:'80%',
-                            background: isAdmin ? 'rgba(249,115,22,0.04)' : isPending ? 'rgba(234,88,12,0.02)' : '#FFF1E6',
-                            border: isAdmin ? '1px solid rgba(249,115,22,0.25)' : isPending ? '1px dashed rgba(234,88,12,0.3)' : '1px solid rgba(249,115,22,0.15)',
+                            background: isAdmin ? 'rgba(249,115,22,0.12)' : isPending ? 'rgba(0,0,0,0.2)' : '#5C2406',
+                            border: isAdmin ? '1px solid rgba(249,115,22,0.35)' : isPending ? '1px dashed rgba(249,115,22,0.2)' : '1px solid rgba(249,115,22,0.2)',
                             borderRadius: isAdmin ? '14px 14px 14px 4px' : '14px 14px 4px 14px',
                             padding:'10px 14px',
                             opacity: isPending ? 0.7 : 1,
                           }}>
-                            <p style={{fontSize:11, fontWeight:800, color: isAdmin ? '#EA580C' : '#F97316', marginBottom:4}}>
+                            <p style={{fontSize:11, fontWeight:800, color: isAdmin ? '#FB923C' : '#FFBA85', marginBottom:4}}>
                               {isAdmin ? '🛡️ Admin Server' : `👤 ${msg.sender}`}
                             </p>
-                            <p style={{fontSize:13, color:'#1A0D05', lineHeight:1.5, whiteSpace:'pre-wrap', fontWeight:500}}>{msg.text}</p>
+                            <p style={{fontSize:13, color:'#FFFFFF', lineHeight:1.5, whiteSpace:'pre-wrap', fontWeight:500}}>{msg.text}</p>
                           </div>
-                          <p style={{fontSize:10, color:'#EA580C', opacity:0.7, marginTop:4, padding:'0 4px', fontWeight:500}}>
+                          <p style={{fontSize:10, color:'#FFBA85', opacity:0.6, marginTop:4, padding:'0 4px', fontWeight:500}}>
                             {isPending ? '⏳ Mengirim...' : fmt(msg.created_at)}
                           </p>
                         </div>
@@ -486,9 +482,9 @@ export default function SupportPage({ settings }) {
               </div>
 
               {/* Chat Input Box */}
-              <div style={{padding:'14px 16px', borderTop:'1px solid rgba(249,115,22,0.12)', background:'rgba(249,115,22,0.01)'}}>
+              <div style={{padding:'14px 16px', borderTop:'1px solid rgba(249,115,22,0.2)', background:'rgba(0,0,0,0.1)'}}>
                 {isClosed ? (
-                  <div style={{textAlign:'center', padding:'8px', color:'#DC2626', fontSize:13, fontWeight:700, background:'rgba(220,38,38,0.05)', borderRadius:8}}>
+                  <div style={{textAlign:'center', padding:'8px', color:'#F87171', fontSize:13, fontWeight:700, background:'rgba(248,113,113,0.1)', borderRadius:8}}>
                     <Icon name="lock" size={12} style={{marginRight:6}}/>
                     Tiket bantuan ini telah ditutup. Percakapan baru tidak dapat dikirim kembali.
                   </div>
@@ -504,7 +500,7 @@ export default function SupportPage({ settings }) {
                     </button>
                   </div>
                 )}
-                {!isClosed && <p style={{fontSize:10.5, color:'#EA580C', opacity:0.7, marginTop:6, fontWeight:500}}>Tekan <kbd style={{fontFamily:'sans-serif', background:'rgba(249,115,22,0.1)', padding:'2px 4px', borderRadius:4}}>Ctrl + Enter</kbd> untuk berkirim pesan secara cepat.</p>}
+                {!isClosed && <p style={{fontSize:10.5, color:'#FFBA85', opacity:0.6, marginTop:6, fontWeight:500}}>Tekan <kbd style={{fontFamily:'sans-serif', background:'rgba(0,0,0,0.2)', color:'#FFF', padding:'2px 4px', borderRadius:4}}>Ctrl + Enter</kbd> untuk berkirim pesan secara cepat.</p>}
               </div>
             </div>
           )}
@@ -523,7 +519,7 @@ export default function SupportPage({ settings }) {
         }}/>
       )}
 
-      {/* CORE CSS ENGINE ANIMATIONS */}
+      {/* STYLING CORES */}
       <style jsx global>{`
         html {
           scroll-behavior: smooth;
@@ -534,9 +530,6 @@ export default function SupportPage({ settings }) {
           transform: translateZ(0);
         }
 
-        /* ---------------------------------------------
-           1. STAGGERED INITIAL PAGE LOAD FADE-IN
-        --------------------------------------------- */
         .load-animate [class^="load-item-"] {
           opacity: 0;
           transform: translateY(12px);
@@ -548,13 +541,10 @@ export default function SupportPage({ settings }) {
         .load-animate.loaded .load-item-3 { opacity: 1; transform: translateY(0); transition-delay: 160ms; }
         .load-animate.loaded .load-item-4 { opacity: 1; transform: translateY(0); transition-delay: 220ms; }
 
-        /* ---------------------------------------------
-           2. INTERSECTION OBSERVER SCROLL
-        --------------------------------------------- */
         .scroll-animate {
           opacity: 0;
-          transform: translateY(18px);
-          transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+          transform: translateY(14px);
+          transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
           will-change: opacity, transform;
         }
         .scroll-animate.visible {
@@ -562,11 +552,10 @@ export default function SupportPage({ settings }) {
           transform: translateY(0);
         }
 
-        /* NAV STYLING TAB BUTTONS */
         .support-nav-tab {
-          background: #FFFFFF;
-          border: 1px solid rgba(249,115,22,0.25);
-          color: #EA580C;
+          background: #431A04;
+          border: 1px solid rgba(249,115,22,0.3);
+          color: #FFBA85;
           padding: 10px 18px;
           border-radius: 12px;
           font-size: 13px;
@@ -585,42 +574,44 @@ export default function SupportPage({ settings }) {
           box-shadow: 0 4px 14px rgba(249,115,22,0.18);
         }
 
-        /* CARD SUPPORT HOVER */
         .support-cat-card:hover, .support-ticket-item-card:hover {
           border-color: #F97316 !important;
-          background: rgba(249,115,22,0.01) !important;
+          background: #5C2406 !important;
           transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(249,115,22,0.05);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         }
 
-        /* PREMIUM ORANGE INPUTS & TEXTAREAS */
         .orange-form-label {
           display: block;
           font-weight: 700;
-          color: #1A0D05;
-          font-size: 12.5px;
+          color: #FFBA85;
+          font-size: 12px;
           text-transform: uppercase;
-          letter-spacing: 0.3px;
+          letter-spacing: 0.5px;
           margin-bottom: 8px;
         }
         .orange-form-input {
           width: 100%;
           padding: 11px 14px;
           border-radius: 10px;
-          border: 1px solid rgba(249,115,22,0.25);
-          background: #FFFFFF;
+          border: 1px solid rgba(249,115,22,0.3);
+          background: #5C2406;
           font-size: 13.5px;
-          color: #1A0D05;
+          color: #FFFFFF;
           font-weight: 500;
           outline: none;
           transition: all 0.15s ease;
         }
+        .orange-form-input::placeholder {
+          color: #FFBA85;
+          opacity: 0.4;
+        }
         .orange-form-input:focus {
           border-color: #F97316 !important;
-          box-shadow: 0 0 0 3px rgba(249,115,22,0.08);
+          background: #6E2B08;
+          box-shadow: 0 0 0 3px rgba(249,115,22,0.15);
         }
 
-        /* ACTIONS BUTTON */
         .orange-submit-ticket-btn {
           background: #F97316;
           color: #FFFFFF;
@@ -638,14 +629,14 @@ export default function SupportPage({ settings }) {
           background: #EA580C;
         }
         .orange-submit-ticket-btn:disabled {
-          opacity: 0.6;
+          opacity: 0.5;
           cursor: not-allowed;
         }
 
         .orange-secondary-btn {
           background: none;
-          border: 1px solid rgba(249,115,22,0.25);
-          color: #F97316;
+          border: 1px solid rgba(249,115,22,0.4);
+          color: #FFBA85;
           padding: 10px 18px;
           border-radius: 10px;
           font-weight: 700;
@@ -657,11 +648,11 @@ export default function SupportPage({ settings }) {
           transition: all 0.15s;
         }
         .orange-secondary-btn:hover {
-          background: rgba(249,115,22,0.03);
+          background: rgba(249,115,22,0.15);
           border-color: #F97316;
+          color: #FFF;
         }
 
-        /* SPINNER EXTRAS */
         .orange-btn-spinner {
           width: 14px;
           height: 14px;
@@ -673,9 +664,9 @@ export default function SupportPage({ settings }) {
         }
 
         @keyframes pulse-dot {
-          0% { box-shadow: 0 0 0 0 rgba(22,163,74, 0.4); }
-          70% { box-shadow: 0 0 0 6px rgba(22,163,74, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(22,163,74, 0); }
+          0% { box-shadow: 0 0 0 0 rgba(74,222,128, 0.4); }
+          70% { box-shadow: 0 0 0 6px rgba(74,222,128, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(74,222,128, 0); }
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
