@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import FancyNav from '../components/FancyNav';
@@ -27,16 +27,38 @@ export default function HomePage({ settings }) {
   const [showLogin, setShowLogin] = useState(false);
   const [copied,    setCopied]    = useState('');
   const [status,    setStatus]    = useState(null);
+  const [isLoaded,  setIsLoaded]  = useState(false); // Trigger Page Load
 
   useEffect(() => {
+    // 1. Ambil data player & status server
     try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
     fetch('/api/server/status').then(r=>r.json()).then(setStatus).catch(()=>{});
+
+    // 2. Memicu Animasi Page Load secara bertahap setelah komponen mounted
+    const timer = setTimeout(() => setIsLoaded(true), 50);
+
+    // 3. Pemicu Animasi Scroll menggunakan Intersection Observer (Sangat Ringan & Native)
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target); // Cukup animasi sekali saja saat di-scroll
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+    document.querySelectorAll('.scroll-animate').forEach(el => observer.observe(el));
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, []);
 
   const copyIP = (text, label) => {
     navigator.clipboard?.writeText(text).catch(()=>{});
     setCopied(label);
-    toast.success(`${label} Berfail Disalin!`);
+    toast.success(`${label} Berhasil Disalin!`);
     setTimeout(() => setCopied(''), 2500);
   };
 
@@ -71,9 +93,9 @@ export default function HomePage({ settings }) {
       </Head>
 
       {/* BACKGROUND PUTIH TERANG DENGAN ELEMEN KONTRAS FULL ORANGE */}
-      <div className="orange-theme-wrapper page-fade-in" style={{ backgroundColor: '#FFFFFF', color: '#1A0D05', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
+      <div className="orange-theme-wrapper" style={{ backgroundColor: '#FFFFFF', color: '#1A0D05', minHeight: '100vh', display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
         
-        {/* Soft Ambient Glow (Sangat redup warna orange di atas background putih) */}
+        {/* Soft Ambient Glow */}
         <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }} className="gpu-glow-layer">
           <div style={{ position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)', width: '500px', height: '400px', background: 'radial-gradient(circle, rgba(249,115,22,0.04) 0%, transparent 70%)', filter: 'blur(70px)' }} />
         </div>
@@ -83,34 +105,34 @@ export default function HomePage({ settings }) {
         {/* MAIN CONTENT */}
         <main style={{ flex: 1, position: 'relative', zIndex: 1, padding: '0 16px' }}>
           
-          {/* HERO SECTION */}
-          <header style={{ padding: '120px 0 40px', textAlign: 'center' }}>
-            <div style={{ margin: '0 auto 16px' }}>
+          {/* HERO SECTION (ANIMATED VIA PAGE LOAD) */}
+          <header style={{ padding: '120px 0 40px', textAlign: 'center' }} className={`load-animate ${isLoaded ? 'loaded' : ''}`}>
+            <div style={{ margin: '0 auto 16px' }} className="load-item-1">
               {s.logo_url ? <img src={s.logo_url} style={{maxWidth:120, margin:'0 auto'}} alt="Server Logo"/> : <LogoImage style={{width:110, margin:'0 auto'}}/>}
             </div>
 
-            <div style={{ display: 'inline-flex', padding: '4px 12px', borderRadius: '50px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', color: '#EA580C', fontWeight: 700, fontSize: 10.5, marginBottom: 16, letterSpacing: '0.5px' }}>
+            <div style={{ display: 'inline-flex', padding: '4px 12px', borderRadius: '50px', background: 'rgba(249,115,22,0.08)', border: '1px solid rgba(249,115,22,0.25)', color: '#EA580C', fontWeight: 700, fontSize: 10.5, marginBottom: 16, letterSpacing: '0.5px' }} className="load-item-2">
               JAVA &amp; BEDROCK
             </div>
 
-            <h1 style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: 850, color: '#1A0D05', marginBottom: 14, maxWidth: 800, margin: '0 auto 14px', lineHeight: 1.15, letterSpacing: '-0.75px' }}>
+            <h1 style={{ fontSize: 'clamp(28px, 6vw, 48px)', fontWeight: 850, color: '#1A0D05', marginBottom: 14, maxWidth: 800, margin: '0 auto 14px', lineHeight: 1.15, letterSpacing: '-0.75px' }} className="load-item-3">
               {s.hero_title || <>Jelajahi Dunia <span style={{ color: '#F97316' }}>{serverName}</span></>}
             </h1>
 
-            <p style={{ color: '#E4580C', opacity: 0.85, fontSize: 14.5, maxWidth: 480, margin: '0 auto 28px', lineHeight: 1.5, fontWeight: 500 }}>
+            <p style={{ color: '#E4580C', opacity: 0.85, fontSize: 14.5, maxWidth: 480, margin: '0 auto 28px', lineHeight: 1.5, fontWeight: 500 }} className="load-item-4">
               {s.server_description || 'Server Minecraft Indonesia dengan komunitas aktif dan performa stabil.'}
             </p>
 
             {/* Status Player Online */}
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: '99px', backgroundColor: 'rgba(249,115,22,0.05)', border: '1px solid rgba(249,115,22,0.2)', fontSize: 12.5, fontWeight: 600, color: '#EA580C', marginBottom: 36 }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 14px', borderRadius: '99px', backgroundColor: 'rgba(249,115,22,0.05)', border: '1px solid rgba(249,115,22,0.2)', fontSize: 12.5, fontWeight: 600, color: '#EA580C', marginBottom: 36 }} className="load-item-5">
               <div style={{ width: 7, height: 7, backgroundColor: '#F97316', borderRadius: '50%', position: 'relative' }}>
                 <div style={{ position: 'absolute', inset: 0, backgroundColor: '#F97316', borderRadius: '50%', transform: 'scale(1.8)', opacity: 0.4, animation: 'ping-orange 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
               </div>
               <span><strong style={{ color: '#F97316', fontWeight: 800 }}>{playerCount}</strong> Online</span>
             </div>
 
-            {/* TRIPLE IP GRID — BOX PUTIH DENGAN BORDER & ORNAMEN TOTAL ORANGE */}
-            <div className="ip-grid scroll-animate" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, width: '100%', maxWidth: 800, margin: '0 auto 32px' }}>
+            {/* TRIPLE IP GRID — INTERACTIVE ACTION */}
+            <div className="ip-grid load-item-6" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, width: '100%', maxWidth: 800, margin: '0 auto 32px' }}>
               {[
                 { label: 'Java IP', addr: serverIp, icon: 'computer', copy: serverIp, copyLabel: 'IP Java' },
                 { label: 'Bedrock IP', addr: serverIp, icon: 'mobile', copy: serverIp, copyLabel: 'IP Bedrock' },
@@ -129,7 +151,7 @@ export default function HomePage({ settings }) {
 
             {/* SOCIAL MEDIA ROW */}
             {socials.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }} className="scroll-animate">
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 10 }} className="load-item-7">
                 {socials.map((x, i) => (
                   <a key={i} href={x.href} target="_blank" rel="noopener noreferrer" className="orange-social-btn">
                     <Icon name={x.icon} size={14} />
@@ -140,7 +162,7 @@ export default function HomePage({ settings }) {
             )}
           </header>
 
-          {/* STATS BAR */}
+          {/* STATS BAR (ANIMATED VIA SCROLL) */}
           <section style={{ backgroundColor: 'rgba(249,115,22,0.03)', borderTop: '1px solid rgba(249,115,22,0.15)', borderBottom: '1px solid rgba(249,115,22,0.15)', padding: '20px', margin: '0 -16px 48px' }} className="scroll-animate">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: 12, maxWidth: 800, margin: '0 auto' }} className="stats-grid">
               {[
@@ -157,7 +179,7 @@ export default function HomePage({ settings }) {
             </div>
           </section>
 
-          {/* FEATURES */}
+          {/* FEATURES (ANIMATED VIA SCROLL) */}
           <section style={{ paddingBottom: 48, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
             <div style={{ textAlign: 'center', marginBottom: 28 }}>
               <h2 className="font-space" style={{ fontSize: 22, fontWeight: 800, color: '#1A0D05' }}>Fitur Utama <span style={{ color: '#F97316' }}>Server</span></h2>
@@ -181,7 +203,7 @@ export default function HomePage({ settings }) {
             </div>
           </section>
 
-          {/* RECRUITMENT */}
+          {/* RECRUITMENT (ANIMATED VIA SCROLL) */}
           <section style={{ paddingBottom: 60, maxWidth: 800, margin: '0 auto' }} className="scroll-animate">
             <div style={{ backgroundColor: 'rgba(249,115,22,0.03)', border: '1px solid rgba(249,115,22,0.15)', borderRadius: 14, padding: '28px 20px', maxWidth: 480, margin: '0 auto' }}>
               <h3 className="font-space" style={{ fontSize: 18, fontWeight: 800, color: '#1A0D05', marginBottom: 8 }}>Rank Famous Creator</h3>
@@ -210,7 +232,7 @@ export default function HomePage({ settings }) {
         {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess} />}
       </div>
 
-      {/* INTERFACE STYLES (TOTAL FOKUS PADA ORANGE) */}
+      {/* STYLES INTERFACE DENGAN NATIVE ANIMATIONS */}
       <style jsx global>{`
         html {
           scroll-behavior: smooth;
@@ -221,27 +243,42 @@ export default function HomePage({ settings }) {
           transform: translateZ(0);
         }
 
-        .page-fade-in {
-          animation: pageIn 0.3s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+        /* ---------------------------------------------
+           1. ANIMASI PAGE LOAD (STAGGERED EFFECT)
+        --------------------------------------------- */
+        .load-animate [class^="load-item-"] {
+          opacity: 0;
+          transform: translateY(15px);
+          transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
           will-change: opacity, transform;
         }
-        @keyframes pageIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
 
+        .load-animate.loaded .load-item-1 { opacity: 1; transform: translateY(0); transition-delay: 50ms; }
+        .load-animate.loaded .load-item-2 { opacity: 1; transform: translateY(0); transition-delay: 120ms; }
+        .load-animate.loaded .load-item-3 { opacity: 1; transform: translateY(0); transition-delay: 190ms; }
+        .load-animate.loaded .load-item-4 { opacity: 1; transform: translateY(0); transition-delay: 260ms; }
+        .load-animate.loaded .load-item-5 { opacity: 1; transform: translateY(0); transition-delay: 330ms; }
+        .load-animate.loaded .load-item-6 { opacity: 1; transform: translateY(0); transition-delay: 400ms; }
+        .load-animate.loaded .load-item-7 { opacity: 1; transform: translateY(0); transition-delay: 470ms; }
+
+        /* ---------------------------------------------
+           2. ANIMASI SCROLL (INTERSECTION OBSERVER)
+        --------------------------------------------- */
         .scroll-animate {
-          animation: slideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+          opacity: 0;
+          transform: translateY(24px);
+          transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+          will-change: opacity, transform;
         }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+        .scroll-animate.visible {
+          opacity: 1;
+          transform: translateY(0);
         }
 
-        /* CARD BOX PUTIH BORDER BOLD ORANGE (KONTRAS DAN TERANG) */
+        /* CARD DAN BUTTON COMPONENT */
         .card-orange {
           background: #FFFFFF; 
-          border: 1px solid rgba(249,115,22,0.25); /* Border pembatas warna orange transparan */
+          border: 1px solid rgba(249,115,22,0.25);
           border-radius: 12px;
           padding: 12px 14px;
           cursor: pointer;
@@ -253,7 +290,7 @@ export default function HomePage({ settings }) {
         }
         .card-orange:hover {
           background: rgba(249,115,22,0.02);
-          border-color: #F97316; /* Menyala Orange Terang tegas saat hover */
+          border-color: #F97316;
           transform: translateY(-2px);
           box-shadow: 0 8px 16px rgba(249, 115, 22, 0.08);
         }
