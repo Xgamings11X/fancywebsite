@@ -6,7 +6,7 @@
  * Fire-and-forget (.catch tanpa await) menyebabkan Discord request tidak selesai.
  */
 import { OrdersAsync }                                  from '../../../lib/redis.js';
-import { verifyWebhookSignature, parseTransactionStatus } from '../../../lib/midtrans.js';
+import { verifyWebhookSignature, parseTransactionStatus, formatPaymentMethod } from '../../../lib/midtrans.js';
 import { notifyTransaction }                             from '../../../lib/plugin.js';
 import { webhookTransaction }                            from '../../../lib/discord.js';
 
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Invalid signature' });
     }
 
-    const { status, paymentType } = parseTransactionStatus(n);
+    const { status } = parseTransactionStatus(n);
     const finalStatus = status === 'paid' ? 'success' : status;
 
     // ── Cari order (Redis-first) ──────────────────────────────────
@@ -37,10 +37,18 @@ export default async function handler(req, res) {
     }
 
     // ── Update status order ───────────────────────────────────────
-    // PENTING: Jangan timpa payment_method yang sudah spesifik (bni_va, mandiri_va, dll)
-    // dengan type generik Midtrans (bank_transfer / echannel / qris).
-    // payment_method sudah di-set dengan benar saat order dibuat (lihat pages/api/orders/create.js).
-    const methodUpdate = order.payment_method ? {} : { payment_method: paymentType };
+    // ATURAN KETAT: nama metode pembayaran spesifik (QRIS, GoPay,
+    // Bank Transfer - BCA, dst.) HANYA boleh dihitung & disimpan saat
+    // status transaksi SUCCESS/SETTLEMENT. Untuk pending/deny/expire,
+    // payment_method TIDAK disentuh sama sekali.
+    //
+    // BUG LAMA: `order.payment_method ? {} : {...}` tidak pernah ke-trigger
+    // karena payment_method di-set 'midtrans_snap' (truthy) sejak order dibuat
+    // di pages/api/orders/create.js — akibatnya field ini tidak pernah ter-update
+    // ke metode spesifik walau transaksi sudah sukses.
+    const isSuccess    = finalStatus === 'success';
+    const methodUpdate = isSuccess ? { payment_method: formatPaymentMethod(n) } : {};
+
     await OrdersAsync.update(n.order_id, {
       payment_status:          finalStatus,
       ...methodUpdate,
