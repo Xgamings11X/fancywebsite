@@ -8,8 +8,6 @@ import toast from 'react-hot-toast';
 import Icon from '../components/Icon';
 import FancyFooter from '../components/FancyFooter';
 
-// Landing page = rute paling sering diakses; modal login HANYA perlu
-// dimuat setelah user benar-benar klik tombol login.
 const LoginModal = dynamic(() => import('../components/LoginModal'), { ssr: false });
 
 export async function getServerSideProps() {
@@ -33,7 +31,7 @@ export default function HomePage({ settings }) {
   useEffect(() => {
     try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
     fetch('/api/server/status').then(r=>r.json()).then(setStatus).catch(()=>{});
-    // Hero entrance
+    
     const t = setTimeout(() => document.body.classList.add('page-loaded'), 80);
     return () => { clearTimeout(t); document.body.classList.remove('page-loaded'); };
   }, []);
@@ -60,10 +58,10 @@ export default function HomePage({ settings }) {
 
   const socials = [
     (s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL)    && { href: s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL,    cls:'btn-vote',    icon:'star',     label:'Vote'    },
-    (s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL) && { href: s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL, cls:'btn-discord', icon:'discord',  label:'Discord', brand:true },
-    (s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL)&& { href: s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL,cls:'btn-wa',      icon:'whatsapp', label:'Whatsapp',brand:true },
-    (s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL)  && { href: s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL,  cls:'btn-tiktok',  icon:'tiktok',   label:'TikTok',  brand:true },
-    (s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL) && { href: s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL, cls:'btn-ig',      icon:'youtube',  label:'YouTube', brand:true },
+    (s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL) && { href: s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL, cls:'btn-discord', icon:'discord',  label:'Discord' },
+    (s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL)&& { href: s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL,cls:'btn-wa',      icon:'whatsapp', label:'Whatsapp' },
+    (s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL)  && { href: s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL,  cls:'btn-tiktok',  icon:'tiktok',   label:'TikTok'  },
+    (s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL) && { href: s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL, cls:'btn-ig',      icon:'youtube',  label:'YouTube' },
   ].filter(Boolean);
 
   const famousApplyUrl = s.discord_url || process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || process.env.NEXT_PUBLIC_DISCORD_URL || '#';
@@ -78,180 +76,279 @@ export default function HomePage({ settings }) {
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
-
-      {/* HERO */}
-      <header style={{minHeight:'100vh',display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'center',textAlign:'center',padding:'160px 24px 60px'}}>
-
-        {/* Floating orbs ambient */}
-        <div style={{position:'absolute',inset:0,overflow:'hidden',pointerEvents:'none',zIndex:0}}>
-          <div style={{position:'absolute',top:'15%',left:'10%',width:300,height:300,background:'radial-gradient(circle,rgba(255,107,0,0.06) 0%,transparent 70%)',animation:'particleDrift 8s ease-in-out infinite',borderRadius:'50%'}}/>
-          <div style={{position:'absolute',top:'60%',right:'8%',width:200,height:200,background:'radial-gradient(circle,rgba(255,107,0,0.04) 0%,transparent 70%)',animation:'particleDrift 11s ease-in-out infinite 2s',borderRadius:'50%'}}/>
-          <div style={{position:'absolute',top:'40%',left:'60%',width:150,height:150,background:'radial-gradient(circle,rgba(255,148,66,0.05) 0%,transparent 70%)',animation:'particleDrift 7s ease-in-out infinite 4s',borderRadius:'50%'}}/>
+      <div className="theme-wrapper" style={{ backgroundColor: '#F8FAFC', color: '#0F172A', minHeight: '100vh', position: 'relative', overflowX: 'hidden' }}>
+        
+        {/* ================= BACKGROUND AMBIENT GLOW (LIGHT VERSION) ================= */}
+        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+          <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(100px)' }} />
+          <div style={{ position: 'absolute', top: '30%', right: '-10%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(168,85,247,0.1) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(100px)' }} />
         </div>
 
-        {/* Logo */}
-        <div className="anim-hero anim-d1" style={{margin:'0 auto 32px',display:'flex',alignItems:'center',justifyContent:'center',position:'relative',zIndex:1}}>
-          {s.logo_url
-            ? <img src={s.logo_url} alt={serverName} style={{maxWidth:180,maxHeight:180,display:'block',background:'transparent',objectFit:'contain',filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.45))',animation:'logoFloat 3.5s ease-in-out infinite'}}/>
-            : <LogoImage alt={serverName} style={{width:160,height:160,objectFit:'contain',display:'block',filter:'drop-shadow(0 8px 32px rgba(255,107,0,0.55)) drop-shadow(0 0 60px rgba(255,107,0,0.2))',animation:'logoFloat 3.5s ease-in-out infinite'}}/>
-          }
-        </div>
+        <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s} />
 
-        <span className="tagline-pill anim-hero-up anim-d2" style={{marginBottom:24,position:'relative',zIndex:1}}>SERVER ECONOMY | JAVA &amp; BEDROCK</span>
+        {/* ================= HERO SECTION ================= */}
+        <header style={{ minHeight: '90vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', padding: '120px 24px 60px', position: 'relative', zIndex: 1 }}>
+          
+          {/* Logo Container */}
+          <div style={{ margin: '0 auto 24px', display: 'flex', alignItems: 'center', justifyContent: 'center', filter: 'drop-shadow(0 20px 40px rgba(59,130,246,0.15))' }}>
+            {s.logo_url
+              ? <img src={s.logo_url} alt={serverName} style={{ maxWidth: 150, maxHeight: 150, display: 'block', objectFit: 'contain' }} />
+              : <LogoImage alt={serverName} style={{ width: 130, height: 130, objectFit: 'contain', display: 'block' }} />
+            }
+          </div>
 
-        <h1 className="font-space anim-hero anim-d3" style={{fontSize:'clamp(28px,6vw,48px)',fontWeight:700,lineHeight:1.2,marginBottom:16,maxWidth:800,position:'relative',zIndex:1}}>
-          {s.hero_title || <>Selamat <span style={{color:'var(--primary)',textShadow:'0 0 30px var(--primary-glow)'}}>Datang</span></>}
-        </h1>
+          {/* Badge Tagline */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '6px 16px', borderRadius: '99px', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', fontSize: 12, fontWeight: 700, color: '#334155', letterSpacing: '0.5px', marginBottom: 20, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)' }}>
+            <span style={{ color: '#3B82F6' }}>SERVER ECONOMY</span>
+            <span style={{ color: '#CBD5E1' }}>|</span>
+            <span>JAVA &amp; BEDROCK</span>
+          </div>
 
-        <p className="anim-hero-up anim-d4" style={{color:'var(--text-muted)',fontSize:15,maxWidth:540,lineHeight:1.6,marginBottom:40,position:'relative',zIndex:1}}>
-          {s.server_description || 'Server Minecraft Indonesia dengan komunitas solid, event seru, dan dunia tanpa batas.'}
-        </p>
+          {/* Title */}
+          <h1 className="font-space" style={{ fontSize: 'clamp(32px, 5vw, 56px)', fontWeight: 800, lineHeight: 1.15, marginBottom: 16, maxWidth: 800, color: '#0F172A' }}>
+            {s.hero_title || <>Selamat Datang di <span style={{ background: 'linear-gradient(to right, #3B82F6, #8B5CF6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{serverName}</span></>}
+          </h1>
 
-        {/* Triple IP Grid */}
-        <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:12,width:'100%',maxWidth:750,marginBottom:24,position:'relative',zIndex:1}} className="ip-grid anim-hero-up anim-d5">
-          {[
-            {label:'Java Edition IP',    addr:serverIp, icon:'computer',             copy:serverIp, copyLabel:'IP Java'},
-            {label:'Bedrock Edition IP', addr:serverIp, icon:'mobile', copy:serverIp, copyLabel:'IP Bedrock'},
-            {label:'Bedrock Port',       addr:'19015',  icon:'network-wired',         copy:'19015',  copyLabel:'Port Bedrock'},
-          ].map((item,i) => (
-            <div key={i} className="ip-card" onClick={()=>copyIP(item.copy, item.copyLabel)}
-              style={{background:'rgba(15,15,20,0.7)',border:'1px solid var(--border)',borderRadius:14,padding:'14px 16px',cursor:'pointer',display:'flex',alignItems:'center',gap:12,position:'relative',backdropFilter:'blur(10px)'}}>
-              <span style={{position:'absolute',top:8,right:8,fontSize:9,color:'var(--text-muted)',background:'rgba(255,255,255,0.03)',padding:'2px 6px',borderRadius:4,fontWeight:600}}>
-                {copied===item.copyLabel ? '✓ Disalin' : 'Salin'}
-              </span>
-              <div style={{width:40,height:40,background:'rgba(255,107,0,0.1)',borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--primary)',fontSize:16,flexShrink:0}}>
-                <Icon name={item.icon} size={18}/>
-              </div>
-              <div style={{overflow:'hidden'}}>
-                <span style={{fontSize:9,textTransform:'uppercase',color:'var(--text-muted)',fontWeight:700,letterSpacing:0.5,display:'block'}}>{item.label}</span>
-                <span style={{fontSize:14,fontWeight:700,color:'#fff',display:'block',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.addr}</span>
-              </div>
+          {/* Description */}
+          <p style={{ color: '#475569', fontSize: 16, maxWidth: 580, lineHeight: 1.6, marginBottom: 36 }}>
+            {s.server_description || 'Server Minecraft Indonesia dengan komunitas solid, event seru, dan dunia tanpa batas.'}
+          </p>
+
+          {/* Player Online Status Pill */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: '99px', backgroundColor: '#EEF2F6', border: '1px solid #E2E8F0', fontSize: 13, fontWeight: 600, color: '#1E293B', marginBottom: 32 }}>
+            <div style={{ width: 8, height: 8, backgroundColor: '#10B981', borderRadius: '50%', position: 'relative' }}>
+              <div style={{ position: 'absolute', inset: 0, backgroundColor: '#10B981', borderRadius: '50%', transform: 'scale(1.8)', opacity: 0.3, animation: 'ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite' }} />
             </div>
-          ))}
-        </div>
+            <span><strong style={{ color: '#10B981', fontWeight: 700 }}>{playerCount}</strong> Pemain Aktif</span>
+          </div>
 
-        {/* Status pill */}
-        <div className="status-pill anim-hero-up anim-d5" style={{marginBottom:32,position:'relative',zIndex:1}}>
-          <Icon name="circle" size={8} style={{animation:'pulse 1.5s infinite'}}/>
-          <span id="player-count">{playerCount}</span> Players Online
-        </div>
-
-        {/* Social buttons */}
-        {socials.length > 0 && (
-          <div className="anim-hero-up anim-d6" style={{display:'flex',flexWrap:'wrap',justifyContent:'center',gap:10,position:'relative',zIndex:1}}>
-            {socials.map((x,i) => (
-              <a key={i} href={x.href} target="_blank" rel="noopener noreferrer" className={`social-btn ${x.cls}`}>
-                <Icon name={x.icon} size={16}/> {x.label}
-              </a>
+          {/* Triple IP Grid */}
+          <div className="ip-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, width: '100%', maxWidth: 800, marginBottom: 36 }}>
+            {[
+              { label: 'Java Edition IP', addr: serverIp, icon: 'computer', copy: serverIp, copyLabel: 'IP Java' },
+              { label: 'Bedrock Edition IP', addr: serverIp, icon: 'mobile', copy: serverIp, copyLabel: 'IP Bedrock' },
+              { label: 'Bedrock Port', addr: '19015', icon: 'network-wired', copy: '19015', copyLabel: 'Port Bedrock' },
+            ].map((item, i) => (
+              <div key={i} className="ip-card-light" onClick={() => copyIP(item.copy, item.copyLabel)}>
+                <span className="copy-indicator">{copied === item.copyLabel ? '✓ Disalin' : 'Salin'}</span>
+                <div className="icon-wrapper-light">
+                  <Icon name={item.icon} size={18} />
+                </div>
+                <div style={{ textAlign: 'left', overflow: 'hidden' }}>
+                  <span className="card-label-light">{item.label}</span>
+                  <span className="card-addr-light">{item.addr}</span>
+                </div>
+              </div>
             ))}
           </div>
-        )}
-      </header>
 
-      {/* STATS BAR */}
-      <section className="stats-bar" data-anim="fade-in">
-        <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',textAlign:'center',gap:20}}>
-          {[
-            {val:'24/7', sub:'Server Online'},
-            {val:'JAVA', sub:'+ Bedrock'},
-            {val:'FREE', sub:'Untuk Semua'},
-            {val:'ID',   sub:'Community'},
-          ].map((st,i) => (
-            <div key={i} data-anim="scale-pop" data-delay={String(i+1)}>
-              <h3 className="font-space" style={{fontSize:24,color:'var(--primary-light)',fontWeight:700}}>{st.val}</h3>
-              <p style={{fontSize:12,color:'var(--text-muted)',marginTop:4,textTransform:'uppercase',fontWeight:600,letterSpacing:0.5}}>{st.sub}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* FEATURES — 2×2 Desktop Grid */}
-      <section style={{padding:'100px 6% 60px',maxWidth:1200,margin:'0 auto'}}>
-        <div style={{textAlign:'center',marginBottom:50}} data-anim="fade-up">
-          <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>KENAPA FANCY NETWORK</span>
-          <h2 className="font-space" style={{fontSize:32,fontWeight:700}}>Server yang <span style={{color:'var(--primary)'}}>Beda</span> dari yang Lain</h2>
-        </div>
-        {/* 2×2 symmetric desktop grid */}
-        <div style={{
-          display:'grid',
-          gridTemplateColumns:'repeat(2,1fr)',
-          gridTemplateRows:'repeat(2,1fr)',
-          gap:20,
-          maxWidth:860,
-          margin:'0 auto'
-        }}>
-          {[
-            {icon:'shield-halved', color:'#e67e22', title:'Anti-Cheat Ketat',  desc:'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.'},
-            {icon:'users', color:'#3498db', title:'Komunitas Solid',   desc:'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.'},
-            {icon:'bolt',           color:'#2ecc71', title:'Low Latency',       desc:'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.'},
-            {icon:'trophy',         color:'#9b59b6', title:'Event & Reward',    desc:'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.'},
-          ].map((f,i) => (
-            <div key={i} className="fn-card" style={{padding:'28px 24px',display:'flex',alignItems:'flex-start',gap:16}} data-anim="flip-in" data-delay={String(i+1)}>
-              {/* Icon style synced with support page cat-icon */}
-              <div style={{
-                width:44, height:44,
-                background:`rgba(${f.color==='#e67e22'?'230,126,34':f.color==='#3498db'?'52,152,219':f.color==='#2ecc71'?'46,204,113':'155,89,182'},0.12)`,
-                border:`1px solid ${f.color}30`,
-                borderRadius:10,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                color:f.color, fontSize:18, flexShrink:0
-              }}>
-                <Icon name={f.icon} size={20}/>
-              </div>
-              <div>
-                <h4 style={{fontSize:15,fontWeight:700,marginBottom:8}}>{f.title}</h4>
-                <p style={{fontSize:13,color:'var(--text-muted)',lineHeight:1.6}}>{f.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* RECRUITMENT */}
-      <section style={{padding:'20px 6% 100px',maxWidth:1200,margin:'0 auto'}}>
-        <div style={{textAlign:'center',marginBottom:50}} data-anim="fade-up">
-          <span style={{color:'var(--primary)',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.5,display:'block',marginBottom:8}}>KONTRIBUSI &amp; REWARD</span>
-          <h2 className="font-space" style={{fontSize:32,fontWeight:700}}>Buka Potensimu di <span style={{color:'var(--primary)'}}>{serverName}</span></h2>
-        </div>
-        <div style={{maxWidth:580,margin:'0 auto'}} data-anim="scale-pop" data-delay="2">
-          <div style={{background:'linear-gradient(145deg,rgba(20,20,27,0.8),rgba(10,10,14,0.8))',border:'1px solid var(--border)',borderRadius:20,padding:40,position:'relative',overflow:'hidden'}}>
-            <div style={{position:'absolute',top:0,right:0,width:120,height:120,background:'radial-gradient(circle,rgba(255,107,0,0.1) 0%,transparent 70%)',pointerEvents:'none'}}/>
-            <h3 className="font-space" style={{fontSize:22,fontWeight:700,marginBottom:20}}>Rank Famous</h3>
-            <p style={{fontSize:13,color:'var(--text-muted)',marginBottom:24,lineHeight:1.6}}>
-              Kreator Konten YouTube atau TikTok? Dapatkan hak istimewa status media, kustomisasi tag name, serta exposure di platform kami.
-            </p>
-            <ul style={{listStyle:'none',marginBottom:35}}>
-              {['Tidak memiliki masalah dengan server lain','Membuat konten Fancy Network rutin','Viewers aktif dan organik','Konten positif & membangun'].map((r,i) => (
-                <li key={i} style={{fontSize:13.5,color:'#d1d1d6',marginBottom:12,display:'flex',alignItems:'center',gap:10}}>
-                  <Icon name="circle-check" size={13} color="#2ecc71"/> {r}
-                </li>
+          {/* Social Media Row */}
+          {socials.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
+              {socials.map((x, i) => (
+                <a key={i} href={x.href} target="_blank" rel="noopener noreferrer" className={`social-btn-light ${x.cls}`}>
+                  <Icon name={x.icon} size={16} />
+                  <span>{x.label}</span>
+                </a>
               ))}
-            </ul>
-            <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer"
-              style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'#fff',padding:14,borderRadius:10,fontWeight:600,fontSize:13,cursor:'pointer',width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,textDecoration:'none',transition:'all 0.3s'}}
-              onMouseEnter={e=>{e.currentTarget.style.background='var(--primary)';e.currentTarget.style.borderColor='var(--primary)';}}
-              onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.04)';e.currentTarget.style.borderColor='rgba(255,255,255,0.08)';}}>
-              Apply Requirement <Icon name="arrow-right" size={14} style={{marginLeft:4}}/>
-            </a>
+            </div>
+          )}
+        </header>
+
+        {/* ================= STATS BAR ================= */}
+        <section style={{ backgroundColor: '#FFFFFF', borderTop: '1px solid #E2E8F0', borderBottom: '1px solid #E2E8F0', padding: '32px 24px', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', textAlign: 'center', gap: 20, maxWidth: 1000, margin: '0 auto' }} className="stats-grid">
+            {[
+              { val: '24/7', sub: 'Server Online' },
+              { val: 'JAVA', sub: '+ Bedrock' },
+              { val: 'FREE', sub: 'Untuk Semua' },
+              { val: 'ID', sub: 'Community' },
+            ].map((st, i) => (
+              <div key={i}>
+                <h3 className="font-space" style={{ fontSize: 28, color: '#3B82F6', fontWeight: 800 }}>{st.val}</h3>
+                <p style={{ fontSize: 11, color: '#64748B', marginTop: 2, textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>{st.sub}</p>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* FOOTER */}
-      <FancyFooter serverName={serverName} />
+        {/* ================= FEATURES SECTION ================= */}
+        <section style={{ padding: '90px 24px 60px', maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div style={{ textAlign: 'center', marginBottom: 44 }}>
+            <span style={{ color: '#3B82F6', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1.5px', display: 'block', marginBottom: 6 }}>FITUR UTAMA</span>
+            <h2 className="font-space" style={{ fontSize: 32, fontWeight: 800, color: '#0F172A' }}>Keunggulan Bermain di <span style={{ color: '#3B82F6' }}>Fancy</span></h2>
+          </div>
+          
+          <div className="feature-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 20, maxWidth: 900, margin: '0 auto' }}>
+            {[
+              { icon: 'shield-halved', color: '#3B82F6', bg: '#EFF6FF', title: 'Anti-Cheat Ketat', desc: 'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.' },
+              { icon: 'users', color: '#8B5CF6', bg: '#F5F3FF', title: 'Komunitas Solid', desc: 'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.' },
+              { icon: 'bolt', color: '#10B981', bg: '#ECFDF5', title: 'Low Latency', desc: 'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.' },
+              { icon: 'trophy', color: '#F59E0B', bg: '#FFFBEB', title: 'Event & Reward', desc: 'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.' },
+            ].map((f, i) => (
+              <div key={i} className="feature-card-light">
+                <div style={{ width: 44, height: 44, backgroundColor: f.bg, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: f.color, flexShrink: 0 }}>
+                  <Icon name={f.icon} size={20} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: 16, fontWeight: 700, color: '#1E293B', marginBottom: 4 }}>{f.title}</h4>
+                  <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.5 }}>{f.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      {showLogin && <LoginModal onClose={()=>setShowLogin(false)} onSuccess={handleLoginSuccess}/>}
+        {/* ================= RECRUITMENT SECTION ================= */}
+        <section style={{ padding: '30px 24px 100px', maxWidth: 1200, margin: '0 auto', position: 'relative', zIndex: 1 }}>
+          <div style={{ maxWidth: 600, margin: '0 auto' }}>
+            <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 24, padding: '40px 32px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.02), 0 8px 10px -6px rgba(0,0,0,0.02)' }}>
+              <span style={{ color: '#8B5CF6', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 4 }}>KONTRIBUSI &amp; REWARD</span>
+              <h3 className="font-space" style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', marginBottom: 12 }}>Rank Famous Creator</h3>
+              <p style={{ fontSize: 14, color: '#64748B', marginBottom: 24, lineHeight: 1.6 }}>
+                Kreator Konten YouTube atau TikTok? Dapatkan hak istimewa status media, kustomisasi tag name, serta exposure di platform kami.
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0' }}>
+                {['Tidak memiliki masalah dengan server lain', 'Membuat konten Fancy Network rutin', 'Viewers aktif dan organik', 'Konten positif & membangun'].map((r, i) => (
+                  <li key={i} style={{ fontSize: 13.5, color: '#334155', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <Icon name="circle-check" size={14} color="#10B981" />
+                    <span>{r}</span>
+                  </li>
+                ))}
+              </ul>
+              <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="apply-btn-light">
+                <span>Apply Requirement</span>
+                <Icon name="arrow-right" size={14} />
+              </a>
+            </div>
+          </div>
+        </section>
 
+        <FancyFooter serverName={serverName} />
+
+        {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess} />}
+      </div>
+
+      {/* ================= STYLES (OPTIMIZED) ================= */}
       <style jsx>{`
-        /* Desktop: 2×2 grid stays locked */
-        @media(min-width:641px){
-          .feature-grid { grid-template-columns: repeat(2,1fr) !important; }
+        /* IP Cards (Light Modern) */
+        .ip-card-light {
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 14px;
+          padding: 14px 16px;
+          cursor: pointer;
+          display: flex;
+          alignItems: center;
+          gap: 12;
+          position: relative;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
-        /* Mobile: everything collapses to 1 col */
-        @media(max-width:640px){
-          .ip-grid { grid-template-columns: 1fr !important; }
+        .ip-card-light:hover {
+          border-color: #CBD5E1;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+        .copy-indicator {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          fontSize: 9px;
+          color: #94A3B8;
+          background: #F1F5F9;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-weight: 700;
+        }
+        .icon-wrapper-light {
+          width: 38px;
+          height: 38px;
+          background: #EFF6FF;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #3B82F6;
+          flex-shrink: 0;
+        }
+        .card-label-light {
+          font-size: 9px;
+          text-transform: uppercase;
+          color: #64748B;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+          display: block;
+        }
+        .card-addr-light {
+          font-size: 14px;
+          font-weight: 700;
+          color: #1E293B;
+          display: block;
+          margin-top: 1px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        /* Feature Card */
+        .feature-card-light {
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          border-radius: 16px;
+          padding: 24px;
+          display: flex;
+          align-items: flex-start;
+          gap: 16px;
+        }
+
+        /* Social Buttons */
+        .social-btn-light {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-size: 13px;
+          font-weight: 600;
+          text-decoration: none;
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          color: #334155;
+          transition: background 0.15s, color 0.15s;
+        }
+        .social-btn-light:hover {
+          background: #F8FAFC;
+          color: #0F172A;
+        }
+
+        /* Recruitment Apply Button */
+        .apply-btn-light {
+          background: #1E293B;
+          color: #FFFFFF;
+          padding: 12px;
+          border-radius: 10px;
+          font-weight: 600;
+          font-size: 13px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          text-decoration: none;
+          transition: background 0.15s;
+        }
+        .apply-btn-light:hover {
+          background: #0F172A;
+        }
+
+        /* Keyframes untuk pulsing tanpa JS */
+        @keyframes ping {
+          75%, 100% { transform: scale(2); opacity: 0; }
+        }
+
+        /* Responsive Layouts Grid */
+        @media(max-width: 768px) {
+          .ip-grid { grid-template-columns: 1fr !important; gap: 10px !important; }
           .feature-grid { grid-template-columns: 1fr !important; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 24px 10px !important; }
         }
       `}</style>
     </>
