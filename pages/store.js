@@ -1,15 +1,21 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import Icon from '../components/Icon';
 import { useRouter } from 'next/router';
 // Redis modules loaded via dynamic import in getServerSideProps
 import FancyNav, { PlayerAvatar } from '../components/FancyNav';
 import { useTransparentLogo } from '../components/LogoImage';
 import ProductCard from '../components/ProductCard';
-import LoginModal from '../components/LoginModal';
-import CartModal from '../components/CartModal';
 import toast from 'react-hot-toast';
+
+// ── Code-splitting: modal hanya dibutuhkan SETELAH user klik
+// "Login" / "Beli" — jangan ikut bundle awal store.js.
+// ssr:false aman karena 100% interaksi client (form, popup Snap).
+const LoginModal = dynamic(() => import('../components/LoginModal'), { ssr: false });
+const CartModal  = dynamic(() => import('../components/CartModal'),  { ssr: false });
+
 
 export async function getServerSideProps() {
   try {

@@ -53,17 +53,6 @@ export default function App({ Component, pageProps }) {
     bar.id = 'scroll-progress';
     document.body.appendChild(bar);
 
-    // ── Cursor glow ──
-    const glow = document.createElement('div');
-    glow.id = 'cursor-glow';
-    document.body.appendChild(glow);
-
-    const onMouseMove = (e) => {
-      glow.style.left = e.clientX + 'px';
-      glow.style.top  = e.clientY + 'px';
-    };
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
-
     const onScroll = () => {
       const scrolled = window.scrollY;
       const total    = document.documentElement.scrollHeight - window.innerHeight;
@@ -92,12 +81,10 @@ export default function App({ Component, pageProps }) {
       router.events.off('routeChangeStart',    handleStart);
       router.events.off('routeChangeComplete', handleDone);
       router.events.off('routeChangeError',    handleDone);
-      window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('scroll',    onScroll);
       cleanup();
       if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
       if (bar.parentNode)     bar.parentNode.removeChild(bar);
-      if (glow.parentNode)    glow.parentNode.removeChild(glow);
     };
   }, [router]);
 

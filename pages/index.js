@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import FancyNav from '../components/FancyNav';
 import LogoImage, { useTransparentLogo } from '../components/LogoImage';
-import LoginModal from '../components/LoginModal';
 import toast from 'react-hot-toast';
 import Icon from '../components/Icon';
 import FancyFooter from '../components/FancyFooter';
+
+// Landing page = rute paling sering diakses; modal login HANYA perlu
+// dimuat setelah user benar-benar klik tombol login.
+const LoginModal = dynamic(() => import('../components/LoginModal'), { ssr: false });
 
 export async function getServerSideProps() {
   try {
