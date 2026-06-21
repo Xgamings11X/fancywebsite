@@ -60,11 +60,25 @@ export default async function handler(req, res) {
 
     // ── Kirim ke Discord SEBELUM respond (bukan fire-and-forget) ──
     // await wajib di serverless — fungsi terminate setelah res.json()
-    try {
-      await webhookTransaction(updated);
-    } catch (e) {
-      // Jangan block response meski Discord gagal
-      console.error('[webhook] Discord TX error:', e.message);
+    //
+    // BUG FIX: Midtrans bisa memanggil webhook ini berkali-kali dengan status
+    // yang SAMA — baik karena retry resmi (kalau respons kita lambat/gagal),
+    // maupun notifikasi 'pending' yang muncul lagi saat VA/QRIS dibuat (status
+    // 'pending' sudah dikirim SEKALI di create.js/create-core.js saat order
+    // pertama kali dibuat). Tanpa guard ini, setiap panggilan ulang itu bikin
+    // pesan Discord baru — itulah sumber notifikasi pending berulang.
+    // Sekarang: Discord HANYA dinotifikasi kalau status benar-benar BERUBAH
+    // dari sebelumnya (idempotent per status transition).
+    const statusChanged = order.payment_status !== finalStatus;
+    if (statusChanged) {
+      try {
+        await webhookTransaction(updated);
+      } catch (e) {
+        // Jangan block response meski Discord gagal
+        console.error('[webhook] Discord TX error:', e.message);
+      }
+    } else {
+      console.log(`[webhook] Status tidak berubah (${finalStatus}) untuk ${n.order_id} — Discord notif dilewati`);
     }
 
     // ── Notifikasi plugin Minecraft ───────────────────────────────
