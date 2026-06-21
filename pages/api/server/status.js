@@ -6,8 +6,20 @@ export default async function handler(req, res) {
     const r = await fetch(url, { signal: AbortSignal.timeout(7000), headers:{'User-Agent':'FancyNetwork/1.0'} });
     const d = await r.json();
     let online=false, players=0, maxPlayers=0, version='';
-    if ('online' in d) { online=d.online===true; players=d.players?.online||0; maxPlayers=d.players?.max||0; version=d.version||''; }
-    else if ('status' in d) { online=d.status==='online'; players=parseInt(d.players)||0; maxPlayers=parseInt(d.max)||0; version=d.version?.name||d.version||''; }
+    if ('online' in d) {
+      // Format mcsrvstat.us /3/ — players adalah object {online,max}
+      online = d.online === true;
+      players = d.players?.online || 0;
+      maxPlayers = d.players?.max || 0;
+      version = d.version?.name_clean || d.version?.name || d.version || '';
+    } else if ('status' in d) {
+      // Format alternatif lain — players bisa berupa object ATAU number,
+      // bug sebelumnya: parseInt(object) selalu NaN -> players selalu 0
+      online = d.status === 'online';
+      players = parseInt(d.players?.online ?? d.players) || 0;
+      maxPlayers = parseInt(d.players?.max ?? d.max) || 0;
+      version = d.version?.name || d.version || '';
+    }
     res.setHeader('Cache-Control','public,s-maxage=30');
     return res.json({ online, players, maxPlayers, version });
   } catch(e) {
