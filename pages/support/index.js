@@ -1,6 +1,7 @@
 import { useTransparentLogo, updateFavicon } from '../../components/LogoImage';
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
+// SettingsAsync loaded server-side via dynamic import in getServerSideProps
 import FancyNav from '../../components/FancyNav';
 import LoginModal from '../../components/LoginModal';
 import FancyFooter from '../../components/FancyFooter';
@@ -15,17 +16,17 @@ export async function getServerSideProps() {
 }
 
 const TYPES = [
-  { id:'banding',       icon:'gavel',        label:'Aju Banding',   desc:'Ajukan banding untuk keputusan admin atau akun terblokir.', color:'#F97316' },
-  { id:'bug',           icon:'bug',          label:'Report Bug',    desc:'Temukan celah atau masalah teknis? Laporkan di sini.',     color:'#F97316' },
-  { id:'report_player', icon:'user-xmark',   label:'Report Pemain', desc:'Laporkan pemain yang melanggar aturan komunitas.',          color:'#F97316' },
-  { id:'lainnya',       icon:'comment-dots', label:'Lainnya',       desc:'Pertanyaan umum, saran, atau feedback operasional.',      color:'#F97316' },
+  { id:'banding',       icon:'gavel',        label:'Aju Banding',   desc:'Ajukan banding untuk keputusan admin / akun banned' },
+  { id:'bug',           icon:'bug',          label:'Report Bug',    desc:'Temukan bug atau masalah teknis? Laporkan di sini' },
+  { id:'report_player', icon:'user-xmark',   label:'Report Pemain', desc:'Laporkan pemain yang melanggar aturan server' },
+  { id:'lainnya',       icon:'comment-dots', label:'Lainnya',       desc:'Pertanyaan umum, saran, atau feedback lainnya' },
 ];
 
 const STATUS = {
-  open:      { label:'Menunggu',  color:'#FFBA85', bg: 'rgba(255,186,133,0.1)' },
-  in_review: { label:'Direview', color:'#F97316', bg: 'rgba(249,115,22,0.15)' },
-  resolved:  { label:'Selesai',  color:'#4ADE80', bg: 'rgba(74,222,128,0.1)' },
-  rejected:  { label:'Ditolak',  color:'#F87171', bg: 'rgba(248,113,113,0.1)' },
+  open:      { label:'Menunggu' },
+  in_review: { label:'Direview' },
+  resolved:  { label:'Selesai'  },
+  rejected:  { label:'Ditolak'  },
 };
 
 const fmt = d => d ? new Date(d).toLocaleString('id-ID',{dateStyle:'short',timeStyle:'short'}) : '-';
@@ -37,53 +38,39 @@ export default function SupportPage({ settings }) {
 
   const [player,      setPlayer]      = useState(null);
   const [showLogin,   setShowLogin]   = useState(false);
-  const [view,        setView]        = useState('home');  
+  const [view,        setView]        = useState('home');  // home | form | tickets | chat
   const [selType,     setSelType]     = useState(null);
   const [tickets,     setTickets]     = useState([]);
   const [sending,     setSending]     = useState(false);
   const [form,        setForm]        = useState({ subject:'', description:'', target_player:'', evidence_url:'' });
-  const [activeTicket,setActiveTicket]= useState(null);  
+  const [activeTicket,setActiveTicket]= useState(null);  // full ticket detail with messages
   const [newMsg,      setNewMsg]      = useState('');
   const [sendingMsg,  setSendingMsg]  = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
-  const [sseStatus,   setSseStatus]   = useState('connecting'); 
-  const [isLoaded,    setIsLoaded]    = useState(false);
+  const [sseStatus,   setSseStatus]   = useState('connecting'); // connecting | live | polling
   const chatEndRef = useRef(null);
   const pollingRef = useRef(null);
   const activeTicketRef = useRef(null);
 
+  // Favicon
   useEffect(() => {
     if (logoSrc) updateFavicon(logoSrc);
   }, [logoSrc]);
 
   useEffect(() => {
-    const t = setTimeout(() => setIsLoaded(true), 50);
     let p = null;
     try { const r = localStorage.getItem('mc_player'); if (r) { p = JSON.parse(r); setPlayer(p); } } catch{}
     if (p) loadTickets(p);
-    return () => clearTimeout(t);
   }, []);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.02, rootMargin: '0px 0px -20px 0px' });
-
-    document.querySelectorAll('.scroll-animate').forEach(el => observer.observe(el));
-    return () => observer.disconnect();
-  }, [view, tickets]);
 
   useEffect(() => {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior:'smooth' });
   }, [activeTicket?.messages]);
 
+  // Sync activeTicket ke ref (untuk SSE closure)
   useEffect(() => { activeTicketRef.current = activeTicket; }, [activeTicket]);
 
+  // ── SSE realtime saat view=chat, fallback polling 3 detik jika SSE gagal ──
   useEffect(() => {
     if (view !== 'chat' || !activeTicket?.ticket_id) return;
     let es = null;
@@ -220,6 +207,7 @@ export default function SupportPage({ settings }) {
   const typeInfo = TYPES.find(t=>t.id===selType);
   const chatType = activeTicket ? TYPES.find(t=>t.id===activeTicket.type) : null;
   const chatStatus = activeTicket ? STATUS[activeTicket.status] || STATUS.open : null;
+  const chatStatusId = activeTicket ? (STATUS[activeTicket.status] ? activeTicket.status : 'open') : null;
   const isClosed = activeTicket?.status === 'resolved' || activeTicket?.status === 'rejected';
 
   return (
@@ -231,169 +219,165 @@ export default function SupportPage({ settings }) {
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      <div className="orange-theme-wrapper" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', backgroundColor: '#FFFFFF', color: '#1A0D05', position: 'relative', overflowX: 'hidden' }}>
-        
-        {/* Soft Ambient Background Glow */}
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }} className="gpu-glow-layer">
-          <div style={{ position: 'absolute', top: '-5%', left: '50%', transform: 'translateX(-50%)', width: '600px', height: '450px', background: 'radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)', filter: 'blur(80px)' }} />
-        </div>
+      {/* Pembungkus Utama Menggunakan Flexbox untuk Menata Footer */}
+      <div className="support-page-wrap">
 
         <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
-        <main style={{ flex: '1 0 auto', padding: '140px 16px 80px', maxWidth: '760px', width: '100%', margin: '0 auto', position: 'relative', zIndex: 1 }}>
+        {/* Konten Utama: flex:1 mendorong footer ke bawah & max-width proporsional */}
+        <main className="support-main">
 
-          {/* HEADER SECTION */}
-          <div style={{textAlign:'center', marginBottom:40}} className={isLoaded ? 'load-animate loaded' : 'load-animate'}>
-            <span style={{display:'inline-flex', padding:'4px 12px', borderRadius:'50px', background:'rgba(249,115,22,0.08)', border:'1px solid rgba(249,115,22,0.25)', color:'#EA580C', fontWeight:700, fontSize:10.5, letterSpacing:'0.5px', marginBottom:12}} className="load-item-1">
-              PUSAT BANTUAN
-            </span>
-            <h1 className="font-space load-item-2" style={{fontSize:'clamp(32px, 7vw, 48px)', fontWeight:900, color: '#1A0D05', marginBottom:10, letterSpacing: '-1px'}}>
-              SUPPORT CENTER
+          {/* Header */}
+          <div className="support-header" data-anim="fade-up">
+            <span className="fn-recruit-eyebrow">PUSAT BANTUAN</span>
+            <h1 className="font-space support-title">
+              Support <span className="fn-logo-brand">Center</span>
             </h1>
-            <p style={{color:'#EA580C', opacity: 0.85, fontSize:14.5, fontWeight: 500}} className="load-item-3">{serverName} — Tim kami siap melayani kendala Anda secara responsif.</p>
+            <p className="support-subtitle">{serverName} — Tim kami siap membantu kamu</p>
           </div>
 
-          {/* NAVIGATION TABS */}
-          <div style={{display:'flex', justifyContent:'center', gap:8, marginBottom:36, maxWidth:360, margin:'0 auto 36px'}} className={isLoaded ? 'load-animate loaded' : 'load-animate'}>
-            <button className={`support-nav-tab load-item-4 ${view==='home'||view==='form'?'active':''}`} onClick={()=>setView('home')}>
-              <Icon name="plus-circle" size={13} /> <span>Buat Tiket</span>
+          {/* Nav tabs */}
+          <div className="tabs-container support-tabs">
+            <button className={`tab-btn${view==='home'||view==='form'?' active':''}`}
+              onClick={()=>setView('home')}>
+              <Icon name="plus-circle" size={14} className="fn-icon-mr"/> Buat Tiket
             </button>
-            <button className={`support-nav-tab load-item-4 ${view==='tickets'||view==='chat'?'active':''}`} onClick={()=>{ setView('tickets'); loadTickets(); }}>
-              <Icon name="list-check" size={13} /> <span>Tiket Saya</span>
+            <button className={`tab-btn${view==='tickets'||view==='chat'?' active':''}`}
+              onClick={()=>{ setView('tickets'); loadTickets(); }}>
+              <Icon name="list-check" size={14} className="fn-icon-mr"/> Tiket Saya
             </button>
           </div>
 
-          {/* ── VIEW HOME: SELECT CATEGORY TICKET ── */}
+          {/* ── HOME: pilih tipe ── */}
           {view === 'home' && (
-            <div style={{display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:14}}>
+            <div className="support-type-grid">
               {!player && (
-                <div style={{gridColumn:'1/-1', background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:12, padding:'14px 18px', display:'flex', alignItems:'center', gap:12, marginBottom:4}} className="scroll-animate visible">
-                  <Icon name="circle-exclamation" size={16} color="#FFBA85"/>
-                  <p style={{fontSize:13, color:'#FFBA85', fontWeight:500}}>
-                    Anda wajib <strong style={{color:'#FFF', cursor:'pointer', textDecoration:'underline'}} onClick={()=>setShowLogin(true)}>Login Akun</strong> terlebih dahulu untuk mengajukan tiket bantuan.
+                <div className="support-login-banner">
+                  <Icon name="circle-exclamation" size={18} color="var(--primary)"/>
+                  <p className="support-login-text">
+                    Kamu perlu <strong className="support-login-link" onClick={()=>setShowLogin(true)}>login</strong> untuk membuat tiket.
                   </p>
                 </div>
               )}
               {TYPES.map(t=>(
-                <button key={t.id} onClick={()=>handleSelectType(t.id)} className="support-cat-card scroll-animate" style={{width:'100%', textAlign:'left', background:'#431A04', border: '1px solid rgba(249,115,22,0.3)', borderRadius:14, padding:18, display:'flex', alignItems:'center', gap:14, cursor:'pointer', transition:'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'}}>
-                  <div style={{background:`rgba(259,115,22,0.15)`, color:'#FFBA85', width:38, height:38, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid rgba(249,115,22,0.2)', flexShrink:0}}>
-                    <Icon name={t.icon} size={15}/>
+                <button key={t.id} onClick={()=>handleSelectType(t.id)} className="support-cat-card support-cat-btn">
+                  <div className={`cat-icon accent-${t.id}`}>
+                    <Icon name={t.icon} size={16}/>
                   </div>
-                  <div style={{flex:1, minWidth:0}}>
-                    <p style={{fontWeight:800, fontSize:14, color:'#FFFFFF', marginBottom:3}}>{t.label}</p>
-                    <p style={{fontSize:12, color:'#FFBA85', opacity:0.8, lineHeight:1.4, overflow:'hidden', textOverflow:'ellipsis'}}>{t.desc}</p>
+                  <div>
+                    <p className="support-cat-title">{t.label}</p>
+                    <p className="support-cat-desc">{t.desc}</p>
                   </div>
-                  <Icon name="chevron-right" size={11} color="#FFBA85" style={{marginLeft:'auto', flexShrink:0}}/>
+                  <Icon name="chevron-right" size={12} color="var(--text-muted)" className="support-cat-chevron"/>
                 </button>
               ))}
             </div>
           )}
 
-          {/* ── VIEW FORM SUBMISSION ── */}
+          {/* ── FORM ── */}
           {view === 'form' && typeInfo && (
-            <div style={{background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:16, padding:'28px'}} className="scroll-animate visible">
-              <button onClick={()=>setView('home')} style={{background:'none', border:'none', color:'#FFBA85', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, marginBottom:20}}>
-                <Icon name="arrow-left" size={12}/> Kembali
+            <div className="fn-card support-form-card" data-anim="fade-up">
+              <button onClick={()=>setView('home')} className="support-back-btn">
+                <Icon name="arrow-left" size={14} className="fn-icon-mr"/> Kembali
               </button>
 
-              <div style={{display:'flex', alignItems:'center', gap:14, marginBottom:24, background:'rgba(255,255,255,0.03)', border:'1px solid rgba(249,115,22,0.2)', borderRadius:12, padding:'14px 18px'}}>
-                <div style={{background:`rgba(249,115,22,0.15)`, color:'#FFBA85', width:40, height:40, borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0, border:'1px solid rgba(249,115,22,0.2)'}}>
-                  <Icon name={typeInfo.icon} size={15}/>
+              <div className="support-form-type-banner">
+                <div className={`cat-icon accent-${typeInfo.id}`}>
+                  <Icon name={typeInfo.icon} size={16}/>
                 </div>
                 <div>
-                  <p className="font-space" style={{fontWeight:800, fontSize:15, color:'#FFFFFF'}}>{typeInfo.label}</p>
-                  <p style={{fontSize:12, color:'#FFBA85', fontWeight:500}}>
-                    Pelapor: <strong style={{color:'#FFF'}}>{player?.displayName||player?.username}</strong>
+                  <p className="font-space support-form-title">{typeInfo.label}</p>
+                  <p className="support-form-login-as">
+                    Login sebagai <strong className="support-form-login-name">{player?.displayName||player?.username}</strong>
                   </p>
                 </div>
               </div>
 
-              <form onSubmit={handleSubmit} style={{display:'flex', flexDirection:'column', gap:18}}>
+              <form onSubmit={handleSubmit} className="support-form">
                 {selType==='report_player' && (
                   <div>
-                    <label className="orange-form-label">Username Pemain Yang Dilaporkan *</label>
+                    <label className="section-label">Username Pemain yang Dilaporkan *</label>
                     <input value={form.target_player} onChange={e=>setForm(p=>({...p,target_player:e.target.value}))}
-                      className="orange-form-input" placeholder="Contoh: SteveGamer_ID" required/>
+                      className="fn-input" placeholder="Nama player" required/>
                   </div>
                 )}
                 <div>
-                  <label className="orange-form-label">Subjek Masalah *</label>
+                  <label className="section-label">Subjek *</label>
                   <input value={form.subject} onChange={e=>setForm(p=>({...p,subject:e.target.value}))}
-                    className="orange-form-input" placeholder="Tuliskan ringkasan pokok kendala..." required maxLength={200}/>
+                    className="fn-input" placeholder="Ringkasan masalahmu..." required maxLength={200}/>
                 </div>
                 <div>
-                  <label className="orange-form-label">Deskripsi Kronologi Lengkap *</label>
+                  <label className="section-label">Deskripsi Lengkap *</label>
                   <textarea value={form.description} onChange={e=>setForm(p=>({...p,description:e.target.value}))}
-                    className="orange-form-input" rows={5} placeholder="Jelaskan secara rinci detail agar tim admin mudah memahami..." required
-                    style={{resize:'vertical', minHeight:120}}/>
+                    className="fn-input support-textarea" rows={5} placeholder="Jelaskan masalahmu secara detail..." required/>
                 </div>
                 <div>
-                  <label className="orange-form-label">Tautan / Link Bukti Screenshot <span style={{fontWeight:500, textTransform:'none', color:'#FFBA85', opacity:0.6}}>(Opsional)</span></label>
+                  <label className="section-label">Link Bukti / Screenshot <span className="support-optional-label">(opsional)</span></label>
                   <input value={form.evidence_url} onChange={e=>setForm(p=>({...p,evidence_url:e.target.value}))}
-                    className="orange-form-input" placeholder="https://imgur.com/example..."/>
+                    className="fn-input" placeholder="https://imgur.com/..."/>
                 </div>
-                <button type="submit" className="orange-submit-ticket-btn" disabled={sending} style={{border:'none', cursor:'pointer', width:'100%', marginTop:6}}>
+                <button type="submit" className="btn-primary-fn support-submit-btn" disabled={sending}>
                   {sending
-                    ? <><span className="orange-btn-spinner"/> Memproses Kiriman...</>
-                    : <><Icon name="paper-plane" size={13}/> Kirim Tiket Sekarang</>
+                    ? <><span className="fn-spinner fn-spinner-sm"/> Mengirim...</>
+                    : <><Icon name={typeInfo.icon} size={16}/> Kirim Tiket</>
                   }
                 </button>
               </form>
             </div>
           )}
 
-          {/* ── VIEW TICKETS LIST ── */}
+          {/* ── TIKET SAYA ── */}
           {view === 'tickets' && (
             <div>
               {!player ? (
-                <div style={{textAlign:'center', padding:'60px 0', background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:16}} className="scroll-animate visible">
-                  <Icon name="lock" size={32} color="#FFBA85" style={{display:'block', margin:'0 auto 14px'}}/>
-                  <p style={{color:'#FFBA85', marginBottom:16, fontSize:14, fontWeight:600}}>Harap masuk akun untuk meninjau riwayat tiket Anda.</p>
-                  <button className="orange-submit-ticket-btn" style={{border:'none', cursor:'pointer', display:'inline-flex', margin:'0 auto'}} onClick={()=>setShowLogin(true)}>
-                    <Icon name="right-to-bracket" size={13}/> Login Akun
+                <div className="support-empty-state">
+                  <Icon name="lock" size={40} color="var(--text-muted)" className="support-empty-icon"/>
+                  <p className="support-empty-text">Login untuk melihat tiketmu</p>
+                  <button className="btn-primary-fn" onClick={()=>setShowLogin(true)}>
+                    <Icon name="right-to-bracket" size={14} className="fn-icon-mr"/> Login
                   </button>
                 </div>
               ) : tickets.length === 0 ? (
-                <div style={{textAlign:'center', padding:'60px 0', background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:16}} className="scroll-animate visible">
-                  <Icon name="inbox" size={32} color="#FFBA85" style={{display:'block', margin:'0 auto 14px'}}/>
-                  <p style={{color:'#FFBA85', marginBottom:14, fontSize:14, fontWeight:600}}>Belum ada tiket bantuan yang terdaftar.</p>
-                  <button className="orange-secondary-btn" onClick={()=>setView('home')}>
-                    <Icon name="plus" size={12}/> Buat Tiket Baru
+                <div className="support-empty-state">
+                  <Icon name="inbox" size={40} color="var(--text-muted)" className="support-empty-icon"/>
+                  <p className="support-empty-text-sm">Belum ada tiket</p>
+                  <button className="btn-ghost-fn" onClick={()=>setView('home')}>
+                    <Icon name="plus" size={14} className="fn-icon-mr"/> Buat Tiket Baru
                   </button>
                 </div>
               ) : (
-                <div style={{display:'flex', flexDirection:'column', gap:14}}>
+                <div className="support-ticket-list">
                   {tickets.map(tk => {
                     const t  = TYPES.find(x=>x.id===tk.type);
                     const st = STATUS[tk.status] || STATUS.open;
+                    const stId = STATUS[tk.status] ? tk.status : 'open';
                     return (
-                      <div key={tk.ticket_id} className="support-ticket-item-card scroll-animate"
-                        style={{padding:'18px 22px', cursor:'pointer', background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:14}}
+                      <div key={tk.ticket_id} className="fn-card animate-in support-ticket-card"
                         onClick={()=>handleOpenChat(tk)}>
-                        <div style={{display:'flex', alignItems:'flex-start', justifyOrigin:'space-between', justifyContent:'space-between', gap:12, marginBottom:10}}>
-                          <div style={{display:'flex', alignItems:'center', gap:12, minWidth:0}}>
-                            <div style={{width:36, height:36, borderRadius:8, background:`rgba(249,115,22,0.15)`, border:'1px solid rgba(249,115,22,0.2)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-                              <Icon name={t?.icon||'ticket'} size={14} color="#FFBA85"/>
+                        <div className="support-ticket-top">
+                          <div className="support-ticket-left">
+                            <div className={`support-ticket-icon accent-${t?.id||'banding'}`}>
+                              <Icon name={t?.icon||'ticket'} size={15}/>
                             </div>
-                            <div style={{minWidth:0}}>
-                              <p style={{fontWeight:800, fontSize:14, color:'#FFFFFF', marginBottom:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{tk.subject}</p>
-                              <code style={{fontSize:11, color:'#FFBA85', opacity:0.8, fontFamily:'monospace'}}>{tk.ticket_id}</code>
+                            <div className="support-ticket-info">
+                              <p className="support-ticket-subject">{tk.subject}</p>
+                              <code className="support-ticket-id">{tk.ticket_id}</code>
                             </div>
                           </div>
-                          <div style={{display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0}}>
-                            <span style={{background: st.bg, color: st.color, border:`1px solid ${st.color}40`, padding:'3px 9px', borderRadius:6, fontSize:11, fontWeight:800}}>
+                          <div className="support-ticket-right">
+                            <span className={`support-status-badge status-${stId}`}>
                               {st.label}
                             </span>
-                            <span style={{fontSize:10.5, color:'#FFBA85', opacity:0.7, fontWeight:500}}>{fmt(tk.updated_at||tk.created_at)}</span>
+                            <span className="support-ticket-date">{fmt(tk.updated_at||tk.created_at)}</span>
                           </div>
                         </div>
-                        <div style={{display:'flex', alignItems:'center', justifyContent:'space-between', paddingTop:10, borderTop:'1px solid rgba(249,115,22,0.15)'}}>
-                          <p style={{fontSize:12, color:'#FFBA85', display:'flex', alignItems:'center', gap:6, fontWeight:500}}>
+                        <div className="support-ticket-bottom">
+                          <p className="support-ticket-msgcount">
                             <Icon name="comment-dots" size={13}/>
-                            {tk.messages?.length || 0} pesan terkirim
+                            {tk.messages?.length || 0} pesan
                           </p>
-                          <span style={{fontSize:12, color:'#F97316', fontWeight:700, display:'flex', alignItems:'center', gap:4}}>
-                            Buka Chat <Icon name="arrow-right" size={10}/>
+                          <span className="support-ticket-open">
+                            <Icon name="arrow-right" size={10} className="fn-icon-ml-2"/> Buka Chat
                           </span>
                         </div>
                       </div>
@@ -404,73 +388,66 @@ export default function SupportPage({ settings }) {
             </div>
           )}
 
-          {/* ── VIEW TICKET CHAT CONVERSATION ── */}
+          {/* ── CHAT ── */}
           {view === 'chat' && (
-            <div style={{background:'#431A04', border:'1px solid rgba(249,115,22,0.3)', borderRadius:16, overflow:'hidden'}} className="scroll-animate visible">
-              {/* Chat Header Bar */}
-              <div style={{padding:'16px 20px', borderBottom:'1px solid rgba(249,115,22,0.2)', display:'flex', alignItems:'center', gap:12, background:'rgba(0,0,0,0.1)'}}>
-                <button onClick={()=>{ setView('tickets'); loadTickets(); }}
-                  style={{background:'none', border:'none', color:'#FFBA85', cursor:'pointer', padding:'4px 8px', borderRadius:6, display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:700}}>
-                  <Icon name="arrow-left" size={13}/> Kembali
+            <div className="fn-card support-chat-card" data-anim="scale-pop">
+              {/* Chat header */}
+              <div className="support-chat-header">
+                <button onClick={()=>{ setView('tickets'); loadTickets(); }} className="support-chat-back">
+                  <Icon name="arrow-left" size={14} className="fn-icon-mr"/> Kembali
                 </button>
                 {activeTicket && (
                   <>
-                    <div style={{width:1, height:20, background:'rgba(249,115,22,0.3)'}}/>
-                    <div style={{width:30, height:30, borderRadius:6, background:`rgba(249,115,22,0.15)`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0}}>
-                      <Icon name={chatType?.icon||'ticket'} size={13} color="#FFBA85"/>
+                    <div className="support-chat-divider"/>
+                    <div className={`support-chat-type-icon accent-${chatType?.id||'banding'}`}>
+                      <Icon name={chatType?.icon||'ticket'} size={13}/>
                     </div>
-                    <div style={{flex:1, minWidth:0}}>
-                      <p style={{fontWeight:800, fontSize:13, color:'#FFFFFF', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{activeTicket.subject}</p>
-                      <code style={{fontSize:10, color:'#FFBA85', opacity:0.8}}>{activeTicket.ticket_id}</code>
+                    <div className="support-chat-info">
+                      <p className="support-chat-subject">{activeTicket.subject}</p>
+                      <code className="support-chat-id">{activeTicket.ticket_id}</code>
                     </div>
-                    <span style={{background: chatStatus?.bg, color: chatStatus?.color, border:`1px solid ${chatStatus?.color}40`, padding:'4px 10px', borderRadius:6, fontSize:11, fontWeight:800, flexShrink:0}}>
+                    <span className={`support-status-badge status-${chatStatusId}`}>
                       {chatStatus?.label}
                     </span>
-                    {/* Live Stream Status Indicator */}
-                    <div style={{flexShrink:0}}>
-                      <span style={{display:'flex', alignItems:'center', gap:4, fontSize:10, fontWeight:700, color:sseStatus==='live'?'#4ADE80':sseStatus==='polling'?'#FB923C':'#FFBA85'}}>
-                        <span style={{width:6, height:6, borderRadius:'50%', background:sseStatus==='live'?'#4ADE80':sseStatus==='polling'?'#FB923C':'#FFBA85', display:'inline-block', animation:sseStatus==='live'?'pulse-dot 2s infinite':undefined}}/>
-                        {sseStatus==='live'?'Live':sseStatus==='polling'?'Poll':'...'}
+                    {/* SSE status indicator */}
+                    <div title={sseStatus==='live'?'Realtime aktif':sseStatus==='polling'?'Mode polling':'Menghubungkan...'} className="support-sse-wrap">
+                      <span className={`support-sse-status ${sseStatus}`}>
+                        <span className={`support-sse-dot ${sseStatus}`}/>
+                        {sseStatus==='live'?'Live':sseStatus==='polling'?'Polling':'...'}
                       </span>
                     </div>
                   </>
                 )}
               </div>
 
-              {/* Chat Messages Log Area */}
-              <div style={{minHeight:320, maxHeight:'52vh', overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:14, background:'rgba(0,0,0,0.05)'}}>
+              {/* Messages area */}
+              <div className="support-messages-area">
                 {loadingChat ? (
-                  <div style={{textAlign:'center', padding:'40px 0', color:'#FFBA85'}}>
-                    <Icon name="spinner" size={24} spin/>
+                  <div className="support-chat-loading">
+                    <Icon name="spinner" size={28} spin/>
                   </div>
                 ) : activeTicket && (
                   <>
+                    {/* Ticket info box */}
                     {activeTicket.evidence_url && (
-                      <div style={{background:'rgba(0,0,0,0.15)', border:'1px dashed rgba(249,115,22,0.3)', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#FFBA85', fontWeight:500}}>
-                        <Icon name="link" size={12} style={{marginRight:6}} color="#F97316"/>
-                        Tautan Bukti: <a href={activeTicket.evidence_url} target="_blank" rel="noopener noreferrer" style={{color:'#FB923C', textDecoration:'underline', fontWeight:700}}>{activeTicket.evidence_url}</a>
+                      <div className="support-evidence-box">
+                        <Icon name="link" size={12} className="fn-icon-mr"/>
+                        Bukti: <a href={activeTicket.evidence_url} target="_blank" rel="noopener noreferrer" className="support-evidence-link">{activeTicket.evidence_url}</a>
                       </div>
                     )}
-                    
                     {(activeTicket.messages||[]).map((msg,i) => {
                       const isAdmin  = msg.sender_type === 'admin';
                       const isPending = !!msg._pending;
+                      const bubbleModifier = isAdmin ? 'admin' : isPending ? 'pending' : '';
                       return (
-                        <div key={msg.id||i} style={{display:'flex', flexDirection:'column', alignItems: isAdmin ? 'flex-start' : 'flex-end'}}>
-                          <div style={{
-                            maxWidth:'80%',
-                            background: isAdmin ? 'rgba(249,115,22,0.12)' : isPending ? 'rgba(0,0,0,0.2)' : '#5C2406',
-                            border: isAdmin ? '1px solid rgba(249,115,22,0.35)' : isPending ? '1px dashed rgba(249,115,22,0.2)' : '1px solid rgba(249,115,22,0.2)',
-                            borderRadius: isAdmin ? '14px 14px 14px 4px' : '14px 14px 4px 14px',
-                            padding:'10px 14px',
-                            opacity: isPending ? 0.7 : 1,
-                          }}>
-                            <p style={{fontSize:11, fontWeight:800, color: isAdmin ? '#FB923C' : '#FFBA85', marginBottom:4}}>
-                              {isAdmin ? '🛡️ Admin Server' : `👤 ${msg.sender}`}
+                        <div key={msg.id||i} className={`support-msg-row ${isAdmin?'admin':''}`}>
+                          <div className={`support-msg-bubble ${bubbleModifier}`}>
+                            <p className={`support-msg-sender ${isAdmin?'admin':''}`}>
+                              {isAdmin ? '🛡️ Admin' : `👤 ${msg.sender}`}
                             </p>
-                            <p style={{fontSize:13, color:'#FFFFFF', lineHeight:1.5, whiteSpace:'pre-wrap', fontWeight:500}}>{msg.text}</p>
+                            <p className="support-msg-text">{msg.text}</p>
                           </div>
-                          <p style={{fontSize:10, color:'#FFBA85', opacity:0.6, marginTop:4, padding:'0 4px', fontWeight:500}}>
+                          <p className="support-msg-time">
                             {isPending ? '⏳ Mengirim...' : fmt(msg.created_at)}
                           </p>
                         </div>
@@ -481,33 +458,35 @@ export default function SupportPage({ settings }) {
                 )}
               </div>
 
-              {/* Chat Input Box */}
-              <div style={{padding:'14px 16px', borderTop:'1px solid rgba(249,115,22,0.2)', background:'rgba(0,0,0,0.1)'}}>
+              {/* Input area */}
+              <div className="support-chat-input-area">
                 {isClosed ? (
-                  <div style={{textAlign:'center', padding:'8px', color:'#F87171', fontSize:13, fontWeight:700, background:'rgba(248,113,113,0.1)', borderRadius:8}}>
-                    <Icon name="lock" size={12} style={{marginRight:6}}/>
-                    Tiket bantuan ini telah ditutup. Percakapan baru tidak dapat dikirim kembali.
+                  <div className="support-chat-closed">
+                    <Icon name="lock" size={12} className="fn-icon-mr"/>
+                    Tiket ini sudah ditutup — tidak bisa mengirim pesan baru
                   </div>
                 ) : (
-                  <div style={{display:'flex', gap:10}}>
+                  <div className="support-chat-input-row">
                     <textarea value={newMsg} onChange={e=>setNewMsg(e.target.value)} rows={2}
-                      placeholder="Ketik balasan pesan Anda di sini..."
+                      placeholder="Tulis pesanmu di sini..."
                       onKeyDown={e=>{ if(e.key==='Enter'&&e.ctrlKey) handleSendMessage(); }}
-                      className="orange-form-input" style={{flex:1, resize:'none', fontSize:13, padding:'10px 14px', margin:0}}/>
+                      className="fn-input support-chat-textarea"/>
                     <button onClick={handleSendMessage} disabled={sendingMsg||!newMsg.trim()}
-                      className="orange-submit-ticket-btn" style={{flexShrink:0, alignSelf:'flex-end', padding:'12px 18px', border:'none', cursor:'pointer'}}>
-                      {sendingMsg?<Icon name="spinner" size={13} spin/>:<><Icon name="paper-plane" size={13}/> Balas</>}
+                      className="btn-primary-fn support-chat-send">
+                      {sendingMsg?<Icon name="spinner" size={14} spin/>:<><Icon name="paper-plane" size={14} className="fn-icon-mr"/> Kirim</>}
                     </button>
                   </div>
                 )}
-                {!isClosed && <p style={{fontSize:10.5, color:'#FFBA85', opacity:0.6, marginTop:6, fontWeight:500}}>Tekan <kbd style={{fontFamily:'sans-serif', background:'rgba(0,0,0,0.2)', color:'#FFF', padding:'2px 4px', borderRadius:4}}>Ctrl + Enter</kbd> untuk berkirim pesan secara cepat.</p>}
+                {!isClosed && <p className="support-chat-hint">Ctrl+Enter untuk kirim cepat</p>}
               </div>
             </div>
           )}
 
         </main>
 
-        <FancyFooter serverName={serverName} style={{ flexShrink: 0 }} />
+        {/* Footer Berada di Luar <main> namun di Dalam Pembungkus Flexbox, Menjamin Posisinya Selalu di Bawah */}
+        <FancyFooter serverName={serverName} discordUrl={s.discord_url} />
+
       </div>
 
       {showLogin && (
@@ -518,160 +497,6 @@ export default function SupportPage({ settings }) {
           loadTickets(p);
         }}/>
       )}
-
-      {/* STYLING CORES */}
-      <style jsx global>{`
-        html {
-          scroll-behavior: smooth;
-        }
-
-        .gpu-glow-layer {
-          will-change: transform, opacity;
-          transform: translateZ(0);
-        }
-
-        .load-animate [class^="load-item-"] {
-          opacity: 0;
-          transform: translateY(12px);
-          transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-          will-change: opacity, transform;
-        }
-        .load-animate.loaded .load-item-1 { opacity: 1; transform: translateY(0); transition-delay: 40ms; }
-        .load-animate.loaded .load-item-2 { opacity: 1; transform: translateY(0); transition-delay: 100ms; }
-        .load-animate.loaded .load-item-3 { opacity: 1; transform: translateY(0); transition-delay: 160ms; }
-        .load-animate.loaded .load-item-4 { opacity: 1; transform: translateY(0); transition-delay: 220ms; }
-
-        .scroll-animate {
-          opacity: 0;
-          transform: translateY(14px);
-          transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-          will-change: opacity, transform;
-        }
-        .scroll-animate.visible {
-          opacity: 1;
-          transform: translateY(0);
-        }
-
-        .support-nav-tab {
-          background: #431A04;
-          border: 1px solid rgba(249,115,22,0.3);
-          color: #FFBA85;
-          padding: 10px 18px;
-          border-radius: 12px;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.15s ease;
-          white-space: nowrap;
-        }
-        .support-nav-tab:hover, .support-nav-tab.active {
-          background: #F97316;
-          border-color: #F97316;
-          color: #FFFFFF;
-          box-shadow: 0 4px 14px rgba(249,115,22,0.18);
-        }
-
-        .support-cat-card:hover, .support-ticket-item-card:hover {
-          border-color: #F97316 !important;
-          background: #5C2406 !important;
-          transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-        }
-
-        .orange-form-label {
-          display: block;
-          font-weight: 700;
-          color: #FFBA85;
-          font-size: 12px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          margin-bottom: 8px;
-        }
-        .orange-form-input {
-          width: 100%;
-          padding: 11px 14px;
-          border-radius: 10px;
-          border: 1px solid rgba(249,115,22,0.3);
-          background: #5C2406;
-          font-size: 13.5px;
-          color: #FFFFFF;
-          font-weight: 500;
-          outline: none;
-          transition: all 0.15s ease;
-        }
-        .orange-form-input::placeholder {
-          color: #FFBA85;
-          opacity: 0.4;
-        }
-        .orange-form-input:focus {
-          border-color: #F97316 !important;
-          background: #6E2B08;
-          box-shadow: 0 0 0 3px rgba(249,115,22,0.15);
-        }
-
-        .orange-submit-ticket-btn {
-          background: #F97316;
-          color: #FFFFFF;
-          padding: 12px 20px;
-          border-radius: 10px;
-          font-weight: 700;
-          font-size: 13.5px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          transition: background 0.15s;
-        }
-        .orange-submit-ticket-btn:hover {
-          background: #EA580C;
-        }
-        .orange-submit-ticket-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .orange-secondary-btn {
-          background: none;
-          border: 1px solid rgba(249,115,22,0.4);
-          color: #FFBA85;
-          padding: 10px 18px;
-          border-radius: 10px;
-          font-weight: 700;
-          font-size: 13px;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.15s;
-        }
-        .orange-secondary-btn:hover {
-          background: rgba(249,115,22,0.15);
-          border-color: #F97316;
-          color: #FFF;
-        }
-
-        .orange-btn-spinner {
-          width: 14px;
-          height: 14px;
-          border: 2px solid rgba(255,255,255,0.3);
-          border-radius: 50%;
-          border-top-color: #FFFFFF;
-          animation: spin 0.8s linear infinite;
-          display: inline-block;
-        }
-
-        @keyframes pulse-dot {
-          0% { box-shadow: 0 0 0 0 rgba(74,222,128, 0.4); }
-          70% { box-shadow: 0 0 0 6px rgba(74,222,128, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(74,222,128, 0); }
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        div::-webkit-scrollbar { display: none; }
-      `}</style>
     </>
   );
 }
