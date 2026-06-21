@@ -15,7 +15,7 @@ function PlayerHeadPreview({ uuid, username, size=80 }) {
   );
   return (
     <img src={src} alt={name} width={size} height={size}
-      style={{borderRadius:12,imageRendering:'pixelated',border:'2px solid rgba(255,107,0,0.3)',boxShadow:'0 8px 24px rgba(255,107,0,0.15)',display:'block',margin:'0 auto'}}
+      className="login-head-preview"
       onError={()=>setSrc(fallbackUrl)}/>
   );
 }
@@ -59,114 +59,112 @@ export default function LoginModal({ onClose, onSuccess, product }) {
       <div className="fn-modal animate-in">
 
         {/* Top accent bar */}
-        <div style={{height:3,background:`linear-gradient(90deg,var(--primary),var(--primary-light),var(--primary))`}}/>
+        <div className="login-modal-topbar"/>
 
-        <div style={{padding:'28px 28px 32px'}}>
+        <div className="login-modal-body">
 
           {/* SUCCESS STATE — tampilkan head skin */}
           {preview ? (
-            <div style={{textAlign:'center',padding:'8px 0'}}>
-              <div style={{marginBottom:20}}>
+            <div className="login-success-wrap">
+              <div className="login-success-avatar">
                 <PlayerHeadPreview uuid={preview.uuid} username={preview.username} size={88}/>
               </div>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:6}}>
+              <div className="login-success-head">
                 <Icon name="circle-check" size={20} color="#2ecc71"/>
-                <h2 className="font-space" style={{fontSize:22,fontWeight:700}}>Login Berhasil!</h2>
+                <h2 className="font-space login-success-title">Login Berhasil!</h2>
               </div>
-              <p style={{color:'var(--primary-light)',fontWeight:700,fontSize:17,marginBottom:4}}>{preview.displayName||preview.username}</p>
+              <p className="login-success-name">{preview.displayName||preview.username}</p>
               {preview.rank && preview.rank!=='default' && (
-                <span style={{background:'rgba(255,107,0,0.15)',color:'var(--primary-light)',padding:'4px 12px',borderRadius:6,fontSize:11,fontWeight:700,textTransform:'uppercase',display:'inline-block',marginBottom:8}}>
+                <span className="login-success-rank">
                   {preview.rank}
                 </span>
               )}
-              <p style={{color:'var(--text-muted)',fontSize:13,marginTop:8}}>Back To Homepage...</p>
+              <p className="login-success-sub">Back To Homepage...</p>
             </div>
 
           ) : (
             /* FORM STATE */
             <>
-              <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:22}}>
+              <div className="login-modal-head">
                 <div>
-                  <h2 className="font-space" style={{fontSize:20,fontWeight:700,marginBottom:4}}>
+                  <h2 className="font-space login-modal-title">
                     {product ? 'Login untuk Membeli' : 'Masuk'}
                   </h2>
-                  <p style={{color:'var(--text-muted)',fontSize:13}}>Gunakan username Minecraft kamu</p>
+                  <p className="login-modal-subtitle">Gunakan username Minecraft kamu</p>
                 </div>
-                <button onClick={onClose} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-muted)',width:32,height:32,borderRadius:8,cursor:'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <button onClick={onClose} className="login-modal-close">
                   <Icon name="xmark" size={14}/>
                 </button>
               </div>
 
               {/* Product mini-badge */}
               {product && (
-                <div style={{background:'rgba(255,107,0,0.06)',border:'1px solid rgba(255,107,0,0.15)',borderRadius:10,padding:'10px 14px',marginBottom:20,display:'flex',alignItems:'center',gap:12}}>
+                <div className="login-product-badge">
                   <Icon name="cart-shopping" size={16} color="var(--primary)"/>
                   <div>
-                    <p style={{fontSize:10,color:'var(--text-muted)',fontWeight:700,textTransform:'uppercase',marginBottom:2}}>Kamu ingin membeli</p>
-                    <p style={{fontWeight:700,fontSize:14,color:'#fff'}}>{product.name}</p>
+                    <p className="login-product-label">Kamu ingin membeli</p>
+                    <p className="login-product-name">{product.name}</p>
                   </div>
                 </div>
               )}
 
               {/* Platform Tabs */}
-              <div className="tabs-container" style={{marginBottom:20}}>
+              <div className="tabs-container login-tabs">
                 <button className={`tab-btn${platform==='java'?' active':''}`} onClick={()=>{setPlatform('java');setError('');setUsername('');}}>
-                  <Icon name="mug" size={13} style={{marginRight:5}}/> Java
+                  <Icon name="mug" size={13} className="fn-icon-mr"/> Java
                 </button>
                 <button className={`tab-btn${platform==='bedrock'?' active':''}`} onClick={()=>{setPlatform('bedrock');setError('');setUsername('');}}>
-                  <Icon name="mobile" size={13} style={{marginRight:5}}/> Bedrock
+                  <Icon name="mobile" size={13} className="fn-icon-mr"/> Bedrock
                 </button>
               </div>
 
               {/* Info strip */}
-              <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.05)',borderRadius:8,padding:'10px 14px',marginBottom:18,fontSize:12,color:'var(--text-muted)',lineHeight:1.5}}>
+              <div className="login-info-strip">
                 {isBedrock
-                  ? <><Icon name="circle-info" size={13} color="var(--primary)" style={{marginRight:6}}/>Masukkan nickname <strong style={{color:'#fff'}}>tanpa titik</strong>. Prefix <code style={{color:'var(--primary-light)',fontWeight:700}}> . </code> ditambahkan otomatis.</>
-                  : <><Icon name="circle-info" size={13} color="var(--primary)" style={{marginRight:6}}/>Masukkan username Java persis seperti di server.</>
+                  ? <><Icon name="circle-info" size={13} color="var(--primary)" className="login-info-icon"/>Masukkan nickname <strong className="login-info-strong">tanpa titik</strong>. Prefix <code className="login-info-code"> . </code> ditambahkan otomatis.</>
+                  : <><Icon name="circle-info" size={13} color="var(--primary)" className="login-info-icon"/>Masukkan username Java persis seperti di server.</>
                 }
               </div>
 
               {/* Error */}
               {error && (
-                <div style={{background:'rgba(231,76,60,0.08)',border:'1px solid rgba(231,76,60,0.2)',borderRadius:8,padding:'10px 14px',marginBottom:16,display:'flex',alignItems:'flex-start',gap:10}}>
-                  <Icon name="circle-exclamation" size={13} color="#e74c3c" style={{marginTop:1,flexShrink:0}}/>
-                  <p style={{fontSize:13,color:'#e74c3c',lineHeight:1.5}}>{error}</p>
+                <div className="login-error">
+                  <Icon name="circle-exclamation" size={13} color="#e74c3c" className="login-error-icon"/>
+                  <p className="login-error-text">{error}</p>
                 </div>
               )}
 
               {/* Form */}
               <form onSubmit={handleSubmit}>
-                <div style={{marginBottom:16}}>
-                  <label style={{display:'block',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:0.5,color:'var(--text-muted)',marginBottom:8}}>
+                <div className="login-field">
+                  <label className="login-field-label">
                     {isBedrock ? 'Nickname Bedrock' : 'Username Java'}
                   </label>
-                  <div style={{position:'relative',display:'flex',alignItems:'center'}}>
+                  <div className="login-input-wrap">
                     {isBedrock && (
-                      <span style={{position:'absolute',left:14,fontFamily:'monospace',fontWeight:700,color:'var(--primary-light)',fontSize:16,userSelect:'none',zIndex:1}}>.</span>
+                      <span className="login-input-dot">.</span>
                     )}
                     <input type="text" value={username} onChange={e=>setUsername(e.target.value)}
                       placeholder={isBedrock ? 'NicknameBedrock' : 'UsernameJava'}
-                      className="fn-input" maxLength={20} autoComplete="off" required
-                      style={{paddingLeft: isBedrock ? 26 : 16}}/>
+                      className={`fn-input login-username-input ${isBedrock?'bedrock':''}`} maxLength={20} autoComplete="off" required/>
                   </div>
                   {isBedrock && username && (
-                    <p style={{fontSize:11,color:'var(--text-muted)',marginTop:6}}>
-                      Di server: <strong style={{color:'var(--primary-light)',fontFamily:'monospace'}}>.{username}</strong>
+                    <p className="login-bedrock-hint">
+                      Di server: <strong className="login-bedrock-hint-name">.{username}</strong>
                     </p>
                   )}
                 </div>
 
-                <button type="submit" className="btn-primary-fn" disabled={loading||!username.trim()}
-                  style={{width:'100%',justifyContent:'center',padding:'13px',fontSize:14,borderRadius:10}}>
+                <button type="submit" className="btn-primary-fn login-submit-btn" disabled={loading||!username.trim()}>
                   {loading
-                    ? <><span className="fn-spinner" style={{width:16,height:16,borderWidth:2}}/> Memeriksa...</>
-                    : <><Icon name="right-to-bracket" size={13} style={{marginRight:6}}/> Masuk</>
+                    ? <><span className="fn-spinner fn-spinner-sm"/> Memeriksa...</>
+                    : <><Icon name="right-to-bracket" size={13} className="fn-icon-mr"/> Masuk</>
                   }
                 </button>
               </form>
 
-              <p style={{textAlign:'center',color:'var(--text-muted)',fontSize:12,marginTop:16}}>
-                Harus sudah pernah <strong style={{color:'var(--primary-light)'}}>join ke server</strong> minimal sekali
+              <p className="login-footer-note">
+                Harus sudah pernah <strong className="login-footer-strong">join ke server</strong> minimal sekali
               </p>
             </>
           )}

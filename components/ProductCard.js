@@ -1,4 +1,7 @@
-/* ProductCard.js — v3: badge color affects full card, no image */
+/* ProductCard.js — v4: theming via 1 CSS custom property (--accent),
+   bukan style object di tiap elemen anak. Lihat blok PRODUCT CARD di
+   globals.css untuk penjelasan kenapa color-mix() dipilih dibanding
+   modifier class per kombinasi warna. */
 
 const CATEGORY_COLOR = {
   rank:        '#ffd700',
@@ -22,6 +25,7 @@ const BADGE_BG = {
 const BADGE_TEXT_DARK = new Set(['yellow']);
 
 const idr = v => `Rp ${Number(v || 0).toLocaleString('id-ID')}`;
+const cx = (...parts) => parts.filter(Boolean).join(' ');
 
 export default function ProductCard({ product, index = 0, onBuy }) {
   const discount = product.original_price && product.original_price > product.price
@@ -50,59 +54,40 @@ export default function ProductCard({ product, index = 0, onBuy }) {
   const listFeatures = features.slice(3);
   const displayList  = listFeatures.length > 0 ? listFeatures : features;
 
-  // ── Gaya kartu berdasarkan state badge ─────────────────────────
-  // isPopular       → gradient penuh oranye (kartu terbalik)
-  // hasBadge        → kartu gelap tapi border + glow sesuai badge color
-  // default         → kartu gelap standar
-  const cardBorderColor = hasBadge && !isPopular ? `${badgeBg}80`  : undefined;
-  const cardShadow      = hasBadge && !isPopular ? `0 8px 32px ${badgeBg}40` : undefined;
-  const cardBg          = hasBadge && !isPopular
-    ? `linear-gradient(160deg, ${badgeBg}18 0%, #141414 55%)`
-    : undefined;
+  const popularCls = isPopular ? 'popular' : '';
 
   return (
     <div
       /* CLASS fn-card, rank-card, product-card-enter WAJIB ADA — animasi bergantung pada ini */
-      className={`fn-card rank-card product-card-enter relative flex flex-col overflow-hidden rounded-[24px] border h-[420px] transition-all duration-300 hover:-translate-y-1 ${
+      className={cx(
+        'fn-card rank-card product-card-enter product-card-themed relative flex flex-col overflow-hidden rounded-[24px] border h-[420px] transition-transform duration-300 hover:-translate-y-1',
+        hasBadge && !isPopular && 'has-badge',
         isPopular
           ? 'rank-card-popular border-[var(--primary)] bg-[var(--primary)] text-white shadow-[0_8px_30px_rgba(255,107,0,0.25)]'
           : 'text-white'
-      }`}
-      style={!isPopular ? {
-        borderColor:  cardBorderColor || 'rgba(255,255,255,0.1)',
-        boxShadow:    cardShadow,
-        background:   cardBg || '#141414',
-      } : undefined}
+      )}
+      style={{ '--accent': accentColor }}
       data-anim="fade-up"
       data-delay={String(Math.min((index % 8) + 1, 8))}
     >
       {/* Accent bar atas — ikut warna aksen kartu */}
-      <div
-        className="h-[3px] w-full flex-shrink-0"
-        style={{ background: isPopular ? 'rgba(255,255,255,0.35)' : accentColor }}
-      />
+      <div className={cx('product-accent-bar h-[3px] w-full flex-shrink-0', popularCls)}/>
 
       {/* ── Badge ribbon ─────────────────────────────────────────── */}
       {hasBadge && (
-        <div className="absolute left-0 right-0 top-[3px] flex justify-center" style={{ zIndex: 10 }}>
-          <span
-            className="rounded-b-lg px-4 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] shadow-lg"
-            style={{
-              background: isPopular ? '#ffffff' : badgeBg,
-              color:      isPopular ? 'var(--primary)' : badgeTxtDark ? '#1a1200' : '#ffffff',
-            }}
-          >
+        <div className="absolute left-0 right-0 top-[3px] z-10 flex justify-center">
+          <span className={cx(
+            'product-badge-ribbon-inner rounded-b-lg px-4 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] shadow-lg',
+            badgeTxtDark && 'text-dark', popularCls
+          )}>
             {badgeText}
           </span>
         </div>
       )}
 
       {/* ── Header: kategori + nama produk ────────────────────────── */}
-      <div className={`flex-shrink-0 px-6 pb-3 ${hasBadge ? 'pt-9' : 'pt-5'}`}>
-        <div
-          className="mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.2em]"
-          style={{ color: isPopular ? 'rgba(255,255,255,0.6)' : `${accentColor}cc` }}
-        >
+      <div className={cx('flex-shrink-0 px-6 pb-3', hasBadge ? 'pt-9' : 'pt-5')}>
+        <div className={cx('product-category-label mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.2em]', popularCls)}>
           {product.category_name || 'Rank'}
         </div>
         <h3 className="text-[22px] font-black tracking-tight leading-[1.1]">
@@ -121,14 +106,10 @@ export default function ProductCard({ product, index = 0, onBuy }) {
       {pills.length > 0 && (
         <div className="flex-shrink-0 px-6 pb-4 flex flex-wrap gap-1.5">
           {pills.map((f, i) => (
-            <span
-              key={i}
-              className="inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold"
-              style={isPopular
-                ? { borderColor: 'rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.9)' }
-                : { borderColor: `${accentColor}35`, background: `${accentColor}12`, color: 'rgba(255,255,255,0.8)' }
-              }
-            >
+            <span key={i} className={cx(
+              'product-pill inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold',
+              popularCls
+            )}>
               {f}
             </span>
           ))}
@@ -137,34 +118,21 @@ export default function ProductCard({ product, index = 0, onBuy }) {
 
       {/* ── Divider ───────────────────────────────────────────────── */}
       {displayList.length > 0 && (
-        <div
-          className="flex-shrink-0 mx-6 mb-3"
-          style={{ height: 1, background: isPopular ? 'rgba(255,255,255,0.15)' : `${accentColor}25` }}
-        />
+        <div className={cx('product-divider flex-shrink-0 mx-6 mb-3', popularCls)}/>
       )}
 
       {/* ── Scrollable benefit list ────────────────────────────────── */}
       {displayList.length > 0 ? (
         <div className="product-card-scroll flex-1 overflow-y-auto px-6 pb-1">
           {listFeatures.length > 0 && (
-            <div
-              className="mb-2.5 text-[9.5px] font-extrabold uppercase tracking-[0.18em]"
-              style={{ color: isPopular ? 'rgba(255,255,255,0.45)' : `${accentColor}80` }}
-            >
+            <div className={cx('product-features-label mb-2.5 text-[9.5px] font-extrabold uppercase tracking-[0.18em]', popularCls)}>
               {product.name} Features
             </div>
           )}
           <ul className="flex flex-col gap-2.5">
             {displayList.map((f, fi) => (
               <li key={fi} className="flex items-start gap-2.5 text-[12.5px] leading-snug">
-                <span
-                  className="mt-[5px] flex-shrink-0 rounded-[2px]"
-                  style={{
-                    width: 5, height: 5,
-                    background: isPopular ? 'rgba(255,255,255,0.55)' : accentColor,
-                    opacity: 0.85,
-                  }}
-                />
+                <span className={cx('product-bullet mt-[5px] flex-shrink-0 rounded-[2px]', popularCls)}/>
                 <span className="opacity-85">{f}</span>
               </li>
             ))}
@@ -174,29 +142,12 @@ export default function ProductCard({ product, index = 0, onBuy }) {
       ) : (
         /* ── Empty state ─────────────────────────────────────────── */
         <div className="flex-1 flex flex-col justify-center px-6 pb-3">
-          <div
-            className="w-full rounded-2xl flex flex-col items-center justify-center gap-2 py-7"
-            style={{
-              background: isPopular
-                ? 'rgba(255,255,255,0.07)'
-                : `linear-gradient(135deg, ${accentColor}12 0%, ${accentColor}20 100%)`,
-              border: `1px solid ${isPopular ? 'rgba(255,255,255,0.1)' : accentColor + '30'}`,
-            }}
-          >
-            <span
-              className="text-center text-[13px] font-black uppercase tracking-[0.12em] leading-tight px-4"
-              style={{ color: accentColor, opacity: isPopular ? 0.35 : 0.45 }}
-            >
+          <div className={cx('product-empty-box w-full rounded-2xl flex flex-col items-center justify-center gap-2 py-7', popularCls)}>
+            <span className={cx('product-empty-title text-center text-[13px] font-black uppercase tracking-[0.12em] leading-tight px-4', popularCls)}>
               {product.name}
             </span>
-            <span
-              className="rounded-full"
-              style={{ width: 32, height: 2, background: isPopular ? 'rgba(255,255,255,0.25)' : accentColor, opacity: 0.4 }}
-            />
-            <span
-              className="text-[10px] font-semibold uppercase tracking-[0.15em]"
-              style={{ color: 'rgba(255,255,255,0.3)' }}
-            >
+            <span className={cx('product-empty-underline rounded-full', popularCls)}/>
+            <span className="product-empty-category text-[10px] font-semibold uppercase tracking-[0.15em]">
               {product.category_name || 'Item'}
             </span>
           </div>
@@ -204,10 +155,7 @@ export default function ProductCard({ product, index = 0, onBuy }) {
       )}
 
       {/* ── Footer: harga + tombol beli ───────────────────────────── */}
-      <div
-        className="flex-shrink-0 px-6 pt-4 pb-5 flex items-center justify-between gap-3"
-        style={{ borderTop: isPopular ? '1px solid rgba(255,255,255,0.15)' : `1px solid ${accentColor}20` }}
-      >
+      <div className={cx('product-footer-row flex-shrink-0 px-6 pt-4 pb-5 flex items-center justify-between gap-3', popularCls)}>
         <div className="flex flex-col">
           {discount > 0 && (
             <div className="flex items-center gap-2 mb-0.5">
@@ -226,11 +174,10 @@ export default function ProductCard({ product, index = 0, onBuy }) {
 
         <button
           onClick={() => onBuy(product)}
-          className="rounded-full px-6 py-2.5 text-[13px] font-bold tracking-wide transition-transform hover:scale-105 active:scale-95"
-          style={isPopular
-            ? { background: '#fff', color: 'var(--primary)' }
-            : { background: accentColor, color: BADGE_TEXT_DARK.has(product.badge_color) && hasBadge ? '#1a1200' : '#ffffff' }
-          }
+          className={cx(
+            'product-buy-btn rounded-full px-6 py-2.5 text-[13px] font-bold tracking-wide transition-transform hover:scale-105 active:scale-95',
+            badgeTxtDark && hasBadge && 'text-dark', popularCls
+          )}
         >
           Beli
         </button>

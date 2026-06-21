@@ -108,88 +108,86 @@ export default function CartModal({ product, player, onClose }) {
       <div className="fn-modal animate-in">
 
         {/* Top accent bar */}
-        <div style={{height:3,background:'linear-gradient(90deg,var(--primary),var(--primary-light),var(--primary))'}}/>
+        <div className="cart-modal-topbar"/>
 
-        <div style={{padding:'28px 28px 32px'}}>
+        <div className="cart-modal-body">
 
           {/* Header */}
-          <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:20}}>
+          <div className="cart-modal-head">
             <div>
-              <h2 className="font-space" style={{fontSize:20,fontWeight:700,marginBottom:4}}>Checkout</h2>
-              <p style={{color:'var(--text-muted)',fontSize:13}}>Selesaikan pembelian kamu</p>
+              <h2 className="font-space cart-modal-title">Checkout</h2>
+              <p className="cart-modal-subtitle">Selesaikan pembelian kamu</p>
             </div>
-            <button onClick={onClose} disabled={loading} style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.08)',color:'var(--text-muted)',width:32,height:32,borderRadius:8,cursor:loading?'not-allowed':'pointer',fontSize:16,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,opacity:loading?0.5:1}}>
+            <button onClick={onClose} disabled={loading} className="cart-modal-close">
               <Icon name="xmark" size={14}/>
             </button>
           </div>
 
           {/* Product summary */}
-          <div style={{background:'rgba(255,107,0,0.06)',border:'1px solid rgba(255,107,0,0.15)',borderRadius:10,padding:'12px 14px',marginBottom:20,display:'flex',alignItems:'center',gap:12}}>
+          <div className="cart-summary">
             <Icon name="cart-shopping" size={18} color="var(--primary)"/>
-            <div style={{flex:1,minWidth:0}}>
-              <p style={{fontWeight:700,fontSize:14,color:'#fff',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{product.name}</p>
-              {player && <p style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>untuk {player.displayName || player.username}</p>}
+            <div className="cart-summary-info">
+              <p className="cart-summary-name">{product.name}</p>
+              {player && <p className="cart-summary-for">untuk {player.displayName || player.username}</p>}
             </div>
-            <div style={{textAlign:'right',flexShrink:0}}>
+            <div className="cart-summary-price-wrap">
               {discount > 0 && (
-                <p style={{fontSize:11,color:'var(--text-muted)',textDecoration:'line-through'}}>{idr(product.price)}</p>
+                <p className="cart-summary-old-price">{idr(product.price)}</p>
               )}
-              <p style={{fontWeight:800,fontSize:15,color:'var(--primary-light)'}}>{idr(finalPrice)}</p>
+              <p className="cart-summary-price">{idr(finalPrice)}</p>
             </div>
           </div>
 
           {/* Error */}
           {error && (
-            <div style={{background:'rgba(231,76,60,0.08)',border:'1px solid rgba(231,76,60,0.2)',borderRadius:8,padding:'10px 14px',marginBottom:16,display:'flex',alignItems:'flex-start',gap:10}}>
-              <Icon name="circle-exclamation" size={13} color="#e74c3c" style={{marginTop:1,flexShrink:0}}/>
-              <p style={{fontSize:13,color:'#e74c3c',lineHeight:1.5}}>{error}</p>
+            <div className="cart-error">
+              <Icon name="circle-exclamation" size={13} color="#e74c3c" className="cart-error-icon"/>
+              <p className="cart-error-text">{error}</p>
             </div>
           )}
 
           <form onSubmit={handleCheckout}>
             {/* Discord username */}
-            <div style={{marginBottom:16}}>
-              <label style={{display:'block',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:0.5,color:'var(--text-muted)',marginBottom:8}}>
-                <Icon name="discord" size={12} style={{marginRight:5,verticalAlign:-2}}/>
+            <div className="cart-field">
+              <label className="cart-field-label">
+                <Icon name="discord" size={12} className="cart-field-icon"/>
                 Username Discord
               </label>
               <input type="text" value={discordUsername} onChange={e => setDiscordUsername(e.target.value)}
                 placeholder="contoh: nama.discord"
                 className="fn-input" maxLength={40} autoComplete="off" required disabled={loading}/>
-              <p style={{fontSize:11,color:'var(--text-muted)',marginTop:6}}>Dipakai untuk klaim role di Discord server</p>
+              <p className="cart-field-hint">Dipakai untuk klaim role di Discord server</p>
             </div>
 
             {/* Redeem code */}
-            <div style={{marginBottom:20}}>
-              <label style={{display:'block',fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:0.5,color:'var(--text-muted)',marginBottom:8}}>
-                <Icon name="ticket" size={12} style={{marginRight:5,verticalAlign:-2}}/>
+            <div className="cart-field tight">
+              <label className="cart-field-label">
+                <Icon name="ticket" size={12} className="cart-field-icon"/>
                 Kode Redeem (opsional)
               </label>
-              <div style={{display:'flex',gap:8}}>
+              <div className="cart-code-row">
                 <input type="text" value={redeemCode}
                   onChange={e => { setRedeemCode(e.target.value); setApplied(null); setCodeError(''); }}
-                  placeholder="Masukkan kode" className="fn-input" disabled={loading || applying}
-                  style={{flex:1}}/>
+                  placeholder="Masukkan kode" className="fn-input cart-code-input" disabled={loading || applying}/>
                 <button type="button" onClick={handleApplyCode} disabled={loading || applying || !redeemCode.trim() || !!applied}
-                  className="btn-primary-fn" style={{padding:'0 16px',fontSize:13,whiteSpace:'nowrap'}}>
-                  {applying ? <span className="fn-spinner" style={{width:14,height:14,borderWidth:2}}/> : (applied ? 'Terpakai' : 'Terapkan')}
+                  className="btn-primary-fn cart-apply-btn">
+                  {applying ? <span className="fn-spinner fn-spinner-sm"/> : (applied ? 'Terpakai' : 'Terapkan')}
                 </button>
               </div>
-              {codeError && <p style={{fontSize:12,color:'#e74c3c',marginTop:6}}>{codeError}</p>}
-              {applied && <p style={{fontSize:12,color:'#2ecc71',marginTop:6}}>Diskon {idr(applied.discountAmount)} berhasil diterapkan</p>}
+              {codeError && <p className="cart-code-error">{codeError}</p>}
+              {applied && <p className="cart-code-success">Diskon {idr(applied.discountAmount)} berhasil diterapkan</p>}
             </div>
 
             {/* Info strip */}
-            <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid rgba(255,255,255,0.05)',borderRadius:8,padding:'10px 14px',marginBottom:20,fontSize:12,color:'var(--text-muted)',lineHeight:1.5,display:'flex',gap:8}}>
-              <Icon name="lock" size={13} color="var(--primary)" style={{flexShrink:0,marginTop:1}}/>
+            <div className="cart-info-strip">
+              <Icon name="lock" size={13} color="var(--primary)" className="cart-info-icon"/>
               <span>Pembayaran diproses lewat popup resmi Midtrans — QRIS, GoPay, ShopeePay, dan VA Bank tersedia langsung di dalamnya.</span>
             </div>
 
-            <button type="submit" className="btn-primary-fn" disabled={loading || !discordUsername.trim()}
-              style={{width:'100%',justifyContent:'center',padding:'13px',fontSize:14,borderRadius:10}}>
+            <button type="submit" className="btn-primary-fn cart-submit-btn" disabled={loading || !discordUsername.trim()}>
               {loading
-                ? <><span className="fn-spinner" style={{width:16,height:16,borderWidth:2}}/> Memproses...</>
-                : <><Icon name="lock" size={13} style={{marginRight:6}}/> Bayar {idr(finalPrice)}</>
+                ? <><span className="fn-spinner fn-spinner-sm"/> Memproses...</>
+                : <><Icon name="lock" size={13} className="fn-icon-mr"/> Bayar {idr(finalPrice)}</>
               }
             </button>
           </form>
