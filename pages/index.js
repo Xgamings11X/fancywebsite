@@ -88,7 +88,7 @@ export default function HomePage({ settings }) {
   return (
     <>
       <Head>
-        <title>{serverName} | Minecraft Server Indonesia</title>
+        <title>{serverName} — Minecraft Server</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta name="description" content={s.server_description || `Server Minecraft Indonesia — ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
