@@ -1,7 +1,7 @@
 {
   "server_name": "Fancy Network",
-  "server_ip": "fancynet.my.id",
-  "server_description": "Economy Semi RPG Server terbaik di Indonesia!",
+  "server_ip": "play.fancynet.my.id",
+  "server_description": "Fancy Network — Economy & RPG Survival Server dengan Keep Inventory. Java & Bedrock 1.20+. Gabung sekarang di play.fancynet.my.id:19026",
   "discord_url": "",
   "vote_url": "",
   "tiktok_url": "",
@@ -16,7 +16,7 @@
   "bg_desktop": "",
   "bg_mobile": "",
   "footer_text": "© 2026 Fancy Network. All rights reserved.",
-  "mc_status_url": "https://api.mcsrvstat.us/2/fancynet.my.id",
+  "mc_status_url": "https://api.mcsrvstat.us/3/play.fancynet.my.id:19026",
   "plugin_http_url": "",
   "plugin_server_key": "",
   "webhook_transaction_url": "",
