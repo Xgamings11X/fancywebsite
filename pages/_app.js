@@ -1,24 +1,54 @@
 import '../styles/globals.css';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Toaster } from 'react-hot-toast';
 
-function initScrollObserver() {
-  const els = document.querySelectorAll('[data-anim]');
-  if (!els.length) return () => {};
+/**
+ * Scroll-reveal observer — dibuat SEKALI untuk seluruh siklus hidup app.
+ * PERF FIX: versi sebelumnya membuat IntersectionObserver baru + querySelectorAll
+ * ulang di SETIAP render React (useEffect tanpa dependency array), yang berarti
+ * observer menumpuk dan DOM di-scan ulang terus-menerus tanpa alasan yang valid.
+ * Sekarang: 1 IntersectionObserver dipakai seumur hidup app, dan MutationObserver
+ * menangkap elemen [data-anim] baru yang dirender belakangan (mis. dari fetch async)
+ * tanpa perlu rebuild observer dari nol.
+ */
+function createScrollRevealObserver() {
   const io = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('anim-visible');
-          io.unobserve(entry.target);
-        }
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        el.classList.add('anim-visible');
+        io.unobserve(el);
+        // will-change hanya aktif selama transisi berlangsung, lalu dilepas.
+        // Mencegah elemen yang sudah selesai animasi tetap "menempel" di compositor
+        // layer GPU selamanya — penting untuk halaman panjang dengan banyak section.
+        el.style.willChange = 'opacity, transform';
+        const clearWillChange = () => { el.style.willChange = 'auto'; };
+        el.addEventListener('transitionend', clearWillChange, { once: true });
+        setTimeout(clearWillChange, 1200); // fallback jika transitionend tak terpicu
       });
     },
     { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
   );
-  els.forEach((el) => io.observe(el));
-  return () => io.disconnect();
+
+  const observeAll = (root) => {
+    root.querySelectorAll('[data-anim]:not(.anim-visible)').forEach((el) => io.observe(el));
+  };
+  observeAll(document);
+
+  const mo = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      m.addedNodes.forEach((node) => {
+        if (node.nodeType !== 1) return;
+        if (node.matches?.('[data-anim]')) io.observe(node);
+        node.querySelectorAll?.('[data-anim]:not(.anim-visible)').forEach((el) => io.observe(el));
+      });
+    }
+  });
+  mo.observe(document.body, { childList: true, subtree: true });
+
+  return () => { io.disconnect(); mo.disconnect(); };
 }
 
 export default function App({ Component, pageProps }) {
@@ -27,9 +57,6 @@ export default function App({ Component, pageProps }) {
   const [bgMobile,  setBgMobile]  = useState('');
 
   // ── Load background settings once on mount ──
-  // FIX: Sebelumnya fetch ke /api/admin/settings yang butuh admin_token
-  // → Error 401 di konsol untuk semua user publik
-  // → Diganti ke /api/store/settings (endpoint publik read-only)
   useEffect(() => {
     fetch('/api/store/settings', { credentials: 'same-origin' })
       .then(r => { if (!r.ok) return null; return r.json(); })
@@ -39,16 +66,16 @@ export default function App({ Component, pageProps }) {
           setBgMobile(d.settings.bg_mobile  || '');
         }
       })
-      .catch(() => {}); // gagal diam-diam, background tidak kritis
+      .catch(() => {});
   }, []);
 
+  // ── One-time setup: page-transition overlay, scroll progress bar, scroll-reveal observer ──
+  // Dependency array kosong = dibuat sekali untuk seluruh app, BUKAN per render/per route.
   useEffect(() => {
-    // ── Page transition overlay ──
     const overlay = document.createElement('div');
     overlay.id = 'page-transition-overlay';
     document.body.appendChild(overlay);
 
-    // ── Scroll progress bar ──
     const bar = document.createElement('div');
     bar.id = 'scroll-progress';
     document.body.appendChild(bar);
@@ -61,42 +88,45 @@ export default function App({ Component, pageProps }) {
     };
     window.addEventListener('scroll', onScroll, { passive: true });
 
-    // ── Route change transitions ──
+    const cleanupObserver = createScrollRevealObserver();
+
+    // First paint hero entrance (tidak ada routeChangeComplete saat initial load)
+    const initialTimer = setTimeout(() => document.body.classList.add('page-loaded'), 80);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cleanupObserver();
+      clearTimeout(initialTimer);
+      overlay.remove();
+      bar.remove();
+    };
+  }, []);
+
+  // ── Route change transitions — hanya subscribe/unsubscribe event, tidak rebuild DOM/observer ──
+  useEffect(() => {
+    const overlay = document.getElementById('page-transition-overlay');
+
     const handleStart = () => {
-      overlay.classList.add('transitioning');
+      overlay?.classList.add('transitioning');
+      // Lepas page-loaded supaya hero halaman tujuan mulai dari state awal (opacity 0)
+      document.body.classList.remove('page-loaded');
     };
     const handleDone = () => {
-      overlay.classList.remove('transitioning');
-      // reset scroll obs after navigation
-      setTimeout(() => initScrollObserver(), 100);
+      overlay?.classList.remove('transitioning');
+      setTimeout(() => document.body.classList.add('page-loaded'), 80);
     };
     router.events.on('routeChangeStart',    handleStart);
     router.events.on('routeChangeComplete', handleDone);
     router.events.on('routeChangeError',    handleDone);
-
-    // Initial scroll observer
-    const cleanup = initScrollObserver();
-
     return () => {
       router.events.off('routeChangeStart',    handleStart);
       router.events.off('routeChangeComplete', handleDone);
       router.events.off('routeChangeError',    handleDone);
-      window.removeEventListener('scroll',    onScroll);
-      cleanup();
-      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
-      if (bar.parentNode)     bar.parentNode.removeChild(bar);
     };
   }, [router]);
 
-  // Re-run observer on every render (catches dynamic content)
-  useEffect(() => {
-    const cleanup = initScrollObserver();
-    return cleanup;
-  });
-
   return (
     <>
-      {/* Dynamic background from admin settings */}
       {(bgDesktop || bgMobile) && (
         <style>{`
           body::before {
