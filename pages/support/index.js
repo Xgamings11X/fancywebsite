@@ -213,7 +213,7 @@ export default function SupportPage({ settings }) {
   return (
     <>
       <Head>
-        <title>Support — {serverName}</title>
+        <title>{`Support — ${serverName}`}</title>
         <meta name="viewport" content="width=device-width,initial-scale=1"/>
         <meta name="description" content={`Support Center ${serverName}`}/>
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
