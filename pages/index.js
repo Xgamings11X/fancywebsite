@@ -88,9 +88,24 @@ export default function HomePage({ settings }) {
   return (
     <>
       <Head>
-        <title>{serverName} — Minecraft Server</title>
+        <title>{`${serverName} | Server Minecraft Indonesia`}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <meta name="description" content={s.server_description || `Server Minecraft Indonesia — ${serverName}`}/>
+        <meta name="description" content={s.server_description || `${serverName} — Server Minecraft Survival Economy. Java & Bedrock. Bergabung sekarang di ${serverIp}`}/>
+
+        {/* OpenGraph — dipakai Discord, WhatsApp, Telegram, dsb untuk preview embed */}
+        <meta property="og:type"        content="website"/>
+        <meta property="og:site_name"   content={serverName}/>
+        <meta property="og:title"       content={`${serverName} | Server Minecraft Indonesia`}/>
+        <meta property="og:description" content={s.server_description || `Server Minecraft Survival Economy. Java & Bedrock. Bergabung sekarang di ${serverIp}`}/>
+        <meta property="og:url"         content={process.env.NEXT_PUBLIC_BASE_URL || 'https://fancynet.my.id'}/>
+        {s.logo_url && <meta property="og:image" content={s.logo_url}/>}
+
+        {/* Twitter Card — juga dipakai Discord untuk thumbnail */}
+        <meta name="twitter:card"        content="summary"/>
+        <meta name="twitter:title"       content={`${serverName} | Server Minecraft Indonesia`}/>
+        <meta name="twitter:description" content={s.server_description || `Server Minecraft Survival Economy. Java & Bedrock. Bergabung sekarang di ${serverIp}`}/>
+        {s.logo_url && <meta name="twitter:image" content={s.logo_url}/>}
+
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
