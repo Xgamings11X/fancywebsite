@@ -146,16 +146,18 @@ export default function App({ Component, pageProps }) {
         position="bottom-center"
         toastOptions={{
           style: {
-            background: '#0f0f14',
-            color: '#f4f4f6',
-            border: '1px solid rgba(255,107,0,0.2)',
-            borderRadius: '30px',
-            fontFamily: 'Plus Jakarta Sans, sans-serif',
+            background: '#ffffff',
+            color: '#101114',
+            border: '1px solid #dce2ea',
+            borderRadius: '14px',
+            boxShadow: '0 16px 40px rgba(16,17,20,0.14)',
+            fontFamily: 'Manrope, sans-serif',
             fontSize: 13,
-            padding: '10px 20px',
+            fontWeight: 700,
+            padding: '12px 16px',
           },
-          success: { iconTheme: { primary: '#2ecc71', secondary: '#0f0f14' } },
-          error:   { iconTheme: { primary: '#e74c3c', secondary: '#0f0f14' } },
+          success: { iconTheme: { primary: '#168a52', secondary: '#ffffff' } },
+          error:   { iconTheme: { primary: '#e03131', secondary: '#ffffff' } },
         }}
       />
     </>
