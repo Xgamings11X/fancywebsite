@@ -682,7 +682,9 @@ export default function AdminPanel() {
                     <div className="adm-settings-fields-grid">
                       {[
                         ['server_name','Nama Server','Fancy Network'],
-                        ['server_ip','IP Server','play.example.com'],
+                        ['server_ip','IP Java','play.example.com'],
+                        ['bedrock_ip','IP Bedrock','play.example.com'],
+                        ['bedrock_port','Port Bedrock','19132'],
                         ['logo_text','Teks Logo','Fancy Network'],
                         ['hero_title','Judul Hero',''],
                       ].map(([key,lbl,ph])=>(
@@ -692,6 +694,12 @@ export default function AdminPanel() {
                             onChange={e=>setSettings(s=>({...s,[key]:e.target.value}))}/>
                         </div>
                       ))}
+                      <div className="adm-settings-field-full">
+                        <label className="adm-settings-field-label">URL API Status Minecraft</label>
+                        <input className="admin-input" value={settings.mc_status_url||''} placeholder="https://api.mcsrvstat.us/3/play.example.com:19132"
+                          onChange={e=>setSettings(s=>({...s,mc_status_url:e.target.value}))}/>
+                        <p className="adm-field-hint">Dipakai untuk jumlah pemain dan indikator online di halaman utama.</p>
+                      </div>
                       <div className="adm-settings-field-full">
                         <label className="adm-settings-field-label">Subtitle Hero</label>
                         <input className="admin-input" value={settings.hero_subtitle||''} placeholder="Deskripsi singkat server..."
