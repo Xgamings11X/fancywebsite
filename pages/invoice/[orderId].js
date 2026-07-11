@@ -74,6 +74,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
   const [copied,      setCopied]      = useState(false);
   const [liveOrder,   setLiveOrder]   = useState(initialOrder);
   const pollRef = useRef(null);
+  const orderId = initialOrder.order_id;
 
   const statusKey = liveOrder?.payment_status || 'pending';
   const cfg       = STATUS_CFG[statusKey] || STATUS_CFG.pending;
@@ -95,13 +96,13 @@ export default function InvoicePage({ order: initialOrder, settings }) {
   useEffect(() => {
     const checkNow = async () => {
       try {
-        const res  = await fetch('/api/orders/verify/'+initialOrder.order_id, { credentials:'include' });
+        const res  = await fetch('/api/orders/verify/'+orderId, { credentials:'include' });
         const data = await res.json();
         if (data?.order) setLiveOrder(data.order);
       } catch {}
     };
     checkNow();
-  }, []);
+  }, [orderId]);
 
   // ── Polling status ──────────────────────────────────────────────
   useEffect(() => {
@@ -110,7 +111,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
     pollRef.current = setInterval(async () => {
       attempts++;
       try {
-        const res  = await fetch('/api/orders/verify/'+initialOrder.order_id, { credentials:'include' });
+        const res  = await fetch('/api/orders/verify/'+orderId, { credentials:'include' });
         const data = await res.json();
         if (data?.order) {
           setLiveOrder(data.order);
@@ -121,7 +122,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
       } catch {}
     }, 3000);
     return () => clearInterval(pollRef.current);
-  }, []);
+  }, [isDone, orderId]);
 
   // ── Sudah bayar? (ref, supaya nilainya langsung sinkron tanpa nunggu
   // render — dipakai di bawah biar event yang lepas tembak (unload/route
@@ -146,13 +147,13 @@ export default function InvoicePage({ order: initialOrder, settings }) {
         fetch('/api/orders/cancel', {
           method:'POST', credentials:'include',
           headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ orderId: initialOrder.order_id }),
+          body: JSON.stringify({ orderId }),
         }).catch(()=>{});
       }
     };
     router.events.on('routeChangeStart', onRoute);
     return () => router.events.off('routeChangeStart', onRoute);
-  }, [isPending]);
+  }, [isPending, orderId, router.events]);
 
   // ── Buka popup Midtrans Snap ──────────────────────────────────────
   const [payingNow, setPayingNow] = useState(false);
@@ -173,7 +174,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
           // Refresh status invoice di tempat — tidak perlu redirect, kita
           // memang sudah di halaman invoice-nya — supaya langsung berubah
           // jadi "Pembayaran Berhasil" tanpa nunggu polling 3 detik berikutnya.
-          fetch('/api/orders/verify/'+initialOrder.order_id,{credentials:'include'})
+          fetch('/api/orders/verify/'+orderId,{credentials:'include'})
             .then(r=>r.json()).then(d=>d?.order&&setLiveOrder(d.order)).catch(()=>{});
         },
         onPending: () => { toast('Selesaikan pembayaran kamu di popup.', { icon: '⏳' }); },
@@ -188,7 +189,7 @@ export default function InvoicePage({ order: initialOrder, settings }) {
       toast.error(e.message || 'Gagal membuka popup pembayaran.');
     }
     setPayingNow(false);
-  }, [liveOrder?.midtrans_snap_token, initialOrder.order_id]);
+  }, [liveOrder?.midtrans_snap_token, orderId]);
 
   // ── Autopay: baru saja dibuat dari checkout (CartModal → ?autopay=1) ──
   // Halaman invoice (status: pending) sudah tampil duluan, BARU popup Midtrans
