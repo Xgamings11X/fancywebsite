@@ -1,245 +1,378 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import FancyNav from '../components/FancyNav';
-import LogoImage, { useTransparentLogo } from '../components/LogoImage';
 import toast from 'react-hot-toast';
-import Icon from '../components/Icon';
+import FancyNav from '../components/FancyNav';
 import FancyFooter from '../components/FancyFooter';
+import LogoImage, { useTransparentLogo } from '../components/LogoImage';
+import Icon from '../components/Icon';
 
-// Landing page = rute paling sering diakses; modal login HANYA perlu
-// dimuat setelah user benar-benar klik tombol login.
 const LoginModal = dynamic(() => import('../components/LoginModal'), { ssr: false });
 
 const FEATURES = [
-  { id:'anticheat', icon:'shield-halved', color:'#e67e22', title:'Anti-Cheat Ketat',  desc:'Sistem perlindungan berlapis yang menjamin kenyamanan bermain tanpa gangguan cheater.' },
-  { id:'community',  icon:'users',         color:'#3498db', title:'Komunitas Solid',   desc:'Bergabunglah dengan ribuan pemain aktif di Discord dan game room yang ramah dan interaktif.' },
-  { id:'latency',     icon:'bolt',          color:'#2ecc71', title:'Low Latency',       desc:'Infrastruktur server terbaik khusus dioptimalkan untuk performa ping super rendah.' },
-  { id:'reward',      icon:'trophy',        color:'#9b59b6', title:'Event & Reward',    desc:'Event mingguan, daily reward, dan hadiah menarik menanti pemain aktif setiap harinya.' },
+  { id:'anticheat', icon:'shield-halved', tone:'orange', title:'Proteksi Anti-Cheat', desc:'Proteksi berlapis dan moderasi aktif menjaga permainan tetap adil tanpa mengganggu pemain normal.' },
+  { id:'community', icon:'users', tone:'blue', title:'Komunitas Aktif', desc:'Temukan teman baru, party, guild, dan bantuan cepat dari komunitas Indonesia yang ramah.' },
+  { id:'latency', icon:'bolt', tone:'green', title:'Performa Stabil', desc:'Konfigurasi server dan jaringan dioptimalkan untuk TPS stabil serta latensi yang nyaman.' },
+  { id:'reward', icon:'trophy', tone:'purple', title:'Event & Reward', desc:'Daily reward, event komunitas, dan hadiah rutin membuat progres bermain selalu terasa menarik.' },
 ];
+
+const SAFE_PROTOCOLS = new Set(['http:', 'https:']);
+
+function safeExternalUrl(value) {
+  if (!value) return '';
+  try {
+    const url = new URL(value);
+    return SAFE_PROTOCOLS.has(url.protocol) ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
+async function writeClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  textarea.style.pointerEvents = 'none';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) throw new Error('Clipboard tidak tersedia');
+}
 
 export async function getServerSideProps() {
   try {
     const { SettingsAsync } = await import('../lib/redis.js');
     return { props: { settings: await SettingsAsync.get() } };
-  } catch { return { props: { settings: {} } }; }
+  } catch {
+    return { props: { settings: {} } };
+  }
 }
 
 export default function HomePage({ settings }) {
-  const s          = settings || {};
+  const s = useMemo(() => settings || {}, [settings]);
   const serverName = s.server_name || 'Fancy Network';
-  const serverIp   = s.server_ip   || 'play.fancynet.my.id';
+  const javaIp = s.server_ip || 'play.fancynet.my.id';
+  const bedrockIp = s.bedrock_ip || javaIp;
+  const bedrockPort = String(s.bedrock_port || '19026');
+  const heroTitle = s.hero_title || `Mainkan petualangan terbaikmu di ${serverName}`;
+  const heroSubtitle = s.hero_subtitle || s.server_description || 'Server Minecraft Indonesia dengan Economy, RPG, komunitas aktif, dan progres yang selalu menarik.';
   const { src: logoSrc } = useTransparentLogo();
 
-  const [player,    setPlayer]    = useState(null);
+  const [player, setPlayer] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
-  const [copied,    setCopied]    = useState('');
-  const [status,    setStatus]    = useState(null);
+  const [copied, setCopied] = useState('');
+  const [status, setStatus] = useState({ loading:true, online:false, players:0, maxPlayers:0, version:'' });
+  const copiedTimerRef = useRef(null);
 
-  useEffect(() => {
-    try { const r=localStorage.getItem('mc_player'); if(r) setPlayer(JSON.parse(r)); } catch{}
-    fetch('/api/server/status').then(r=>r.json()).then(setStatus).catch(()=>{});
+  const loadStatus = useCallback(async (signal) => {
+    try {
+      const response = await fetch('/api/server/status', {
+        signal,
+        credentials:'same-origin',
+        headers:{ Accept:'application/json' },
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      setStatus({
+        loading:false,
+        online:data.online === true,
+        players:Number(data.players) || 0,
+        maxPlayers:Number(data.maxPlayers) || 0,
+        version:typeof data.version === 'string' ? data.version : '',
+      });
+    } catch (error) {
+      if (error?.name === 'AbortError') return;
+      setStatus(current => ({ ...current, loading:false, online:false }));
+    }
   }, []);
 
-  const copyIP = (text, label) => {
-    navigator.clipboard?.writeText(text).catch(()=>{});
-    setCopied(label);
-    toast.success(`${label} "${text}" berhasil disalin!`);
-    setTimeout(() => setCopied(''), 2500);
-  };
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
 
-  const handleLogout = async () => {
-    await fetch('/api/auth/logout', { method:'POST', credentials:'include' });
-    setPlayer(null);
-    localStorage.removeItem('mc_player');
-    toast.success('Berhasil keluar');
-  };
+    try {
+      const cached = localStorage.getItem('mc_player');
+      if (cached) setPlayer(JSON.parse(cached));
+    } catch {
+      localStorage.removeItem('mc_player');
+    }
 
-  const handleLoginSuccess = (p) => {
-    setPlayer(p);
-    localStorage.setItem('mc_player', JSON.stringify(p));
+    fetch('/api/auth/me', { credentials:'include', signal:controller.signal })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (!active) return;
+        if (data?.success && data.player) {
+          setPlayer(data.player);
+          localStorage.setItem('mc_player', JSON.stringify(data.player));
+        } else {
+          setPlayer(null);
+          localStorage.removeItem('mc_player');
+          localStorage.removeItem('mc_token');
+        }
+      })
+      .catch(error => {
+        if (error?.name !== 'AbortError') {
+          // Tetap gunakan cache ketika koneksi sementara bermasalah.
+        }
+      });
+
+    loadStatus(controller.signal);
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') loadStatus();
+    }, 45_000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') loadStatus();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
+    };
+  }, [loadStatus]);
+
+  const copyAddress = useCallback(async (text, label) => {
+    try {
+      await writeClipboard(text);
+      setCopied(label);
+      toast.success(`${label} berhasil disalin`);
+      if (copiedTimerRef.current) window.clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = window.setTimeout(() => setCopied(''), 2200);
+    } catch {
+      toast.error(`Gagal menyalin ${label}. Salin secara manual: ${text}`);
+    }
+  }, []);
+
+  const handleLogout = useCallback(async () => {
+    try {
+      const response = await fetch('/api/auth/logout', { method:'POST', credentials:'include' });
+      if (!response.ok) throw new Error('Logout gagal');
+      toast.success('Berhasil keluar');
+    } catch {
+      toast.error('Sesi lokal dibersihkan, tetapi server tidak dapat dihubungi');
+    } finally {
+      setPlayer(null);
+      localStorage.removeItem('mc_player');
+      localStorage.removeItem('mc_token');
+    }
+  }, []);
+
+  const handleLoginSuccess = useCallback((nextPlayer) => {
+    setPlayer(nextPlayer);
+    try { localStorage.setItem('mc_player', JSON.stringify(nextPlayer)); } catch {}
     setShowLogin(false);
-  };
+  }, []);
 
-  const socials = [
-    (s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL)    && { href: s.vote_url    || process.env.NEXT_PUBLIC_VOTE_URL,    cls:'btn-vote',    icon:'star',     label:'Vote'    },
-    (s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL) && { href: s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL, cls:'btn-discord', icon:'discord',  label:'Discord', brand:true },
-    (s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL)&& { href: s.whatsapp_url|| process.env.NEXT_PUBLIC_WHATSAPP_URL,cls:'btn-wa',      icon:'whatsapp', label:'Whatsapp',brand:true },
-    (s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL)  && { href: s.tiktok_url  || process.env.NEXT_PUBLIC_TIKTOK_URL,  cls:'btn-tiktok',  icon:'tiktok',   label:'TikTok',  brand:true },
-    (s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL) && { href: s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL, cls:'btn-ig',      icon:'youtube',  label:'YouTube', brand:true },
-  ].filter(Boolean);
+  const socials = useMemo(() => [
+    { href:safeExternalUrl(s.vote_url || process.env.NEXT_PUBLIC_VOTE_URL), icon:'star', label:'Vote', cls:'is-vote' },
+    { href:safeExternalUrl(s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL), icon:'discord', label:'Discord', cls:'is-discord' },
+    { href:safeExternalUrl(s.whatsapp_url || process.env.NEXT_PUBLIC_WHATSAPP_URL), icon:'whatsapp', label:'WhatsApp', cls:'is-whatsapp' },
+    { href:safeExternalUrl(s.tiktok_url || process.env.NEXT_PUBLIC_TIKTOK_URL), icon:'tiktok', label:'TikTok', cls:'is-tiktok' },
+    { href:safeExternalUrl(s.youtube_url || process.env.NEXT_PUBLIC_YOUTUBE_URL), icon:'youtube', label:'YouTube', cls:'is-youtube' },
+  ].filter(item => item.href), [s]);
 
-  const famousApplyUrl = s.discord_url || process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || process.env.NEXT_PUBLIC_DISCORD_URL || '#';
-  const playerCount = status?.online ? status.players : (s.players_online || 0);
+  const famousApplyUrl = safeExternalUrl(
+    process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL
+  );
 
-  const ipCards = [
-    {label:'Java Edition IP',    addr:serverIp, icon:'computer',      copy:serverIp, copyLabel:'IP Java'},
-    {label:'Bedrock Edition IP', addr:serverIp, icon:'mobile',        copy:serverIp, copyLabel:'IP Bedrock'},
-    {label:'Bedrock Port',       addr:'19026',  icon:'network-wired', copy:'19026',  copyLabel:'Port Bedrock'},
-  ];
+  const playerCount = status.online ? status.players : Number(s.players_online) || 0;
+  const maxPlayers = status.maxPlayers || 0;
+  const population = maxPlayers > 0 ? Math.min(100, Math.round((playerCount / maxPlayers) * 100)) : 0;
+  const statusText = status.loading ? 'Memeriksa server' : status.online ? 'Server online' : 'Server offline';
 
-  const statsBar = [
-    {val:'24/7', sub:'Server Online'},
-    {val:'JAVA', sub:'+ Bedrock'},
-    {val:'FREE', sub:'Untuk Semua'},
-    {val:'ID',   sub:'Community'},
+  const endpointCards = [
+    { key:'java', label:'Java Edition', value:javaIp, icon:'computer', copy:javaIp },
+    { key:'bedrock', label:'Bedrock Edition', value:`${bedrockIp}:${bedrockPort}`, icon:'mobile', copy:`${bedrockIp}:${bedrockPort}` },
   ];
 
   return (
     <>
       <Head>
-        <title>{`${serverName} | Server Minecraft Indonesia`}</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <meta name="description" content={s.server_description || `${serverName} — Server Minecraft Survival Economy. Java & Bedrock. Bergabung sekarang di ${serverIp}`}/>
-
-        {/* OpenGraph — dipakai Discord, WhatsApp, Telegram, dsb untuk preview embed */}
-        <meta property="og:type"        content="website"/>
-        <meta property="og:site_name"   content={serverName}/>
-        <meta property="og:title"       content={`${serverName} | Server Minecraft Indonesia`}/>
-        <meta property="og:description" content={s.server_description || `Server Minecraft Survival Economy. Java & Bedrock. Bergabung sekarang di ${serverIp}`}/>
-        <meta property="og:url"         content={process.env.NEXT_PUBLIC_BASE_URL || 'https://fancynet.my.id'}/>
-        {s.logo_url && <meta property="og:image" content={s.logo_url}/>}
-
-        {/* Twitter Card — juga dipakai Discord untuk thumbnail */}
-        <meta name="twitter:card"        content="summary"/>
-        <meta name="twitter:title"       content={`${serverName} | Server Minecraft Indonesia`}/>
-        <meta name="twitter:description" content={s.server_description || `Server Minecraft Survival Economy. Java & Bedrock. Bergabung sekarang di ${serverIp}`}/>
-        {s.logo_url && <meta name="twitter:image" content={s.logo_url}/>}
-
+        <title>{`${serverName} | Minecraft Server Indonesia`}</title>
+        <meta name="description" content={s.server_description || `${serverName} — Minecraft Server Indonesia Java & Bedrock. Bergabung di ${javaIp}.`}/>
+        <meta property="og:type" content="website"/>
+        <meta property="og:site_name" content={serverName}/>
+        <meta property="og:title" content={`${serverName} | Minecraft Server Indonesia`}/>
+        <meta property="og:description" content={s.server_description || `Main bersama komunitas ${serverName}. Java & Bedrock tersedia.`}/>
+        <meta property="og:url" content={process.env.NEXT_PUBLIC_BASE_URL || 'https://fancynet.my.id'}/>
+        {s.logo_url && <meta property="og:image" content={s.logo_url}/>} 
+        <meta name="twitter:card" content={s.logo_url ? 'summary_large_image' : 'summary'}/>
+        <meta name="twitter:title" content={`${serverName} | Minecraft Server Indonesia`}/>
+        <meta name="twitter:description" content={s.server_description || `Main bersama komunitas ${serverName}.`}/>
+        {s.logo_url && <meta name="twitter:image" content={s.logo_url}/>} 
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
+      <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
-      {/* HERO */}
-      <header className="hero-header">
+      <main className="landing-page">
+        <header className="landing-hero">
+          <div className="landing-grid-glow" aria-hidden="true"/>
+          <div className="landing-orb landing-orb-a" aria-hidden="true"/>
+          <div className="landing-orb landing-orb-b" aria-hidden="true"/>
 
-        {/* Floating orbs ambient */}
-        <div className="hero-orbs">
-          <div className="hero-orb hero-orb-1"/>
-          <div className="hero-orb hero-orb-2"/>
-          <div className="hero-orb hero-orb-3"/>
-        </div>
-
-        {/* Logo */}
-        <div className="anim-hero anim-d1 hero-logo-wrap">
-          {s.logo_url
-            ? <img src={s.logo_url} alt={serverName} className="hero-logo-img"/>
-            : <LogoImage alt={serverName} className="hero-logo-fallback"/>
-          }
-        </div>
-
-        <span className="tagline-pill anim-hero-up anim-d2 hero-tagline">SERVER ECONOMY | JAVA &amp; BEDROCK</span>
-
-        <h1 className="font-space anim-hero anim-d3 hero-title">
-          {s.hero_title || <>Selamat <span className="hero-title-accent">Datang</span></>}
-        </h1>
-
-        <p className="anim-hero-up anim-d4 hero-desc">
-          {s.server_description || 'Server Minecraft Indonesia dengan komunitas solid, event seru, dan dunia tanpa batas.'}
-        </p>
-
-        {/* Triple IP Grid */}
-        <div className="anim-hero-up anim-d5 hero-ip-grid">
-          {ipCards.map((item,i) => (
-            <div key={i} className="ip-card" onClick={()=>copyIP(item.copy, item.copyLabel)}>
-              <span className="ip-card-copied-badge">
-                {copied===item.copyLabel ? '✓ Disalin' : 'Salin'}
-              </span>
-              <div className="ip-card-icon">
-                <Icon name={item.icon} size={18}/>
+          <div className="landing-hero-grid">
+            <section className="landing-hero-copy">
+              <div className="landing-eyebrow anim-hero-up anim-d1">
+                <span className={`landing-status-dot ${status.online ? 'is-online' : 'is-offline'}`}/>
+                {statusText}
+                {status.version && <span className="landing-version">{status.version}</span>}
               </div>
-              <div className="ip-card-text-wrap">
-                <span className="ip-card-label">{item.label}</span>
-                <span className="ip-card-value">{item.addr}</span>
+
+              <h1 className="font-space landing-title anim-hero anim-d2">{heroTitle}</h1>
+              <p className="landing-description anim-hero-up anim-d3">{heroSubtitle}</p>
+
+              <div className="landing-actions anim-hero-up anim-d4">
+                <button type="button" className="landing-primary-action" onClick={() => copyAddress(javaIp, 'IP Java')}>
+                  <Icon name={copied === 'IP Java' ? 'circle-check' : 'copy'} size={17}/>
+                  <span>{copied === 'IP Java' ? 'IP berhasil disalin' : 'Salin IP & Main'}</span>
+                </button>
+                <Link href="/store" className="landing-secondary-action">
+                  Lihat Store <Icon name="arrow-right" size={16}/>
+                </Link>
+              </div>
+
+              <div className="landing-mini-stats anim-hero-up anim-d5">
+                <div><strong>{playerCount}</strong><span>Pemain online</span></div>
+                <div><strong>24/7</strong><span>Server aktif</span></div>
+                <div><strong>Java</strong><span>&amp; Bedrock</span></div>
+              </div>
+            </section>
+
+            <aside className="server-console anim-hero anim-d3" aria-label="Informasi koneksi server">
+              <div className="server-console-top">
+                <div className="server-console-brand">
+                  <div className="server-console-logo">
+                    {s.logo_url
+                      ? <img src={s.logo_url} alt=""/>
+                      : <LogoImage alt="" className="server-console-logo-fallback"/>}
+                  </div>
+                  <div>
+                    <span>WELCOME TO</span>
+                    <strong className="font-space">{serverName}</strong>
+                  </div>
+                </div>
+                <span className={`server-health-badge ${status.online ? 'is-online' : 'is-offline'}`}>
+                  {status.loading ? 'CHECKING' : status.online ? 'ONLINE' : 'OFFLINE'}
+                </span>
+              </div>
+
+              <div className="server-console-screen">
+                <div className="server-population-head">
+                  <div>
+                    <span>LIVE POPULATION</span>
+                    <strong>{playerCount}{maxPlayers ? ` / ${maxPlayers}` : ''}</strong>
+                  </div>
+                  <Icon name="users" size={20}/>
+                </div>
+                <div className="server-population-track" aria-label={`Kapasitas server ${population}%`}>
+                  <span style={{ width:`${population}%` }}/>
+                </div>
+              </div>
+
+              <div className="server-endpoints">
+                {endpointCards.map(item => (
+                  <button key={item.key} type="button" className="server-endpoint" onClick={() => copyAddress(item.copy, item.label)}>
+                    <span className="server-endpoint-icon"><Icon name={item.icon} size={18}/></span>
+                    <span className="server-endpoint-copy">
+                      <small>{item.label}</small>
+                      <strong>{item.value}</strong>
+                    </span>
+                    <span className="server-endpoint-action">
+                      <Icon name={copied === item.label ? 'circle-check' : 'copy'} size={16}/>
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              <p className="server-console-hint">
+                <Icon name="circle-info" size={14}/> Klik alamat untuk menyalin otomatis
+              </p>
+            </aside>
+          </div>
+
+          {socials.length > 0 && (
+            <div className="landing-socials anim-hero-up anim-d6" aria-label="Media sosial">
+              <span>Temukan kami</span>
+              <div>
+                {socials.map(item => (
+                  <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" className={`landing-social-link ${item.cls}`} aria-label={item.label}>
+                    <Icon name={item.icon} size={16}/><span>{item.label}</span>
+                  </a>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </header>
 
-        {/* Status pill */}
-        <div className="status-pill anim-hero-up anim-d5 hero-status-pill">
-          <Icon name="circle" size={8} className="anim-pulse-dot"/>
-          <span id="player-count">{playerCount}</span> Players Online
-        </div>
+        <section className="landing-section landing-features">
+          <div className="landing-section-heading" data-anim="fade-up">
+            <span>ALASAN UNTUK BERGABUNG</span>
+            <h2 className="font-space">Dibangun untuk pengalaman bermain yang lebih serius</h2>
+            <p>Bukan sekadar tempat bermain. Setiap sistem dirancang agar progres, komunitas, dan kompetisi tetap seimbang.</p>
+          </div>
 
-        {/* Social buttons */}
-        {socials.length > 0 && (
-          <div className="anim-hero-up anim-d6 hero-social-row">
-            {socials.map((x,i) => (
-              <a key={i} href={x.href} target="_blank" rel="noopener noreferrer" className={`social-btn ${x.cls}`}>
-                <Icon name={x.icon} size={16}/> {x.label}
-              </a>
+          <div className="landing-feature-grid">
+            {FEATURES.map((feature, index) => (
+              <article key={feature.id} className={`landing-feature-card tone-${feature.tone}`} data-anim="fade-up" data-delay={String(index + 1)}>
+                <div className="landing-feature-number">0{index + 1}</div>
+                <div className="landing-feature-icon"><Icon name={feature.icon} size={22}/></div>
+                <h3 className="font-space">{feature.title}</h3>
+                <p>{feature.desc}</p>
+              </article>
             ))}
           </div>
-        )}
-      </header>
+        </section>
 
-      {/* STATS BAR */}
-      <section className="stats-bar" data-anim="fade-in">
-        <div className="hero-stats-grid">
-          {statsBar.map((st,i) => (
-            <div key={i} data-anim="scale-pop" data-delay={String(i+1)}>
-              <h3 className="font-space hero-stat-value">{st.val}</h3>
-              <p className="hero-stat-label">{st.sub}</p>
+        <section className="landing-section landing-creator" data-anim="fade-up">
+          <div className="landing-creator-copy">
+            <span className="landing-section-label">CREATOR PROGRAM</span>
+            <h2 className="font-space">Bangun komunitasmu bersama {serverName}</h2>
+            <p>Kreator YouTube dan TikTok dapat memperoleh Rank Famous, tag eksklusif, dukungan event, dan exposure dari komunitas kami.</p>
+            <div className="landing-creator-actions">
+              {famousApplyUrl ? (
+                <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="landing-primary-action">
+                  Daftar Rank Famous <Icon name="arrow-right" size={16}/>
+                </a>
+              ) : (
+                <Link href="/support" className="landing-primary-action">
+                  Hubungi Tim Support <Icon name="arrow-right" size={16}/>
+                </Link>
+              )}
+              <Link href="/support" className="landing-text-link">Tanya persyaratan</Link>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
 
-      {/* FEATURES — 2×2 Desktop Grid */}
-      <section className="hero-features-section">
-        <div className="hero-features-header" data-anim="fade-up">
-          <span className="fn-recruit-eyebrow">KENAPA FANCY NETWORK</span>
-          <h2 className="font-space fn-recruit-title">Server yang <span className="fn-logo-brand">Beda</span> dari yang Lain</h2>
-        </div>
-        {/* 2×2 symmetric desktop grid */}
-        <div className="hero-features-grid">
-          {FEATURES.map((f,i) => (
-            <div key={f.id} className="fn-card hero-feature-card" data-anim="flip-in" data-delay={String(i+1)}>
-              <div className="hero-feature-icon" style={{'--c': f.color}}>
-                <Icon name={f.icon} size={20}/>
-              </div>
-              <div>
-                <h4 className="hero-feature-title">{f.title}</h4>
-                <p className="hero-feature-desc">{f.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* RECRUITMENT */}
-      <section className="fn-recruit-section">
-        <div className="fn-recruit-header" data-anim="fade-up">
-          <span className="fn-recruit-eyebrow">KONTRIBUSI &amp; REWARD</span>
-          <h2 className="font-space fn-recruit-title">Buka Potensimu di <span className="fn-logo-brand">{serverName}</span></h2>
-        </div>
-        <div className="fn-recruit-wrap" data-anim="scale-pop" data-delay="2">
-          <div className="fn-apply-card">
-            <div className="fn-apply-card-glow"/>
-            <h3 className="font-space fn-apply-title">Rank Famous</h3>
-            <p className="fn-apply-desc">
-              Kreator Konten YouTube atau TikTok? Dapatkan hak istimewa status media, kustomisasi tag name, serta exposure di platform kami.
-            </p>
-            <ul className="fn-apply-list">
-              {['Tidak memiliki masalah dengan server lain','Membuat konten Fancy Network rutin','Viewers aktif dan organik','Konten positif & membangun'].map((r,i) => (
-                <li key={i}>
-                  <Icon name="circle-check" size={13} color="#2ecc71"/> {r}
-                </li>
+          <div className="landing-requirements">
+            <span>Persyaratan utama</span>
+            <ul>
+              {[
+                'Konten positif dan membangun komunitas',
+                `Membuat konten ${serverName} secara rutin`,
+                'Audiens aktif dan organik',
+                'Mematuhi seluruh peraturan server',
+              ].map(item => (
+                <li key={item}><Icon name="circle-check" size={16}/><span>{item}</span></li>
               ))}
             </ul>
-            <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="fn-apply-btn">
-              Apply Requirement <Icon name="arrow-right" size={14} className="fn-icon-ml"/>
-            </a>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
-      {/* FOOTER */}
-      <FancyFooter serverName={serverName} discordUrl={s.discord_url} />
-
-      {showLogin && <LoginModal onClose={()=>setShowLogin(false)} onSuccess={handleLoginSuccess}/>}
+      <FancyFooter serverName={serverName} discordUrl={safeExternalUrl(s.discord_url)} />
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess}/>} 
     </>
   );
 }
