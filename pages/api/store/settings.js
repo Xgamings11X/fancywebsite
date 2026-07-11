@@ -25,6 +25,8 @@ const PUBLIC_FIELDS = [
   'bg_mobile',
   'server_name',
   'server_ip',
+  'bedrock_ip',
+  'bedrock_port',
   'logo_url',
   'hero_title',
   'server_description',
