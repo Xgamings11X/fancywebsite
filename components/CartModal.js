@@ -20,7 +20,7 @@
  *     perlu redirect lagi.
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import Icon from './Icon';
@@ -104,8 +104,8 @@ export default function CartModal({ product, player, onClose }) {
   };
 
   return (
-    <div className="fn-modal-overlay" onClick={e => { if (e.target === e.currentTarget && !loading) onClose(); }}>
-      <div className="fn-modal animate-in">
+    <div className="fn-modal-overlay" role="presentation" onClick={e => { if (e.target === e.currentTarget && !loading) onClose(); }}>
+      <div ref={dialogRef} className="fn-modal animate-in" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
 
         {/* Top accent bar */}
         <div className="cart-modal-topbar"/>
@@ -115,7 +115,7 @@ export default function CartModal({ product, player, onClose }) {
           {/* Header */}
           <div className="cart-modal-head">
             <div>
-              <h2 className="font-space cart-modal-title">Checkout</h2>
+              <h2 id="checkout-title" className="font-space cart-modal-title">Checkout</h2>
               <p className="cart-modal-subtitle">Selesaikan pembelian kamu</p>
             </div>
             <button onClick={onClose} disabled={loading} className="cart-modal-close">
@@ -153,7 +153,7 @@ export default function CartModal({ product, player, onClose }) {
                 <Icon name="discord" size={12} className="cart-field-icon"/>
                 Username Discord
               </label>
-              <input type="text" value={discordUsername} onChange={e => setDiscordUsername(e.target.value)}
+              <input ref={discordRef} type="text" value={discordUsername} onChange={e => setDiscordUsername(e.target.value)}
                 placeholder="contoh: nama.discord"
                 className="fn-input" maxLength={40} autoComplete="off" required disabled={loading}/>
               <p className="cart-field-hint">Dipakai untuk klaim role di Discord server</p>

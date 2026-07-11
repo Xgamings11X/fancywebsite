@@ -1,187 +1,138 @@
-/* ProductCard.js — v4: theming via 1 CSS custom property (--accent),
-   bukan style object di tiap elemen anak. Lihat blok PRODUCT CARD di
-   globals.css untuk penjelasan kenapa color-mix() dipilih dibanding
-   modifier class per kombinasi warna. */
+import Icon from './Icon';
 
 const CATEGORY_COLOR = {
-  rank:        '#ffd700',
-  weapon:      '#e74c3c',
-  sellwand:    '#2ecc71',
-  auraskills:  '#9b59b6',
-  'crate-key': '#3498db',
-  kit:         '#1abc9c',
+  rank: '#1447ff',
+  weapon: '#e03131',
+  sellwand: '#168a52',
+  auraskills: '#7c3aed',
+  'crate-key': '#d97706',
+  kit: '#0f766e',
 };
-const DEFAULT_COLOR = '#ff6b00';
 
-const BADGE_BG = {
-  orange: '#ff6b00',
-  red:    '#e74c3c',
-  purple: '#9b59b6',
-  blue:   '#3498db',
-  green:  '#2ecc71',
-  yellow: '#d4a017',
+const CATEGORY_ICON = {
+  rank: 'trophy',
+  weapon: 'bolt',
+  sellwand: 'chart-line',
+  auraskills: 'star',
+  'crate-key': 'ticket',
+  kit: 'box-open',
 };
-// Teks badge kuning pakai warna gelap biar kontras
-const BADGE_TEXT_DARK = new Set(['yellow']);
 
-const idr = v => `Rp ${Number(v || 0).toLocaleString('id-ID')}`;
-const cx = (...parts) => parts.filter(Boolean).join(' ');
+const idr = value => `Rp ${Number(value || 0).toLocaleString('id-ID')}`;
 
-export default function ProductCard({ product, index = 0, onBuy }) {
-  const discount = product.original_price && product.original_price > product.price
-    ? Math.round((1 - product.price / product.original_price) * 100)
-    : 0;
+function parseFeatures(value) {
+  if (Array.isArray(value)) return value.filter(Boolean).map(String);
+  if (typeof value !== 'string' || !value.trim()) return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter(Boolean).map(String) : [];
+  } catch {
+    return value.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+  }
+}
 
-  const features = (() => {
-    try {
-      return typeof product.features === 'string'
-        ? JSON.parse(product.features)
-        : (product.features || []);
-    } catch { return []; }
-  })();
-
-  const categoryColor = CATEGORY_COLOR[product.category_slug] || DEFAULT_COLOR;
-  const badgeText     = (product.badge || '').trim();
-  const hasBadge      = !!badgeText;
-  const isPopular     = badgeText.toLowerCase().includes('popul');
-  // Untuk kartu berBadge non-popular, gunakan badge color sebagai warna aksen utama
-  const badgeBg       = BADGE_BG[product.badge_color] || DEFAULT_COLOR;
-  const badgeTxtDark  = BADGE_TEXT_DARK.has(product.badge_color);
-  // Warna aksen kartu: badge color bila ada badge, kategori bila tidak
-  const accentColor   = hasBadge ? badgeBg : categoryColor;
-
-  const pills        = features.slice(0, 3);
-  const listFeatures = features.slice(3);
-  const displayList  = listFeatures.length > 0 ? listFeatures : features;
-
-  const popularCls = isPopular ? 'popular' : '';
+export default function ProductCard({ product = {}, index = 0, isOpen = false, onToggleExpand, onBuy }) {
+  const price = Math.max(0, Number(product.price) || 0);
+  const originalPrice = Math.max(0, Number(product.original_price) || 0);
+  const discount = originalPrice > price ? Math.min(99, Math.round((1 - price / originalPrice) * 100)) : 0;
+  const features = parseFeatures(product.features);
+  const previewLimit = 4;
+  const visibleFeatures = isOpen ? features : features.slice(0, previewLimit);
+  const hiddenCount = Math.max(0, features.length - previewLimit);
+  const categorySlug = String(product.category_slug || '').toLowerCase();
+  const accent = CATEGORY_COLOR[categorySlug] || '#1447ff';
+  const rawIcon = String(product.category_icon || '').trim();
+  const categoryEmoji = /\p{Extended_Pictographic}/u.test(rawIcon) ? rawIcon : '';
+  const categoryIcon = CATEGORY_ICON[categorySlug] || (!categoryEmoji && rawIcon) || 'cube';
+  const imageUrl = typeof product.image_url === 'string' && /^https?:\/\//i.test(product.image_url.trim()) ? product.image_url.trim() : '';
+  const badge = String(product.badge || '').trim();
+  const platform = String(product.platform || product.edition || 'Java & Bedrock');
 
   return (
-    <div
-      /* CLASS fn-card, rank-card, product-card-enter WAJIB ADA — animasi bergantung pada ini */
-      className={cx(
-        'fn-card rank-card product-card-enter product-card-themed relative flex flex-col overflow-hidden rounded-[24px] border h-[420px] transition-transform duration-300 hover:-translate-y-1',
-        hasBadge && !isPopular && 'has-badge',
-        isPopular
-          ? 'rank-card-popular border-[var(--primary)] bg-[var(--primary)] text-white shadow-[0_8px_30px_rgba(255,107,0,0.25)]'
-          : 'text-white'
-      )}
-      style={{ '--accent': accentColor }}
-      data-anim="fade-up"
-      data-delay={String(Math.min((index % 8) + 1, 8))}
-    >
-      {/* Accent bar atas — ikut warna aksen kartu */}
-      <div className={cx('product-accent-bar h-[3px] w-full flex-shrink-0', popularCls)}/>
-
-      {/* ── Badge ribbon ─────────────────────────────────────────── */}
-      {hasBadge && (
-        <div className="absolute left-0 right-0 top-[3px] z-10 flex justify-center">
-          <span className={cx(
-            'product-badge-ribbon-inner rounded-b-lg px-4 py-1 text-[10px] font-extrabold uppercase tracking-[0.2em] shadow-lg',
-            badgeTxtDark && 'text-dark', popularCls
-          )}>
-            {badgeText}
+    <article className="store-product-card" style={{ '--product-accent': accent }} data-anim="fade-up" data-delay={String(Math.min(index + 1, 8))}>
+      <div className="store-product-media">
+        <div className="store-product-media-top">
+          <span className="store-product-category">
+            {categoryEmoji ? <span>{categoryEmoji}</span> : <Icon name={categoryIcon} size={15} />}
+            {product.category_name || 'Minecraft Item'}
           </span>
+          <span className="store-product-platform"><Icon name="gamepad" size={13} /> {platform}</span>
         </div>
-      )}
 
-      {/* ── Header: kategori + nama produk ────────────────────────── */}
-      <div className={cx('flex-shrink-0 px-6 pb-3', hasBadge ? 'pt-9' : 'pt-5')}>
-        <div className={cx('product-category-label mb-1.5 text-[10px] font-extrabold uppercase tracking-[0.2em]', popularCls)}>
-          {product.category_name || 'Rank'}
+        {badge && <span className="store-product-badge"><Icon name="star" size={12} /> {badge}</span>}
+        {discount > 0 && <span className="store-product-discount">Hemat {discount}%</span>}
+
+        <div className="store-product-visual">
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={product.name || 'Produk Minecraft'}
+              loading="lazy"
+              decoding="async"
+              onError={event => {
+                event.currentTarget.hidden = true;
+                event.currentTarget.nextElementSibling?.removeAttribute('hidden');
+              }}
+            />
+          ) : null}
+          <div className="store-product-fallback" hidden={Boolean(imageUrl)}>
+            {categoryEmoji ? <span>{categoryEmoji}</span> : <Icon name={categoryIcon} size={42} />}
+          </div>
         </div>
-        <h3 className="text-[22px] font-black tracking-tight leading-[1.1]">
-          {product.name}
-        </h3>
       </div>
 
-      {/* ── Deskripsi ─────────────────────────────────────────────── */}
-      {product.description && (
-        <p className="flex-shrink-0 px-6 pb-3 text-[12.5px] leading-relaxed opacity-65">
-          {product.description}
+      <div className="store-product-content">
+        <div className="store-product-heading">
+          <div>
+            <span className="store-product-kicker">{product.category_name || 'Produk'}</span>
+            <h3>{product.name || 'Produk Tanpa Nama'}</h3>
+          </div>
+          {Number(product.purchase_limit) > 0 && (
+            <span className="store-product-limit"><Icon name="lock" size={12} /> Maks. {Number(product.purchase_limit)}</span>
+          )}
+        </div>
+
+        <p className="store-product-description">
+          {product.description || 'Produk premium yang dikirim otomatis ke akun Minecraft setelah pembayaran berhasil.'}
         </p>
-      )}
 
-      {/* ── Pills (3 benefit utama) ─────────────────────────────────── */}
-      {pills.length > 0 && (
-        <div className="flex-shrink-0 px-6 pb-4 flex flex-wrap gap-1.5">
-          {pills.map((f, i) => (
-            <span key={i} className={cx(
-              'product-pill inline-flex items-center rounded-full border px-3 py-1 text-[11px] font-semibold',
-              popularCls
-            )}>
-              {f}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* ── Divider ───────────────────────────────────────────────── */}
-      {displayList.length > 0 && (
-        <div className={cx('product-divider flex-shrink-0 mx-6 mb-3', popularCls)}/>
-      )}
-
-      {/* ── Scrollable benefit list ────────────────────────────────── */}
-      {displayList.length > 0 ? (
-        <div className="product-card-scroll flex-1 overflow-y-auto px-6 pb-1">
-          {listFeatures.length > 0 && (
-            <div className={cx('product-features-label mb-2.5 text-[9.5px] font-extrabold uppercase tracking-[0.18em]', popularCls)}>
-              {product.name} Features
-            </div>
-          )}
-          <ul className="flex flex-col gap-2.5">
-            {displayList.map((f, fi) => (
-              <li key={fi} className="flex items-start gap-2.5 text-[12.5px] leading-snug">
-                <span className={cx('product-bullet mt-[5px] flex-shrink-0 rounded-[2px]', popularCls)}/>
-                <span className="opacity-85">{f}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-      ) : (
-        /* ── Empty state ─────────────────────────────────────────── */
-        <div className="flex-1 flex flex-col justify-center px-6 pb-3">
-          <div className={cx('product-empty-box w-full rounded-2xl flex flex-col items-center justify-center gap-2 py-7', popularCls)}>
-            <span className={cx('product-empty-title text-center text-[13px] font-black uppercase tracking-[0.12em] leading-tight px-4', popularCls)}>
-              {product.name}
-            </span>
-            <span className={cx('product-empty-underline rounded-full', popularCls)}/>
-            <span className="product-empty-category text-[10px] font-semibold uppercase tracking-[0.15em]">
-              {product.category_name || 'Item'}
-            </span>
+        <div className="store-product-benefits">
+          <div className="store-product-benefits-head">
+            <strong>Benefit produk</strong>
+            <span>{features.length} item</span>
           </div>
-        </div>
-      )}
-
-      {/* ── Footer: harga + tombol beli ───────────────────────────── */}
-      <div className={cx('product-footer-row flex-shrink-0 px-6 pt-4 pb-5 flex items-center justify-between gap-3', popularCls)}>
-        <div className="flex flex-col">
-          {discount > 0 && (
-            <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-[11px] line-through opacity-35">
-                {idr(product.original_price)}
-              </span>
-              <span className="rounded bg-red-500/20 px-1.5 py-0.5 text-[10px] font-bold text-red-400">
-                -{discount}%
-              </span>
-            </div>
+          {visibleFeatures.length > 0 ? (
+            <ul>
+              {visibleFeatures.map((feature, featureIndex) => (
+                <li key={`${product.id || 'product'}-${featureIndex}`}>
+                  <span><Icon name="check" size={11} /></span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="store-product-empty-benefit"><Icon name="circle-info" size={14} /> Detail lengkap tersedia saat checkout.</p>
           )}
-          <div className="font-space text-[20px] font-extrabold leading-none">
-            {idr(product.price)}
-          </div>
-        </div>
 
-        <button
-          onClick={() => onBuy(product)}
-          className={cx(
-            'product-buy-btn rounded-full px-6 py-2.5 text-[13px] font-bold tracking-wide transition-transform hover:scale-105 active:scale-95',
-            badgeTxtDark && hasBadge && 'text-dark', popularCls
+          {features.length > previewLimit && (
+            <button type="button" className="store-product-expand" onClick={() => onToggleExpand?.(product.id)} aria-expanded={isOpen}>
+              {isOpen ? 'Tutup daftar benefit' : `Lihat ${hiddenCount} benefit lainnya`}
+              <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={12} />
+            </button>
           )}
-        >
-          Beli
+        </div>
+      </div>
+
+      <div className="store-product-footer">
+        <div className="store-product-price">
+          <span>Harga</span>
+          {discount > 0 && <del>{idr(originalPrice)}</del>}
+          <strong>{idr(price)}</strong>
+        </div>
+        <button type="button" onClick={() => onBuy?.(product)} className="store-product-buy">
+          Beli sekarang <Icon name="arrow-right" size={15} />
         </button>
       </div>
-    </div>
+    </article>
   );
 }
