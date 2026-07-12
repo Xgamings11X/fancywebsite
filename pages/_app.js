@@ -3,6 +3,19 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { Toaster } from 'react-hot-toast';
 
+function safeBackgroundUrl(value) {
+  if (typeof value !== 'string' || !value.trim()) return '';
+  const candidate = value.trim();
+  if (/[\\'"<>\r\n]/.test(candidate)) return '';
+  if (/^\/[A-Za-z0-9_./%-]+$/.test(candidate)) return candidate;
+  try {
+    const url = new URL(candidate);
+    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';
+  } catch {
+    return '';
+  }
+}
+
 /**
  * Scroll-reveal observer — dibuat SEKALI untuk seluruh siklus hidup app.
  * PERF FIX: versi sebelumnya membuat IntersectionObserver baru + querySelectorAll
@@ -62,8 +75,8 @@ export default function App({ Component, pageProps }) {
       .then(r => { if (!r.ok) return null; return r.json(); })
       .then(d => {
         if (d && d.success && d.settings) {
-          setBgDesktop(d.settings.bg_desktop || '');
-          setBgMobile(d.settings.bg_mobile  || '');
+          setBgDesktop(safeBackgroundUrl(d.settings.bg_desktop));
+          setBgMobile(safeBackgroundUrl(d.settings.bg_mobile));
         }
       })
       .catch(() => {});
@@ -151,12 +164,12 @@ export default function App({ Component, pageProps }) {
             border: '1px solid #dce2ea',
             borderRadius: '14px',
             boxShadow: '0 16px 40px rgba(16,17,20,0.14)',
-            fontFamily: 'Manrope, sans-serif',
+            fontFamily: '"Plus Jakarta Sans", sans-serif',
             fontSize: 13,
             fontWeight: 700,
             padding: '12px 16px',
           },
-          success: { iconTheme: { primary: '#168a52', secondary: '#ffffff' } },
+          success: { iconTheme: { primary: '#16a34a', secondary: '#ffffff' } },
           error:   { iconTheme: { primary: '#e03131', secondary: '#ffffff' } },
         }}
       />

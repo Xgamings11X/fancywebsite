@@ -1,0 +1,10 @@
+JavaScript/JSX files checked: 55
+Syntax failures: 0
+Icon literal validation: run separately in packaging audit.
+CSS brace balance: 0
+JSON parsed: package.json
+JSON parsed: vercel.json
+JSON parsed: data/settings.json
+package-lock.json present: False
+pnpm-lock.yaml present: True
+Literal Icon names checked; missing: 0

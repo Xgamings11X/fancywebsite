@@ -10,6 +10,7 @@
  */
 import { verifyToken } from '../../../lib/auth.js';
 import { parse }       from 'cookie';
+import DISCORD_EMOJIS   from '../../../lib/discord-emojis.js';
 
 function auth(req) {
   const t = parse(req.headers.cookie || '').admin_token
@@ -24,15 +25,15 @@ async function pingWebhook(url, channelLabel) {
   const payload = {
     embeds: [{
       color: channelLabel === 'Admin' ? 0xf97316 : 0x57f287,
-      title: `✅ Test Webhook — ${channelLabel}`,
-      description: `Koneksi ke channel **${channelLabel}** berhasil terhubung dan siap menerima notifikasi.`,
+      title: `${DISCORD_EMOJIS.CHECK} Test Webhook — ${channelLabel}`,
+      description: `${DISCORD_EMOJIS.ONLINE} Koneksi ke channel **${channelLabel}** berhasil terhubung dan siap menerima notifikasi.`,
       fields: [
         { name: '𝗖𝗛𝗔𝗡𝗡𝗘𝗟',  value: `\`${channelLabel}\``,         inline: true },
         { name: '𝗦𝗧𝗔𝗧𝗨𝗦',    value: '`TEST — OK`',               inline: true },
         { name: '𝗧𝗥𝗫 𝗜𝗗',   value: `\`TEST-${Date.now()}\``,    inline: true },
-        { name: '𝗣𝗟𝗔𝗬𝗘𝗥',   value: '`TestPlayer`',               inline: true },
-        { name: '𝗣𝗥𝗢𝗗𝗨𝗞',   value: '`VIP Package (TEST)`',       inline: true },
-        { name: '𝗛𝗔𝗥𝗚𝗔',    value: '`Rp 50.000`',                inline: true },
+        { name: `${DISCORD_EMOJIS.MINECRAFT} 𝗣𝗟𝗔𝗬𝗘𝗥`, value: '`TestPlayer`',               inline: true },
+        { name: `${DISCORD_EMOJIS.BUY} 𝗣𝗥𝗢𝗗𝗨𝗞`, value: '`VIP Package (TEST)`',       inline: true },
+        { name: `${DISCORD_EMOJIS.MONEY} 𝗛𝗔𝗥𝗚𝗔`, value: '`Rp 50.000`',                inline: true },
       ],
       footer: { text: `Fancy Network Admin Panel · ${channelLabel} Channel` },
       timestamp: new Date().toISOString(),

@@ -29,6 +29,8 @@ const PUBLIC_FIELDS = [
   'bedrock_port',
   'logo_url',
   'hero_title',
+  'hero_subtitle',
+  'famous_apply_url',
   'server_description',
   'discord_url',
   'vote_url',

@@ -2,7 +2,7 @@
  * pages/api/support/events.js — Server-Sent Events untuk realtime chat tiket
  *
  * Client connect via:
- *   new EventSource(`/api/support/events?ticket_id=TKT-xxxx&token=JWT_TOKEN`)
+ *   new EventSource(`/api/support/events?ticket_id=TKT-xxxx`)
  *
  * Server akan push event setiap ada pesan baru atau status berubah.
  * Koneksi otomatis reconnect oleh browser setiap kali server kirim "event: reconnect".
@@ -10,13 +10,15 @@
 import { TicketsAsync } from '../../../lib/redis.js';
 import { verifyToken } from '../../../lib/auth.js';
 import { parse } from 'cookie';
+import { syncDiscordTicket } from '../../../lib/discord-ticket.js';
 
 export const config = {
   api: { bodyParser: false },
 };
 
 function getUser(req) {
-  // Token via cookie atau query param (EventSource tidak bisa set header)
+  // EventSource same-origin mengirim cookie secara otomatis. Query token
+  // dipertahankan hanya untuk kompatibilitas client lama.
   const cookies = parse(req.headers.cookie || '');
   const t = cookies.token || cookies.admin_token || req.query.token;
   return verifyToken(t);
@@ -57,22 +59,29 @@ export default async function handler(req, res) {
   let lastMsgCount  = ticket.messages?.length || 0;
   let lastStatus    = ticket.status;
   let lastEventTime = await TicketsAsync.getLastEventTime(ticket_id);
+  let lastDiscordSyncAt = 0;
 
   // ── Polling ke Redis setiap 1.5 detik ────────────────────────────
   const pollInterval = setInterval(async () => {
     try {
+      // Discord REST disinkronkan maksimal sekali tiap ±5 detik agar tetap
+      // realtime tanpa membanjiri rate limit API Discord.
+      if (Date.now() - lastDiscordSyncAt >= 4500) {
+        lastDiscordSyncAt = Date.now();
+        await syncDiscordTicket(ticket_id);
+      }
+
       const eventTime = await TicketsAsync.getLastEventTime(ticket_id);
-      if (eventTime <= lastEventTime) return; // tidak ada yang baru
+      if (eventTime <= lastEventTime) return;
 
       const fresh = await TicketsAsync.byId(ticket_id);
       if (!fresh) return;
 
       const newMsgCount = fresh.messages?.length || 0;
-      const newStatus   = fresh.status;
-
-      if (newMsgCount !== lastMsgCount || newStatus !== lastStatus) {
-        lastMsgCount  = newMsgCount;
-        lastStatus    = newStatus;
+      const newStatus = fresh.status;
+      if (newMsgCount !== lastMsgCount || newStatus !== lastStatus || eventTime !== lastEventTime) {
+        lastMsgCount = newMsgCount;
+        lastStatus = newStatus;
         lastEventTime = eventTime;
         sendTicket(fresh);
       }

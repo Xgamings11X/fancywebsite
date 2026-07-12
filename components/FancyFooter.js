@@ -17,7 +17,7 @@ export default function FancyFooter({ serverName = 'Fancy Network', discordUrl =
   const s = settings || {};
   const javaIp = s.server_ip || 'play.fancynet.my.id';
   const bedrockIp = s.bedrock_ip || javaIp;
-  const bedrockPort = String(s.bedrock_port || '19132');
+  const bedrockPort = String(s.bedrock_port || '19026');
   const resolvedDiscord = safeUrl(s.discord_url || discordUrl);
 
   const socials = [
@@ -28,34 +28,18 @@ export default function FancyFooter({ serverName = 'Fancy Network', discordUrl =
   ].filter(item => item.href);
 
   return (
-    <footer className="public-footer">
-      <div className="public-footer-cta">
-        <div>
-          <span>MULAI PETUALANGANMU</span>
-          <h2>Siap bermain di {serverName}?</h2>
-          <p>Login, pilih produk bila diperlukan, atau hubungi tim support melalui ticket web yang terhubung dengan Discord.</p>
-        </div>
-        <div className="public-footer-cta-actions">
-          <Link href="/store" className="public-footer-primary-action">
-            Buka Store <Icon name="arrow-right" size={16} />
-          </Link>
-          <Link href="/support" className="public-footer-secondary-action">
-            Buat Ticket <Icon name="comment-dots" size={16} />
-          </Link>
-        </div>
-      </div>
-
-      <div className="public-footer-grid">
-        <div className="public-footer-brand">
+    <footer className="public-footer public-footer-orange">
+      <div className="public-footer-top">
+        <div className="public-footer-brand-block">
           <div className="public-footer-logo-row">
-            <span className="public-footer-logo"><LogoImage alt="" /></span>
-            <div><strong>{serverName}</strong><small>Minecraft Java &amp; Bedrock Network</small></div>
+            <span className="public-footer-logo">{s.logo_url ? <img src={s.logo_url} alt="" /> : <LogoImage alt="" />}</span>
+            <div><strong>{serverName}</strong><small>Survival Economy · Java &amp; Bedrock</small></div>
           </div>
-          <p>Survival Economy semi-RPG dengan progres yang jelas, komunitas aktif, transaksi otomatis, dan dukungan lintas website serta Discord.</p>
+          <p>Server Minecraft Indonesia dengan progression semi-RPG, ekonomi aktif, transaksi otomatis, dan support yang terhubung ke Discord.</p>
           {socials.length > 0 && (
             <div className="public-footer-socials">
               {socials.map(item => (
-                <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" aria-label={item.label}>
+                <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" aria-label={item.label} title={item.label}>
                   <Icon name={item.icon} size={17} />
                 </a>
               ))}
@@ -63,33 +47,45 @@ export default function FancyFooter({ serverName = 'Fancy Network', discordUrl =
           )}
         </div>
 
-        <div className="public-footer-column">
-          <strong>Navigasi</strong>
-          <Link href="/">Home</Link>
-          <Link href="/store">Store</Link>
-          <Link href="/support">Support</Link>
-          {safeUrl(s.vote_url) && <a href={safeUrl(s.vote_url)} target="_blank" rel="noopener noreferrer">Vote Server</a>}
-        </div>
-
-        <div className="public-footer-column public-footer-server-column">
-          <strong>Server Info</strong>
+        <div className="public-footer-server-card">
+          <span className="public-footer-card-label"><Icon name="server" size={15} /> ALAMAT SERVER</span>
           <div><span>Java IP</span><code>{javaIp}</code></div>
           <div><span>Bedrock IP</span><code>{bedrockIp}</code></div>
           <div><span>Bedrock Port</span><code>{bedrockPort}</code></div>
         </div>
 
-        <div className="public-footer-column">
-          <strong>Bantuan</strong>
-          <Link href="/support">Buat ticket baru</Link>
-          <Link href="/support?view=tickets">Lihat ticket saya</Link>
-          {resolvedDiscord && <a href={resolvedDiscord} target="_blank" rel="noopener noreferrer">Discord community</a>}
-          <span className="public-footer-small-copy">Balasan ticket dapat diterima melalui web atau Discord.</span>
+        <div className="public-footer-links-grid">
+          <div className="public-footer-column">
+            <strong>Navigasi</strong>
+            <Link href="/">Home</Link>
+            <Link href="/store">Store</Link>
+            <Link href="/support">Support</Link>
+            {safeUrl(s.vote_url) && <a href={safeUrl(s.vote_url)} target="_blank" rel="noopener noreferrer">Vote server</a>}
+          </div>
+          <div className="public-footer-column">
+            <strong>Bantuan</strong>
+            <Link href="/support">Buat ticket</Link>
+            <Link href="/support?view=tickets">Ticket saya</Link>
+            {resolvedDiscord && <a href={resolvedDiscord} target="_blank" rel="noopener noreferrer">Discord community</a>}
+            <span>Balasan tersedia lewat web atau Discord.</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="public-footer-cta">
+        <div>
+          <span>SIAP MULAI?</span>
+          <h2>Masuk ke server atau lihat produk yang tersedia.</h2>
+        </div>
+        <div className="public-footer-cta-actions">
+          <Link href="/store" className="public-footer-primary-action">BUKA STORE <Icon name="arrow-right" size={15} /></Link>
+          <Link href="/support" className="public-footer-secondary-action">BUAT TICKET <Icon name="comment-dots" size={15} /></Link>
         </div>
       </div>
 
       <div className="public-footer-bottom">
         <span>© {year} {serverName}. Semua hak dilindungi.</span>
-        <span>Minecraft adalah merek dagang Mojang Studios. Situs ini tidak berafiliasi dengan Mojang atau Microsoft.</span>
+        <span>Minecraft adalah merek dagang Mojang Studios. Tidak berafiliasi dengan Mojang atau Microsoft.</span>
       </div>
     </footer>
   );

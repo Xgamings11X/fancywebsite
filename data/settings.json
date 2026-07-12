@@ -20,5 +20,8 @@
   "plugin_http_url": "",
   "plugin_server_key": "",
   "webhook_transaction_url": "",
-  "webhook_report_url": ""
+  "webhook_report_url": "",
+  "bedrock_ip": "play.fancynet.my.id",
+  "bedrock_port": "19026",
+  "famous_apply_url": ""
 }

@@ -1,291 +1,373 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
-// Redis modules loaded via dynamic import in getServerSideProps
 import FancyNav, { PlayerAvatar } from '../components/FancyNav';
 import FancyFooter from '../components/FancyFooter';
 import { useTransparentLogo } from '../components/LogoImage';
 import ProductCard from '../components/ProductCard';
+import Icon from '../components/Icon';
 import toast from 'react-hot-toast';
 
-// ── Code-splitting: modal hanya dibutuhkan SETELAH user klik
-// "Login" / "Beli" — jangan ikut bundle awal store.js.
-// ssr:false aman karena 100% interaksi client (form, popup Snap).
 const LoginModal = dynamic(() => import('../components/LoginModal'), { ssr: false });
-const CartModal  = dynamic(() => import('../components/CartModal'),  { ssr: false });
+const CartModal = dynamic(() => import('../components/CartModal'), { ssr: false });
+
+const CATEGORY_PRESENTATION = [
+  { match: ['rank', 'vip', 'mvp', 'famous'], icon: 'trophy', description: 'Rank dan benefit permanen' },
+  { match: ['weapon', 'senjata', 'sword', 'pedang'], icon: 'gavel', description: 'Senjata dan item tempur' },
+  { match: ['crate', 'key', 'kunci'], icon: 'ticket', description: 'Kunci crate dan hadiah' },
+  { match: ['kit', 'bundle', 'paket'], icon: 'box-open', description: 'Paket item siap pakai' },
+  { match: ['skill', 'aura', 'boost'], icon: 'bolt', description: 'Booster dan progression' },
+  { match: ['wand', 'sell', 'utility'], icon: 'chart-line', description: 'Utility ekonomi pemain' },
+];
+
+function parseFeatures(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value !== 'string') return [];
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return value.split(/\r?\n/).map(item => item.trim()).filter(Boolean);
+  }
+}
+
+function categoryKey(category) {
+  const slug = String(category?.slug || '').trim();
+  if (slug) return slug.toLowerCase();
+  return category?.id != null ? `category-${category.id}` : '';
+}
+
+function categoryPresentation(category) {
+  const text = `${category?.slug || ''} ${category?.name || ''}`.toLowerCase();
+  return CATEGORY_PRESENTATION.find(item => item.match.some(keyword => text.includes(keyword))) || {
+    icon: 'cube',
+    description: category?.description || 'Item dan benefit server',
+  };
+}
+
+function enrichProducts(products, categories) {
+  const byId = new Map((categories || []).map(category => [String(category.id), category]));
+  return (products || []).map(product => {
+    const category = byId.get(String(product.category_id));
+    return {
+      ...product,
+      category_name: product.category_name || category?.name || null,
+      category_slug: String(product.category_slug || categoryKey(category) || '').toLowerCase() || null,
+      category_icon: product.category_icon || category?.icon || null,
+    };
+  });
+}
 
 export async function getServerSideProps() {
   try {
     const { SettingsAsync, ProductsAsync, CategoriesAsync } = await import('../lib/redis.js');
-    const [settings, allCats, allProds] = await Promise.all([
-      SettingsAsync.get(),
-      CategoriesAsync.active(),
-      ProductsAsync.active(),
+    const [settings, rawCategories, rawProducts] = await Promise.all([
+      SettingsAsync.get(), CategoriesAsync.active(), ProductsAsync.active(),
     ]);
-    const categories = allCats.sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
-    const catMap     = Object.fromEntries(categories.map(c=>[c.id,c]));
-    const products   = allProds
-      .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0))
-      .map(p=>({
-        ...p,
-        category_name: catMap[p.category_id]?.name||null,
-        category_slug: catMap[p.category_id]?.slug||null,
-        category_icon: catMap[p.category_id]?.icon||null,
-      }));
-    return { props:{settings,categories,products} };
-  } catch(e) { return { props:{settings:{},categories:[],products:[]} }; }
+    const categories = [...rawCategories].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+    const products = enrichProducts(
+      [...rawProducts].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+      categories,
+    );
+    return { props: { settings, categories, products } };
+  } catch {
+    return { props: { settings: {}, categories: [], products: [] } };
+  }
 }
 
-export default function StorePage({ settings, categories: initCategories, products: initProducts }) {
+export default function StorePage({ settings, categories: initialCategories, products: initialProducts }) {
   const router = useRouter();
   const s = settings || {};
   const serverName = s.server_name || 'Fancy Network';
   const { src: logoSrc } = useTransparentLogo();
 
-  const [player,     setPlayer]     = useState(null);
-  const [showLogin,  setShowLogin]  = useState(false);
-  const [showCart,   setShowCart]   = useState(false);
-  const [cartItem,   setCartItem]   = useState(null);
+  const [player, setPlayer] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
+  const [showCart, setShowCart] = useState(false);
+  const [cartItem, setCartItem] = useState(null);
   const [pendingBuy, setPendingBuy] = useState(null);
-  const [activeTab,  setActiveTab]  = useState('all');
-  const [expanded,   setExpanded]   = useState({});
-  const [search,     setSearch]     = useState('');
-  // State produk — bisa di-update via client-side fetch
-  const [products,   setProducts]   = useState(initProducts || []);
-  const [categories, setCategories] = useState(initCategories || []);
+  const [activeTab, setActiveTab] = useState('all');
+  const [expanded, setExpanded] = useState({});
+  const [search, setSearch] = useState('');
+  const [products, setProducts] = useState(initialProducts || []);
+  const [categories, setCategories] = useState(initialCategories || []);
+  const [catalogLoading, setCatalogLoading] = useState(false);
 
-  // Client-side fetch untuk memastikan data produk selalu terbaru
-  // (mengatasi kasus Vercel serverless di mana /tmp/data bisa berbeda per instance)
-  // BUGFIX: hanya update state jika response benar-benar punya data,
-  // supaya data SSR tidak tertimpa array kosong dari instance berbeda.
-  useEffect(() => {
-    fetch('/api/store/products')
-      .then(r => r.json())
-      .then(d => {
-        if (d.success) {
-          // Hanya update produk jika ada isi, jangan timpa data SSR dengan array kosong
-          // Pastikan urutan sort_order diterapkan (no 1 dari atas ke bawah)
-          if (Array.isArray(d.products) && d.products.length > 0) {
-            setProducts([...d.products].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)));
-          }
-          // Update categories dan urutkan (no 1 dari kiri ke kanan)
-          if (Array.isArray(d.categories) && d.categories.length > 0) {
-            setCategories([...d.categories].sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)));
-          }
-        }
-      })
-      .catch(() => {});
+  const loadCatalog = useCallback(async signal => {
+    setCatalogLoading(true);
+    try {
+      const response = await fetch('/api/store/products', { signal, headers: { Accept: 'application/json' } });
+      const data = response.ok ? await response.json() : null;
+      if (!data?.success) return;
+      const nextCategories = Array.isArray(data.categories)
+        ? [...data.categories].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+        : [];
+      const nextProducts = Array.isArray(data.products)
+        ? enrichProducts([...data.products].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)), nextCategories)
+        : [];
+      setCategories(nextCategories);
+      setProducts(nextProducts);
+    } catch (error) {
+      if (error?.name !== 'AbortError') toast.error('Katalog gagal diperbarui. Menampilkan data terakhir.');
+    } finally {
+      if (!signal?.aborted) setCatalogLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    // Restore player dari localStorage, tapi validasi session masih aktif
-    try {
-      const r = localStorage.getItem('mc_player');
-      if (r) {
-        const savedPlayer = JSON.parse(r);
-        // Verifikasi token masih valid (cookie atau localStorage token)
-        const token = localStorage.getItem('mc_token');
-        const headers = { 'Content-Type': 'application/json' };
-        if (token) headers['Authorization'] = `Bearer ${token}`;
-        fetch('/api/auth/me', { credentials: 'include', headers })
-          .then(res => res.ok ? res.json() : null)
-          .then(data => {
-            if (data && data.success) {
-              setPlayer(savedPlayer);
-            } else {
-              // Session sudah tidak valid, bersihkan state
-              localStorage.removeItem('mc_player');
-              localStorage.removeItem('mc_token');
-            }
-          })
-          .catch(() => {
-            // Kalau endpoint tidak ada, fallback ke restore biasa
-            setPlayer(savedPlayer);
-          });
-      }
-    } catch {}
-    const { order, status, order_id, transaction_status } = router.query;
+    const controller = new AbortController();
+    loadCatalog(controller.signal);
+    return () => controller.abort();
+  }, [loadCatalog]);
 
-    // Redirect dari Midtrans deeplink (GoPay, dll) — pakai order_id dari query
-    if (order_id) {
-      router.replace('/invoice/' + order_id);
+  useEffect(() => {
+    const controller = new AbortController();
+    try {
+      const cached = localStorage.getItem('mc_player');
+      if (cached) setPlayer(JSON.parse(cached));
+    } catch {
+      localStorage.removeItem('mc_player');
+    }
+
+    let token = '';
+    try { token = localStorage.getItem('mc_token') || ''; } catch {}
+    fetch('/api/auth/me', {
+      credentials: 'include',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal: controller.signal,
+    })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => {
+        if (data?.success && data.player) {
+          setPlayer(data.player);
+          localStorage.setItem('mc_player', JSON.stringify(data.player));
+        } else {
+          setPlayer(null);
+          localStorage.removeItem('mc_player');
+          localStorage.removeItem('mc_token');
+        }
+      })
+      .catch(() => {});
+
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    if (!router.isReady) return;
+    const { order, status, order_id: orderId, category } = router.query;
+    if (orderId) {
+      router.replace(`/invoice/${encodeURIComponent(String(orderId))}`);
       return;
     }
-
-    // Redirect lama dari snap popup callback
     if (order && status) {
-      router.replace('/invoice/' + order);
+      router.replace(`/invoice/${encodeURIComponent(String(order))}`);
+      return;
     }
-  }, [router.query]);
+    if (typeof category === 'string' && category.trim()) setActiveTab(category.trim().toLowerCase());
+  }, [router, router.isReady, router.query.category, router.query.order, router.query.order_id, router.query.status]);
+
+  const validCategoryKeys = useMemo(() => new Set(categories.map(categoryKey).filter(Boolean)), [categories]);
+  useEffect(() => {
+    if (activeTab !== 'all' && !validCategoryKeys.has(activeTab)) setActiveTab('all');
+  }, [activeTab, validCategoryKeys]);
 
   const handleLogout = async () => {
-    await fetch('/api/auth/logout',{method:'POST',credentials:'include'});
-    setPlayer(null); localStorage.removeItem('mc_player');
+    try { await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }); } catch {}
+    setPlayer(null);
+    localStorage.removeItem('mc_player');
+    localStorage.removeItem('mc_token');
     toast.success('Berhasil keluar');
   };
 
-  const handleLoginSuccess = (p) => {
-    setPlayer(p); localStorage.setItem('mc_player',JSON.stringify(p));
+  const handleLoginSuccess = nextPlayer => {
+    setPlayer(nextPlayer);
+    localStorage.setItem('mc_player', JSON.stringify(nextPlayer));
     setShowLogin(false);
-    if (pendingBuy) { setCartItem(pendingBuy); setShowCart(true); setPendingBuy(null); }
+    if (pendingBuy) {
+      setCartItem(pendingBuy);
+      setShowCart(true);
+      setPendingBuy(null);
+    }
   };
 
-  // Tombol beli — muncul popup login jika belum login
-  const handleBuy = (product) => {
-    if (!player) { setPendingBuy(product); setShowLogin(true); }
-    else         { setCartItem(product);   setShowCart(true);  }
+  const handleBuy = product => {
+    if (!player) {
+      setPendingBuy(product);
+      setShowLogin(true);
+      return;
+    }
+    setCartItem(product);
+    setShowCart(true);
   };
 
-  const toggleExpand = (id) => setExpanded(p=>({...p,[id]:!p[id]}));
+  const categoryItems = useMemo(() => [
+    { id: 'all', name: 'Semua', icon: 'box-open', description: 'Seluruh produk tersedia' },
+    ...categories.map(category => {
+      const presentation = categoryPresentation(category);
+      return {
+        id: categoryKey(category),
+        name: category.name || 'Kategori',
+        icon: presentation.icon,
+        description: category.description || presentation.description,
+      };
+    }).filter(item => item.id),
+  ], [categories]);
 
-  const filtered = products.filter(p => {
-    const matchTab  = activeTab==='all' || p.category_slug===activeTab;
-    const matchSrch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    return matchTab && matchSrch;
-  });
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return products.filter(product => {
+      if (activeTab !== 'all' && String(product.category_slug || '') !== activeTab) return false;
+      if (!term) return true;
+      return [
+        product.name,
+        product.description,
+        product.category_name,
+        ...parseFeatures(product.features),
+      ].filter(Boolean).join(' ').toLowerCase().includes(term);
+    });
+  }, [activeTab, products, search]);
 
-  // colorName disimpan terpisah dari nilai CSS yang sudah di-resolve,
-  // dipakai sebagai modifier class (tab-accent-X) — bukan inline style.
-  const allTabs = [
-    { id:'all', label:'Semua', colorName:'orange' },
-    ...categories.map(c=>({
-      id:c.slug, label:c.name, colorName: c.color || 'orange',
-    })),
-  ];
+  const countFor = id => id === 'all'
+    ? products.length
+    : products.filter(product => String(product.category_slug || '') === id).length;
+
+  const selectCategory = id => {
+    setActiveTab(id);
+    setExpanded({});
+    const nextQuery = { ...router.query };
+    delete nextQuery.order;
+    delete nextQuery.order_id;
+    delete nextQuery.status;
+    if (id === 'all') delete nextQuery.category;
+    else nextQuery.category = id;
+    router.replace({ pathname: '/store', query: nextQuery }, undefined, { shallow: true, scroll: false });
+  };
 
   return (
     <>
       <Head>
         <title>{`Store — ${serverName}`}</title>
-        <meta name="viewport" content="width=device-width,initial-scale=1"/>
-        <meta name="description" content={`Item Store ${serverName}`}/>
-        <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
+        <meta name="description" content={`Rank, item, dan benefit premium ${serverName}.`} />
+        <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'} />
       </Head>
 
-      <FancyNav player={player} onLoginClick={()=>setShowLogin(true)} onLogout={handleLogout} settings={s}/>
+      <div className="public-shell orange-public-theme">
+        <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s} />
 
-      <div className="store-page-wrap">
+        <main className="store-redesign store-orange-page">
+          <section className="store-page-hero">
+            <div className="store-page-hero-copy">
+              <span className="store-page-kicker">OFFICIAL STORE</span>
+              <h1><strong>Store</strong> {serverName}</h1>
+              <p>Pilih rank, kit, crate key, atau utility. Semua produk diproses otomatis setelah pembayaran berhasil.</p>
+              <div className="store-trust-row">
+                <span><Icon name="lock" size={14} /> Pembayaran aman</span>
+                <span><Icon name="bolt" size={14} /> Proses otomatis</span>
+                <span><Icon name="gamepad" size={14} /> Java &amp; Bedrock</span>
+              </div>
+            </div>
 
-        {/* Ambient ember particles behind hero */}
-        <div className="store-embers" aria-hidden="true">
-          {[...Array(14)].map((_,i)=>(
-            <span key={i} className="ember-dot" style={{
-              '--left': `${(i*7.3)%100}%`,
-              '--dur':  `${6+(i%5)*1.4}s`,
-              '--edelay': `${(i%7)*0.6}s`,
-              '--size': `${2+(i%3)}px`,
-            }}/>
-          ))}
-        </div>
-
-        {/* Header */}
-        <div className="store-hero-header">
-          <span className="tagline-pill anim-hero-up anim-d1 flex items-center gap-2.5">
-            <span className="store-tagline-divider-l"/>
-            DUKUNG SERVER
-            <span className="store-tagline-divider-r"/>
-          </span>
-          <h1 className="font-space flame-text anim-hero anim-d2 store-title">
-            STORE
-          </h1>
-          <p className="anim-hero-up anim-d3 store-subtitle">Semua pembelian dikirim otomatis ke Minecraft kamu</p>
-          {player && (
-            <div className="anim-hero-up anim-d4 store-player-badge">
-              <PlayerAvatar uuid={player.uuid} username={player.username} size={20}/>
-              <span className="store-player-name">{player.displayName||player.username}</span>
-              {player.rank && player.rank!=='default' && (
-                <span className="store-player-rank">
-                  {player.rank.toUpperCase()}
-                </span>
+            <aside className="store-account-panel">
+              {player ? (
+                <>
+                  <span className="store-account-label">PEMBELIAN UNTUK</span>
+                  <div className="store-account-player">
+                    <PlayerAvatar uuid={player.uuid} username={player.username} size={46} />
+                    <div>
+                      <strong>{player.displayName || player.username}</strong>
+                      <small>{player.platform === 'bedrock' ? 'BEDROCK' : 'JAVA'} · {player.rank && player.rank !== 'default' ? String(player.rank).toUpperCase() : 'PLAYER'}</small>
+                    </div>
+                  </div>
+                  <p>Pastikan akun ini benar sebelum checkout.</p>
+                </>
+              ) : (
+                <>
+                  <span className="store-account-icon"><Icon name="right-to-bracket" size={22} /></span>
+                  <strong>Login sebelum membeli</strong>
+                  <p>Gunakan username Minecraft yang sudah pernah join server.</p>
+                  <button type="button" onClick={() => setShowLogin(true)}>LOGIN</button>
+                </>
               )}
-            </div>
-          )}
-        </div>
+            </aside>
+          </section>
 
-        {/* Tabs + search */}
-        <div data-anim="fade-up" className="store-tabs-wrap">
-          {/* Search bar */}
-          <div className="store-search-row">
-            <div className="store-search-box">
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24" width="13" height="13" fill="none"
-                stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
-                className="store-search-icon"
-              >
-                <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
-              </svg>
-              <input value={search} onChange={e=>setSearch(e.target.value)}
-                placeholder="Cari produk..." className="fn-input store-search-input"
-                aria-label="Cari produk"/>
+          <section className="store-catalog-section">
+            <div className="public-section-heading store-catalog-heading">
+              <span className="public-eyebrow">KATALOG PRODUK</span>
+              <h2>Pilih kategori, lalu temukan produkmu.</h2>
+              <p>Ikon kategori dan produk dipilih otomatis berdasarkan nama. Kamu tidak perlu mengaturnya satu per satu.</p>
             </div>
-          </div>
-          {/* Category tabs */}
-          <div className="tabs-container scrollable">
-            {allTabs.map(tab=>{
-              const isActive = activeTab === tab.id;
-              return (
-                <button key={tab.id}
-                  className={`tab-btn tab-accent-${tab.colorName}${isActive?' active':''}`}
-                  onClick={()=>setActiveTab(tab.id)}>
-                  <span>{tab.label}</span>
-                  {isActive && (
-                    <span className="tab-count-badge">
-                      {activeTab==='all' ? products.length : products.filter(p=>p.category_slug===tab.id).length}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
-        {/* Products grid */}
-        {filtered.length === 0 ? (
-          <div className="store-empty-state">
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="48" height="48" fill="none"
-              stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
-              className="store-empty-icon">
-              <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-              <line x1="12" y1="22.08" x2="12" y2="12"/>
-            </svg>
-            <p className="store-empty-text">{search?`Produk "${search}" tidak ditemukan`:'Belum ada produk di kategori ini'}</p>
-            {search && <button onClick={()=>setSearch('')} className="store-empty-clear-btn">Hapus pencarian</button>}
-          </div>
-        ) : (
-          <div className="store-products-grid">
-            {filtered.map((product, pIdx) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                index={pIdx}
-                isOpen={!!expanded[product.id]}
-                onToggleExpand={toggleExpand}
-                onBuy={handleBuy}
-              />
-            ))}
-          </div>
-        )}
+            <div className="store-category-grid" role="tablist" aria-label="Kategori produk">
+              {categoryItems.map(item => {
+                const active = activeTab === item.id;
+                return (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    key={item.id}
+                    className={`store-category-card${active ? ' active' : ''}`}
+                    onClick={() => selectCategory(item.id)}
+                  >
+                    <span className="store-category-icon"><Icon name={item.icon} size={20} /></span>
+                    <div><strong>{item.name}</strong><small>{item.description}</small></div>
+                    <span className="store-category-count">{countFor(item.id)}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="store-toolbar">
+              <div className="store-search-field">
+                <Icon name="search" size={17} />
+                <input
+                  value={search}
+                  onChange={event => setSearch(event.target.value)}
+                  placeholder="Cari produk atau benefit..."
+                  aria-label="Cari produk"
+                />
+                {search && <button type="button" onClick={() => setSearch('')} aria-label="Hapus pencarian"><Icon name="xmark" size={14} /></button>}
+              </div>
+              <div className="store-result-count">
+                {catalogLoading && <Icon name="spinner" size={14} spin />}
+                <strong>{filtered.length}</strong> produk ditemukan
+              </div>
+            </div>
+
+            {filtered.length > 0 ? (
+              <div className="store-products-grid">
+                {filtered.map((product, index) => {
+                  const productId = product.id ?? `${product.name || 'product'}-${index}`;
+                  return (
+                    <ProductCard
+                      key={productId}
+                      product={product}
+                      index={index}
+                      isOpen={Boolean(expanded[productId])}
+                      onToggleExpand={id => setExpanded(current => ({ ...current, [id]: !current[id] }))}
+                      onBuy={handleBuy}
+                    />
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="store-empty-state">
+                <span><Icon name="box-open" size={28} /></span>
+                <h3>Produk tidak ditemukan</h3>
+                <p>Coba kategori lain atau hapus kata pencarian.</p>
+                <button type="button" onClick={() => { setSearch(''); selectCategory('all'); }}>Tampilkan semua</button>
+              </div>
+            )}
+          </section>
+        </main>
+
+        <FancyFooter serverName={serverName} discordUrl={s.discord_url} settings={s} />
       </div>
 
-      {/* Footer — komponen shared, identik dengan landing & support page */}
-      <FancyFooter serverName={serverName} discordUrl={s.discord_url} />
-
-      {/* Login popup — muncul otomatis saat klik beli tanpa login */}
-      {showLogin && (
-        <LoginModal
-          onClose={()=>{ setShowLogin(false); setPendingBuy(null); }}
-          onSuccess={handleLoginSuccess}
-          product={pendingBuy}/>
-      )}
-
-      {/* Cart / checkout */}
-      {showCart && cartItem && (
-        <CartModal product={cartItem} player={player}
-          onClose={()=>{ setShowCart(false); setCartItem(null); }}/>
-      )}
+      {showLogin && <LoginModal product={pendingBuy} onClose={() => { setShowLogin(false); setPendingBuy(null); }} onSuccess={handleLoginSuccess} />}
+      {showCart && cartItem && <CartModal product={cartItem} player={player} onClose={() => { setShowCart(false); setCartItem(null); }} />}
     </>
   );
 }

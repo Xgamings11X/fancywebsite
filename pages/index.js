@@ -106,7 +106,11 @@ export default function HomePage({ settings }) {
       localStorage.removeItem('mc_player');
     }
 
-    fetch('/api/auth/me', { credentials:'include', signal:controller.signal })
+    fetch('/api/auth/me', {
+      credentials:'include',
+      signal:controller.signal,
+      headers:(() => { try { const token = localStorage.getItem('mc_token'); return token ? { Authorization:`Bearer ${token}` } : {}; } catch { return {}; } })(),
+    })
       .then(response => response.ok ? response.json() : null)
       .then(data => {
         if (!active) return;
@@ -184,7 +188,7 @@ export default function HomePage({ settings }) {
   ].filter(item => item.href), [s]);
 
   const famousApplyUrl = safeExternalUrl(
-    process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL
+    process.env.NEXT_PUBLIC_FAMOUS_APPLY_URL || s.famous_apply_url || s.discord_url || process.env.NEXT_PUBLIC_DISCORD_URL
   );
 
   const playerCount = status.online ? status.players : Number(s.players_online) || 0;
@@ -193,8 +197,9 @@ export default function HomePage({ settings }) {
   const statusText = status.loading ? 'Memeriksa server' : status.online ? 'Server online' : 'Server offline';
 
   const endpointCards = [
-    { key:'java', label:'Java Edition', value:javaIp, icon:'computer', copy:javaIp },
-    { key:'bedrock', label:'Bedrock Edition', value:`${bedrockIp}:${bedrockPort}`, icon:'mobile', copy:`${bedrockIp}:${bedrockPort}` },
+    { key:'java', label:'Java Edition IP', value:javaIp, icon:'computer', copy:javaIp },
+    { key:'bedrock-ip', label:'Bedrock Edition IP', value:bedrockIp, icon:'mobile', copy:bedrockIp },
+    { key:'bedrock-port', label:'Bedrock Port', value:bedrockPort, icon:'network-wired', copy:bedrockPort },
   ];
 
   return (
@@ -215,9 +220,10 @@ export default function HomePage({ settings }) {
         <link rel="icon" type="image/png" href={s.logo_url || logoSrc || '/favicon.png'}/>
       </Head>
 
-      <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s}/>
+      <div className="public-shell orange-public-theme">
+        <FancyNav player={player} onLoginClick={() => setShowLogin(true)} onLogout={handleLogout} settings={s}/>
 
-      <main className="landing-page">
+        <main className="landing-page landing-orange-page">
         <header className="landing-hero">
           <div className="landing-grid-glow" aria-hidden="true"/>
           <div className="landing-orb landing-orb-a" aria-hidden="true"/>
@@ -336,11 +342,16 @@ export default function HomePage({ settings }) {
           </div>
         </section>
 
-        <section className="landing-section landing-creator" data-anim="fade-up">
-          <div className="landing-creator-copy">
+        <section className="landing-section landing-famous-program" data-anim="fade-up">
+          <div className="landing-famous-copy">
             <span className="landing-section-label">CREATOR PROGRAM</span>
-            <h2 className="font-space">Bangun komunitasmu bersama {serverName}</h2>
-            <p>Kreator YouTube dan TikTok dapat memperoleh Rank Famous, tag eksklusif, dukungan event, dan exposure dari komunitas kami.</p>
+            <h2 className="font-space">Rank Famous untuk kreator yang ikut membesarkan komunitas.</h2>
+            <p>Program ini ditujukan untuk kreator YouTube dan TikTok yang konsisten membuat konten positif. Benefitnya bukan sekadar badge, tetapi identitas khusus, exposure, serta kesempatan kolaborasi bersama server.</p>
+            <div className="landing-famous-benefits">
+              <span><Icon name="star" size={15}/> Tag dan role kreator</span>
+              <span><Icon name="users" size={15}/> Exposure komunitas</span>
+              <span><Icon name="trophy" size={15}/> Kolaborasi event</span>
+            </div>
             <div className="landing-creator-actions">
               {famousApplyUrl ? (
                 <a href={famousApplyUrl} target="_blank" rel="noopener noreferrer" className="landing-primary-action">
@@ -348,30 +359,34 @@ export default function HomePage({ settings }) {
                 </a>
               ) : (
                 <Link href="/support" className="landing-primary-action">
-                  Hubungi Tim Support <Icon name="arrow-right" size={16}/>
+                  Tanyakan ke Support <Icon name="arrow-right" size={16}/>
                 </Link>
               )}
-              <Link href="/support" className="landing-text-link">Tanya persyaratan</Link>
+              <Link href="/support" className="landing-text-link">Lihat persyaratan</Link>
             </div>
           </div>
 
-          <div className="landing-requirements">
-            <span>Persyaratan utama</span>
+          <aside className="landing-famous-card" aria-label="Persyaratan Rank Famous">
+            <div className="landing-famous-rank-head">
+              <span><Icon name="star" size={22}/></span>
+              <div><small>EXCLUSIVE CREATOR RANK</small><strong>FAMOUS</strong></div>
+            </div>
             <ul>
               {[
-                'Konten positif dan membangun komunitas',
                 `Membuat konten ${serverName} secara rutin`,
                 'Audiens aktif dan organik',
-                'Mematuhi seluruh peraturan server',
+                'Konten positif serta mematuhi peraturan',
+                'Tidak memiliki masalah aktif dengan komunitas lain',
               ].map(item => (
                 <li key={item}><Icon name="circle-check" size={16}/><span>{item}</span></li>
               ))}
             </ul>
-          </div>
+          </aside>
         </section>
-      </main>
+        </main>
 
-      <FancyFooter serverName={serverName} discordUrl={safeExternalUrl(s.discord_url)} />
+        <FancyFooter serverName={serverName} discordUrl={safeExternalUrl(s.discord_url)} settings={s} />
+      </div>
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess}/>} 
     </>
   );

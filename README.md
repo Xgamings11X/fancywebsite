@@ -8,7 +8,8 @@ Store website untuk server Minecraft dengan payment Midtrans, plugin integration
 
 ### 1. Install dependencies
 ```bash
-npm install
+corepack enable
+pnpm install --frozen-lockfile
 ```
 
 ### 2. Buat file environment
@@ -20,10 +21,16 @@ cp .env.example .env.local
 ### 3. Jalankan
 ```bash
 # Development
-npm run dev
+pnpm run dev
 
 # Production
-npm run build && npm start
+pnpm run build && pnpm start
+```
+
+Port mengikuti environment `PORT` (default Next.js: `3000`). Contoh:
+
+```bash
+PORT=25580 pnpm start
 ```
 
 ---
@@ -126,7 +133,7 @@ Gunakan **Generic: Node.js** egg atau buat custom egg dengan:
 
 ```
 # Startup command
-npm run build && npm start
+pnpm run build && pnpm start
 
 # Environment variables yang perlu diset di panel:
 NODE_ENV=production
@@ -168,3 +175,47 @@ Tab yang tersedia:
 - Masukkan URL di **Admin Panel → Pengaturan → URL Logo**
 - Simpan → website otomatis refresh dan favicon ikut berubah
 
+
+---
+
+## 💬 Ticket dua arah Website ↔ Discord
+
+Website dapat membuat channel ticket Discord privat secara otomatis. Staf dapat menjawab dari Discord atau Admin Panel; pesan yang masuk dari kedua sisi disinkronkan ke chat player.
+
+Tambahkan ke `.env.local` atau Environment Variables Pterodactyl:
+
+```env
+DISCORD_BOT_TOKEN=TOKEN_BOT_DISCORD
+DISCORD_GUILD_ID=ID_SERVER_DISCORD
+DISCORD_TICKET_CATEGORY_ID=ID_KATEGORI_TICKET
+DISCORD_SUPPORT_ROLE_ID=ID_ROLE_STAFF
+DISCORD_TICKET_ARCHIVE_CATEGORY_ID=ID_KATEGORI_ARSIP
+DISCORD_TICKET_DELETE_ON_CLEANUP=false
+NEXT_PUBLIC_BASE_URL=https://domainmu.com
+```
+
+Permission bot yang diperlukan:
+
+- View Channels
+- Manage Channels
+- Send Messages
+- Read Message History
+
+Alur:
+
+1. Player login di website dan membuat ticket.
+2. Website membuat channel Discord privat.
+3. Bila player mengisi Discord User ID, player ikut diberi akses ke channel.
+4. Pesan dari web diteruskan ke Discord.
+5. Balasan manusia dari Discord muncul kembali di web.
+6. Admin juga dapat membalas dari tab **Report** di panel website.
+
+Command status khusus staf di channel Discord:
+
+```text
+!close / !resolve / !selesai
+!reject / !tolak
+!reopen / !open / !buka
+```
+
+Jangan pernah membagikan `DISCORD_BOT_TOKEN` atau memasukkannya ke kode frontend.

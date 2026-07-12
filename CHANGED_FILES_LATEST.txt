@@ -1,0 +1,84 @@
+FANCY WEBSITE — FILE YANG DIUBAH DARI ZIP TERBARU
+=================================================
+
+PUBLIC UI
+- pages/index.js
+  Home orange/charcoal, server console dipertahankan, Java/Bedrock/port dipisah,
+  Creator Program menggantikan Rank Famous lama.
+- pages/store.js
+  Category state/query fix, katalog robust, login/session fix, product card baru.
+- pages/support/index.js
+  Support category/tab/chat redesign, pending category setelah login, SSE aman.
+- styles/globals.css
+  Tema solid HEX, responsive Home/Store/Support, navbar, modal, product, footer.
+- pages/_document.js
+  Outfit + Plus Jakarta Sans dimuat dengan stylesheet yang benar-benar aktif.
+- pages/_app.js
+  Theme toaster, observer lifecycle, validasi URL background runtime.
+
+COMPONENTS
+- Navbar dan LoginModal tidak membutuhkan perubahan source pada ZIP terbaru;
+  redesign keduanya diterapkan melalui styles/globals.css.
+- components/FancyFooter.js
+  Footer lengkap: sosial, alamat server, navigasi, bantuan, CTA, legal.
+- components/ProductCard.js
+  Ikon otomatis, fallback gambar, badge/diskon/platform/benefit/price/footer.
+- components/CartModal.js
+  Fix dialogRef/discordRef, focus trap, Escape, scroll lock, focus restore.
+
+DISCORD / WEBHOOK / TICKET
+- lib/discord-emojis.js (BARU)
+  Mapping custom emoji yang diberikan user + alias lowercase.
+- lib/discord.js
+  Emoji webhook transaksi/support, metode pembayaran, warna support orange.
+- lib/discord-ticket.js (BARU)
+  Discord Bot REST bridge: private channel, web↔Discord messages, status command.
+- pages/api/support/index.js
+  Create/list/detail/reply ticket, validation, Discord relay, first timestamp fix.
+- pages/api/support/events.js
+  SSE realtime + Discord sync + fallback reconnect; cookie-first authentication.
+- pages/api/admin/support.js
+  Admin reply/status terhubung ke Discord.
+- pages/api/admin/test-webhook.js
+  Test webhook memakai custom emoji.
+- lib/cleanup.js
+  Cleanup ticket ikut mengarsipkan/menghapus channel Discord sesuai env.
+- lib/redis.js
+  Message timestamp preservation dan updated ticket return.
+
+SETTINGS / ADMIN
+- pages/admin/index.js
+  Field Bedrock IP, Bedrock Port 19026, Famous Apply URL, ticket Discord state.
+- pages/api/store/settings.js
+  Public fields Bedrock, hero subtitle, dan Famous Apply URL.
+- lib/storage.js
+  Default Bedrock IP/port dan Famous Apply URL.
+- data/settings.json
+  Menambahkan bedrock_ip, bedrock_port, famous_apply_url tanpa menimpa data lain.
+
+DEPLOYMENT / CONFIG
+- package.json
+  pnpm 10, Node 22, pinned dependencies, portable dev/start scripts.
+- pnpm-lock.yaml (BARU)
+  Lockfile reproducible untuk Vercel.
+- vercel.json
+  Build memakai pnpm, tidak memaksa npm install.
+- .npmrc (BARU)
+  Registry publik npm.
+- .env.example
+  Konfigurasi webhook Admin/Player/Report dan Discord Ticket Bot.
+- README.md
+  Setup pnpm, PORT, deployment instructions.
+
+DOKUMENTASI / VALIDASI
+- DISCORD_TICKET_SETUP.md (BARU)
+- VERCEL_DEPLOY_FIX.md (BARU)
+- LATEST_PATCH_NOTES.md (BARU)
+- ORANGE_REWORK_NOTES.md (BARU/DISESUAIKAN)
+- APPLY_GIT_PATCH.md (BARU)
+- STATIC_VALIDATION.txt (BARU)
+- CHANGED_FILES_LATEST.txt (BARU)
+
+FILE YANG SENGAJA TIDAK ADA
+- package-lock.json
+  Dihapus/tidak digunakan agar Vercel tidak kembali menjalankan npm.

@@ -29,6 +29,12 @@ const idr = v => `Rp ${Number(v || 0).toLocaleString('id-ID')}`;
 
 export default function CartModal({ product, player, onClose }) {
   const router = useRouter();
+  const dialogRef = useRef(null);
+  const discordRef = useRef(null);
+  const previousFocusRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  const loadingRef = useRef(false);
+  onCloseRef.current = onClose;
 
   const [discordUsername, setDiscordUsername] = useState('');
   const [redeemCode,      setRedeemCode]       = useState('');
@@ -40,6 +46,42 @@ export default function CartModal({ product, player, onClose }) {
 
   const finalPrice = applied?.finalPrice ?? product.price;
   const discount    = applied?.discountAmount ?? 0;
+  loadingRef.current = loading;
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => discordRef.current?.focus(), 60);
+
+    const handleKeyDown = event => {
+      if (event.key === 'Escape' && !loadingRef.current) {
+        event.preventDefault();
+        onCloseRef.current?.();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialogRef.current) return;
+      const focusable = [...dialogRef.current.querySelectorAll('button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')];
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus?.();
+    };
+  }, []);
 
   const handleApplyCode = async () => {
     if (!redeemCode.trim()) return;
@@ -118,7 +160,7 @@ export default function CartModal({ product, player, onClose }) {
               <h2 id="checkout-title" className="font-space cart-modal-title">Checkout</h2>
               <p className="cart-modal-subtitle">Selesaikan pembelian kamu</p>
             </div>
-            <button onClick={onClose} disabled={loading} className="cart-modal-close">
+            <button type="button" onClick={onClose} disabled={loading} className="cart-modal-close" aria-label="Tutup checkout">
               <Icon name="xmark" size={14}/>
             </button>
           </div>

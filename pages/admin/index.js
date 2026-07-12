@@ -91,8 +91,21 @@ export default function AdminPanel() {
   const [settingsSaving,    setSettingsSaving]    = useState(false);
   const af = useAF();
 
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (['dashboard','products'].includes(tab))   { const r=await af('/api/admin/products');  if(r.success){ setProducts(r.products||[]); setProdSortDirty(false); } }
+      if (['dashboard','categories'].includes(tab)) { const r=await af('/api/admin/categories');if(r.success){ setCategories(r.categories||[]); setCatSortDirty(false); } }
+      if (['dashboard','orders'].includes(tab))     { const r=await af(`/api/admin/orders?status=${orderFilter}`); if(r.success){setOrders(r.orders||[]);if(r.stats)setStats(r.stats);} }
+      if (tab==='reports')                          { const r=await af(`/api/admin/support?status=${reportFilter}`); if(r.success) setTickets(r.tickets||[]); }
+      if (tab==='redeem')                           { const r=await af('/api/admin/redeem'); if(r.success) setCodes(r.codes||[]); }
+      if (tab==='settings')                         { const r=await af('/api/admin/settings'); if(r.success) setSettings(r.settings||{}); }
+    } catch {}
+    setLoading(false);
+  }, [af, orderFilter, reportFilter, tab]);
+
   useEffect(() => { if (localStorage.getItem('admin_token')) setLoggedIn(true); }, []);
-  useEffect(() => { if (loggedIn) load(); }, [loggedIn, tab, orderFilter, reportFilter]);
+  useEffect(() => { if (loggedIn) load(); }, [loggedIn, load]);
 
   // Realtime polling untuk tab reports dan orders (setiap 10 detik)
   useEffect(() => {
@@ -106,20 +119,7 @@ export default function AdminPanel() {
       } catch {}
     }, 10000);
     return () => clearInterval(iv);
-  }, [loggedIn, tab, orderFilter, reportFilter]);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      if (['dashboard','products'].includes(tab))   { const r=await af('/api/admin/products');  if(r.success){ setProducts(r.products||[]); setProdSortDirty(false); } }
-      if (['dashboard','categories'].includes(tab)) { const r=await af('/api/admin/categories');if(r.success){ setCategories(r.categories||[]); setCatSortDirty(false); } }
-      if (['dashboard','orders'].includes(tab))     { const r=await af(`/api/admin/orders?status=${orderFilter}`); if(r.success){setOrders(r.orders||[]);if(r.stats)setStats(r.stats);} }
-      if (tab==='reports')                          { const r=await af(`/api/admin/support?status=${reportFilter}`); if(r.success) setTickets(r.tickets||[]); }
-      if (tab==='redeem')                           { const r=await af('/api/admin/redeem'); if(r.success) setCodes(r.codes||[]); }
-      if (tab==='settings')                         { const r=await af('/api/admin/settings'); if(r.success) setSettings(r.settings||{}); }
-    } catch {}
-    setLoading(false);
-  };
+  }, [af, loggedIn, tab, orderFilter, reportFilter]);
 
   const login = async e => {
     e.preventDefault(); setLLoading(true); setLError('');
@@ -684,9 +684,10 @@ export default function AdminPanel() {
                         ['server_name','Nama Server','Fancy Network'],
                         ['server_ip','IP Java','play.example.com'],
                         ['bedrock_ip','IP Bedrock','play.example.com'],
-                        ['bedrock_port','Port Bedrock','19132'],
+                        ['bedrock_port','Port Bedrock','19026'],
                         ['logo_text','Teks Logo','Fancy Network'],
                         ['hero_title','Judul Hero',''],
+                        ['famous_apply_url','URL Pendaftaran Rank Famous','https://discord.gg/...'],
                       ].map(([key,lbl,ph])=>(
                         <div key={key}>
                           <label className="adm-settings-field-label">{lbl}</label>
@@ -751,6 +752,7 @@ export default function AdminPanel() {
 // ── TicketCard ────────────────────────────────────────────────
 function TicketCard({ tk, af, onRefresh }) {
   const [expanded,  setExpanded]  = useState(false);
+  const [liveTicket, setLiveTicket] = useState(tk);
   const [msg,       setMsg]       = useState('');
   const [sending,   setSending]   = useState(false);
   const [timeLeft,  setTimeLeft]  = useState(null);  // detik tersisa sebelum cleanup
@@ -759,18 +761,35 @@ function TicketCard({ tk, af, onRefresh }) {
   const tInfo = {
     banding:{icon:'gavel',color:'#e67e22'}, bug:{icon:'bug',color:'#3498db'},
     report_player:{icon:'user-xmark',color:'#e74c3c'}, lainnya:{icon:'comment-dots',color:'#9b59b6'},
-  }[tk.type] || {icon:'ticket',color:'var(--primary)'};
+  }[liveTicket.type] || {icon:'ticket',color:'var(--primary)'};
 
   const st = {
     open:{label:'Menunggu',color:'#f1c40f'}, in_review:{label:'Review',color:'#3498db'},
     resolved:{label:'Selesai',color:'#2ecc71'}, rejected:{label:'Ditolak',color:'#e74c3c'},
     expired:{label:'Expired',color:'#95a5a6'},
-  }[tk.status] || {label:tk.status,color:'#8e8e9a'};
+  }[liveTicket.status] || {label:liveTicket.status,color:'#8e8e9a'};
+
+  useEffect(() => { setLiveTicket(tk); }, [tk]);
+
+  // Saat chat admin dibuka, sinkronkan balasan Discord setiap 5 detik.
+  useEffect(() => {
+    if (!expanded || !liveTicket.ticket_id) return undefined;
+    let active = true;
+    const sync = async () => {
+      try {
+        const result = await af(`/api/admin/support?id=${encodeURIComponent(liveTicket.ticket_id)}`);
+        if (active && result?.success && result.ticket) setLiveTicket(result.ticket);
+      } catch {}
+    };
+    sync();
+    const interval = window.setInterval(sync, 5000);
+    return () => { active = false; window.clearInterval(interval); };
+  }, [af, expanded, liveTicket.ticket_id]);
 
   // Hitung countdown 2 menit untuk closed ticket
   useEffect(() => {
-    if (!tk.closed_at) { setTimeLeft(null); return; }
-    const closedMs  = new Date(tk.closed_at).getTime();
+    if (!liveTicket.closed_at) { setTimeLeft(null); return; }
+    const closedMs  = new Date(liveTicket.closed_at).getTime();
     const TWO_MIN   = 2 * 60 * 1000;
     const tick = () => {
       const left = Math.max(0, TWO_MIN - (Date.now() - closedMs));
@@ -779,26 +798,26 @@ function TicketCard({ tk, af, onRefresh }) {
     tick();
     const iv = setInterval(tick, 1000);
     return () => clearInterval(iv);
-  }, [tk.closed_at]);
+  }, [liveTicket.closed_at]);
 
   // Scroll ke pesan terbaru saat expand
   useEffect(() => {
     if (expanded && msgEndRef.current) {
       msgEndRef.current.scrollIntoView({ behavior:'smooth' });
     }
-  }, [expanded, tk.messages?.length]);
+  }, [expanded, liveTicket.messages?.length]);
 
   const sendMsg = async () => {
     if (!msg.trim() || sending) return;
     setSending(true);
-    await af('/api/admin/support', { method:'PATCH', body:JSON.stringify({ id:tk.ticket_id, message:msg.trim() }) });
+    await af('/api/admin/support', { method:'PATCH', body:JSON.stringify({ id:liveTicket.ticket_id, message:msg.trim() }) });
     setSending(false);
     setMsg('');
     onRefresh();
   };
 
   const cancelCleanup = async () => {
-    await af('/api/admin/support', { method:'PATCH', body:JSON.stringify({ id:tk.ticket_id, cancel_cleanup:true }) });
+    await af('/api/admin/support', { method:'PATCH', body:JSON.stringify({ id:liveTicket.ticket_id, cancel_cleanup:true }) });
     toast.success('Auto-cleanup dibatalkan');
     onRefresh();
   };
@@ -810,14 +829,14 @@ function TicketCard({ tk, af, onRefresh }) {
     return `${m}:${String(s).padStart(2,'0')}`;
   };
 
-  const isClosed = tk.status === 'resolved' || tk.status === 'rejected';
-  const msgs = tk.messages || [];
+  const isClosed = liveTicket.status === 'resolved' || liveTicket.status === 'rejected';
+  const msgs = liveTicket.messages || [];
 
   return (
-    <div className={cx('admin-card adm-ticket-card', isClosed && tk.closed_at && 'closing')}>
+    <div className={cx('admin-card adm-ticket-card', isClosed && liveTicket.closed_at && 'closing')}>
 
       {/* Countdown cleanup banner */}
-      {isClosed && tk.closed_at && timeLeft !== null && (
+      {isClosed && liveTicket.closed_at && timeLeft !== null && (
         <div className="adm-cleanup-banner">
           <div className="adm-cleanup-left">
             <Icon name="clock" size={13} color="#e74c3c" className="fn-icon-mr-4"/>
@@ -843,14 +862,15 @@ function TicketCard({ tk, af, onRefresh }) {
             <Icon name={tInfo.icon} size={14} color={tInfo.color}/>
           </div>
           <div className="min-w-0">
-            <p className="adm-ticket-subject">{tk.subject}</p>
+            <p className="adm-ticket-subject">{liveTicket.subject}</p>
             <div className="adm-ticket-meta">
-              <code className="adm-ticket-meta-text adm-mono">{tk.ticket_id}</code>
+              <code className="adm-ticket-meta-text adm-mono">{liveTicket.ticket_id}</code>
               <span className="adm-ticket-meta-text">·</span>
-              <span className="adm-ticket-player">{tk.player_username}</span>
+              <span className="adm-ticket-player">{liveTicket.player_username}</span>
               <span className="adm-ticket-meta-text">·</span>
-              <span className="adm-ticket-meta-text">{fmt(tk.created_at)}</span>
+              <span className="adm-ticket-meta-text">{fmt(liveTicket.created_at)}</span>
               {msgs.length > 0 && <span className="adm-ticket-msgcount-badge">{msgs.length} pesan</span>}
+              {liveTicket.discord_channel_id && <span className="adm-ticket-msgcount-badge">Discord sync</span>}
             </div>
           </div>
         </div>
@@ -859,8 +879,8 @@ function TicketCard({ tk, af, onRefresh }) {
             <Icon name={expanded?'chevron-up':'chevron-down'} size={10}/>
             {expanded ? 'Tutup' : 'Buka Chat'}
           </button>
-          <select defaultValue={tk.status} onChange={async e=>{
-            await af('/api/admin/support',{method:'PATCH',body:JSON.stringify({id:tk.ticket_id,status:e.target.value})});
+          <select value={liveTicket.status} onChange={async e=>{
+            await af('/api/admin/support',{method:'PATCH',body:JSON.stringify({id:liveTicket.ticket_id,status:e.target.value})});
             toast.success('Status diupdate'); onRefresh();
           }} className="adm-ticket-status-select" style={{'--c': st.color}}>
             <option value="open">Menunggu</option>
@@ -871,8 +891,8 @@ function TicketCard({ tk, af, onRefresh }) {
         </div>
       </div>
 
-      {tk.target_player && <p className="adm-ticket-target"><Icon name="user-xmark" size={12} className="fn-icon-mr"/>Target: <strong>{tk.target_player}</strong></p>}
-      {tk.evidence_url  && <a href={tk.evidence_url} target="_blank" rel="noopener noreferrer" className="adm-ticket-evidence-link"><Icon name="link" size={12} className="fn-icon-mr"/>Lihat Bukti</a>}
+      {liveTicket.target_player && <p className="adm-ticket-target"><Icon name="user-xmark" size={12} className="fn-icon-mr"/>Target: <strong>{liveTicket.target_player}</strong></p>}
+      {liveTicket.evidence_url  && <a href={liveTicket.evidence_url} target="_blank" rel="noopener noreferrer" className="adm-ticket-evidence-link"><Icon name="link" size={12} className="fn-icon-mr"/>Lihat Bukti</a>}
 
       {/* Chat area - expanded */}
       {expanded && (
